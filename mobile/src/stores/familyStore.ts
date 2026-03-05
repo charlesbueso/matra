@@ -348,10 +348,13 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
       // Dev mode: send transcript text directly, skip audio
       formData.append('transcript', devTranscript);
     } else if (audioUri) {
-      // Normal mode: send recorded audio
-      const audioResponse = await fetch(audioUri);
-      const audioBlob = await audioResponse.blob();
-      formData.append('audio', audioBlob, 'interview.m4a');
+      // React Native requires URI-based file objects for FormData uploads.
+      // Blob-based uploads are unreliable and often send empty/malformed bodies.
+      formData.append('audio', {
+        uri: audioUri,
+        type: 'audio/m4a',
+        name: 'interview.m4a',
+      } as any);
     }
     formData.append('familyGroupId', familyGroupId);
     if (title) formData.append('title', title);

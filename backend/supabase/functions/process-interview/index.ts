@@ -22,7 +22,9 @@ serve(async (req: Request) => {
   if (corsResponse) return corsResponse;
 
   try {
+    console.log('[process-interview] Starting...');
     const userId = await getAuthUserId(req);
+    console.log('[process-interview] Authenticated user:', userId);
     const supabase = getServiceClient();
 
     // Check feature gate
@@ -32,12 +34,20 @@ serve(async (req: Request) => {
     }
 
     // Parse multipart form data
+    console.log('[process-interview] Parsing form data...');
     const formData = await req.formData();
     const audioFile = formData.get('audio') as File | null;
     const familyGroupId = formData.get('familyGroupId') as string;
     const title = formData.get('title') as string | null;
     const subjectPersonId = formData.get('subjectPersonId') as string | null;
     const devTranscript = formData.get('transcript') as string | null;
+    console.log('[process-interview] Form data parsed:', {
+      hasAudio: !!audioFile,
+      audioSize: audioFile?.size,
+      audioName: audioFile?.name,
+      familyGroupId,
+      hasTranscript: !!devTranscript,
+    });
 
     if (!familyGroupId) {
       return errorResponse('Missing required field: familyGroupId', 'MISSING_FIELDS', 400);
@@ -106,6 +116,7 @@ serve(async (req: Request) => {
       const audioBytes = new Uint8Array(await audioFile!.arrayBuffer());
 
       let audioUrl: string;
+      console.log('[process-interview] Uploading audio:', audioSubPath, `(${audioBytes.length} bytes)`);
       try {
         audioUrl = await uploadToSpaces(audioSubPath, audioBytes, audioFile!.type);
       } catch (uploadErr) {
@@ -135,6 +146,7 @@ serve(async (req: Request) => {
         });
 
       // 3. Transcribe audio
+      console.log('[process-interview] Starting transcription...');
       const sttProvider = getSTTProvider();
       let transcriptionResult;
 
@@ -427,7 +439,7 @@ serve(async (req: Request) => {
       storiesCreated: summaryResult?.suggestedStories.length || 0,
     });
   } catch (err) {
-    console.error('Process interview error:', err);
+    console.error('[process-interview] FATAL ERROR:', (err as any)?.message || err, (err as any)?.stack || '');
     return errorResponse(
       err.message || 'Internal server error',
       'INTERNAL_ERROR',

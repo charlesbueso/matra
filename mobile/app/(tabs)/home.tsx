@@ -334,7 +334,7 @@ const styles = StyleSheet.create({
   upgradeCard: {
     borderColor: Colors.accent.amber,
     borderWidth: 1,
-    backgroundColor: 'rgba(196, 154, 60, 0.06)',
+    backgroundColor: '#FBF3E0',
   },
   upgradeTitle: {
     fontSize: Typography.sizes.h4,

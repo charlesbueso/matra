@@ -18,8 +18,11 @@ function getSupabaseUrl(): string {
   const debuggerHost = Constants.expoConfig?.hostUri ?? Constants.manifest2?.extra?.expoGo?.debuggerHost;
   if (debuggerHost) {
     let host = debuggerHost.split(':')[0]; // strip port
-    // Android emulator can't reach host via localhost; use the special alias
-    if (Platform.OS === 'android' && (host === 'localhost' || host === '127.0.0.1')) {
+    // Android emulator (not physical device) can't reach host via localhost;
+    // use the special 10.0.2.2 alias. On physical devices localhost is routed
+    // through adb reverse, so keep it as-is.
+    const isEmulator = Platform.OS === 'android' && !Constants.isDevice;
+    if (isEmulator && (host === 'localhost' || host === '127.0.0.1')) {
       host = '10.0.2.2';
     }
     return `http://${host}:54321`;
@@ -28,6 +31,7 @@ function getSupabaseUrl(): string {
 }
 
 const supabaseUrl = getSupabaseUrl();
+console.log('[Supabase] URL:', supabaseUrl);
 const supabaseAnonKey = Constants.expoConfig?.extra?.supabaseAnonKey || '';
 
 // Secure storage adapter for Supabase auth tokens
