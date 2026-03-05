@@ -5,6 +5,7 @@
 import { create } from 'zustand';
 import { supabase, invokeFunction } from '../services/supabase';
 import { useAuthStore } from './authStore';
+import { useNotificationStore } from './notificationStore';
 
 export interface Person {
   id: string;
@@ -238,6 +239,9 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
         get().fetchInterviews(),
         get().fetchStories(),
       ]);
+      // Update unread badge counts
+      const { people, stories } = get();
+      useNotificationStore.getState().updateUnreadCounts(stories.length, people.length);
     } finally {
       set({ isLoading: false });
     }
@@ -516,6 +520,13 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
 
     // Soft-delete all people from this conversation and remove their relationships
     if (personIdsToDelete.length > 0) {
+      // Clean up avatar images from DO Spaces before soft-deleting
+      try {
+        await invokeFunction('cleanup-person-avatars', { personIds: personIdsToDelete });
+      } catch {
+        // Best-effort: don't block deletion if cleanup fails
+      }
+
       await supabase
         .from('people')
         .update({ deleted_at: now })
@@ -556,8 +567,21 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
         .in('interview_id', interviewIds)
         .is('deleted_at', null);
 
-      // Soft-delete all people in this group EXCEPT the user's self person
+      // Clean up avatar images from DO Spaces before soft-deleting
       const selfPersonId = useAuthStore.getState().profile?.self_person_id;
+      const peopleToDelete = get().people.filter((p) => p.id !== selfPersonId);
+      const avatarPersonIds = peopleToDelete
+        .filter((p) => p.avatar_url)
+        .map((p) => p.id);
+      if (avatarPersonIds.length > 0) {
+        try {
+          await invokeFunction('cleanup-person-avatars', { personIds: avatarPersonIds });
+        } catch {
+          // Best-effort: don't block deletion if cleanup fails
+        }
+      }
+
+      // Soft-delete all people in this group EXCEPT the user's self person
       let peopleQuery = supabase
         .from('people')
         .update({ deleted_at: now })

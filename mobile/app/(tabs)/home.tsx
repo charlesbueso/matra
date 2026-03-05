@@ -53,7 +53,7 @@ export default function HomeScreen() {
             Welcome back, {profile?.display_name || 'Explorer'}
           </Text>
           <Text style={styles.greetingSubtext}>
-            Your family tree is growing
+            {people.length <= 1 ? 'Start a conversation to grow your tree' : 'Your family tree is growing'}
           </Text>
         </View>
 

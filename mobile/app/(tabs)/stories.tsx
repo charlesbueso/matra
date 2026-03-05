@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { StarField, Card, BioAlgae, CornerBush } from '../../src/components/ui';
 import { useFamilyStore } from '../../src/stores/familyStore';
+import { useNotificationStore } from '../../src/stores/notificationStore';
 import { Colors, Typography, Spacing } from '../../src/theme/tokens';
 
 export default function StoriesScreen() {
@@ -17,6 +18,11 @@ export default function StoriesScreen() {
   useEffect(() => {
     fetchStories();
   }, []);
+
+  // Mark stories as read when this tab is viewed
+  useEffect(() => {
+    useNotificationStore.getState().markStoriesRead();
+  }, [stories.length]);
 
   if (stories.length === 0) {
     return (

@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background.depth,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.xxs,
   },
   closeIcon: {
     fontSize: 16,

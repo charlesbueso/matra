@@ -20,6 +20,7 @@ import {
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ThemeProvider } from '../src/theme';
 import { useAuthStore } from '../src/stores/authStore';
+import { useNotificationStore } from '../src/stores/notificationStore';
 import { Colors } from '../src/theme/tokens';
 
 SplashScreen.preventAutoHideAsync();
@@ -45,6 +46,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     initialize();
+    useNotificationStore.getState().requestPermissions();
   }, []);
 
   useEffect(() => {

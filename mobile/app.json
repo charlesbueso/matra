@@ -34,6 +34,13 @@
       "expo-font",
       "expo-secure-store",
       [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#04070B"
+        }
+      ],
+      [
         "expo-av",
         {
           "microphonePermission": "Allow MATRA to access your microphone to record family interviews."

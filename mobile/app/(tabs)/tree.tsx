@@ -5,7 +5,7 @@
 // Each person is a warm organic node on branches.
 // ============================================================
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Dimensions, Pressable, ScrollView, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Image } from 'expo-image';
@@ -20,6 +20,7 @@ import Svg, { Line, Circle, Path, Defs, RadialGradient, Stop, Text as SvgText } 
 import { StarField, BioAlgae, TreeTrunk, MountainScape, FlyingBirds } from '../../src/components/ui';
 import { useFamilyStore, Person, Relationship } from '../../src/stores/familyStore';
 import { useAuthStore } from '../../src/stores/authStore';
+import { useNotificationStore } from '../../src/stores/notificationStore';
 import { Colors, Typography, Spacing } from '../../src/theme/tokens';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -416,6 +417,11 @@ export default function TreeScreen() {
     () => layoutNodes(people, relationships),
     [people, relationships]
   );
+
+  // Mark lineage as read when this tab is viewed
+  useEffect(() => {
+    useNotificationStore.getState().markLineageRead();
+  }, [people.length]);
 
   // ── Pan & Zoom state (must be declared before any early return) ──
   const scale = useSharedValue(0.8);

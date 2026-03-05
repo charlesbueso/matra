@@ -237,16 +237,23 @@ serve(async (req: Request) => {
 
     // 7. Create/link people nodes — with cross-interview deduplication
     // Build a resolution map: suggested name → person ID in DB
-    const resolvedPeople = new Map<string, string>(); // "firstName lastName" → person.id
+    const resolvedPeople = new Map<string, string>(); // normalized key → person.id
+
+    // Strip diacritics / accents for consistent matching
+    // e.g. "Rentería" → "renteria", "Héctor" → "hector"
+    function normalize(s: string): string {
+      return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+    }
 
     // Pre-seed the resolution map with the subject/self person so they are
     // NEVER duplicated. Any AI-suggested person matching the narrator's name
     // will resolve to their existing record.
     if (subjectPerson) {
-      const selfKey = `${subjectPerson.first_name} ${subjectPerson.last_name || ''}`.trim();
+      const selfKey = normalize(`${subjectPerson.first_name} ${subjectPerson.last_name || ''}`);
       resolvedPeople.set(selfKey, subjectPerson.id);
-      // Also seed first-name-only key for common references
-      resolvedPeople.set(subjectPerson.first_name, subjectPerson.id);
+      // NOTE: We intentionally do NOT seed first-name-only for the subject.
+      // This prevents false dedup when a family member shares the subject's
+      // first name (e.g., "Carlos Jose Bueso" vs narrator "Carlos Bueso").
     }
 
     // Fetch all existing people in this family group for matching
@@ -258,15 +265,34 @@ serve(async (req: Request) => {
 
     const allExisting = existingPeople || [];
 
-    for (const suggested of extractionResult.suggestedPeople) {
-      const sugFirst = (suggested.firstName || '').trim().toLowerCase();
-      const sugLast = (suggested.lastName || '').trim().toLowerCase();
-      const sugNick = (suggested.nickname || '').trim().toLowerCase();
-      const sugFullKey = `${suggested.firstName} ${suggested.lastName || ''}`.trim();
+    // Also pre-seed resolvedPeople with ALL existing people so within-interview
+    // duplicates are caught (e.g. AI suggests "Marco Bueso" and "Marco" in same batch)
+    for (const ep of allExisting) {
+      const epKey = normalize(`${ep.first_name} ${ep.last_name || ''}`);
+      if (!resolvedPeople.has(epKey)) {
+        resolvedPeople.set(epKey, ep.id);
+      }
+    }
 
-      // If this person was already pre-seeded (e.g. the subject/self), skip
-      if (resolvedPeople.has(sugFullKey) || resolvedPeople.has(suggested.firstName)) {
-        continue;
+    for (const suggested of extractionResult.suggestedPeople) {
+      const sugFirst = normalize(suggested.firstName || '');
+      const sugLast = normalize(suggested.lastName || '');
+      const sugNick = normalize(suggested.nickname || '');
+      const sugFullKey = normalize(`${suggested.firstName} ${suggested.lastName || ''}`);
+
+      // If this person was already resolved (e.g. the subject/self, or existing person), skip.
+      // EXCEPTION: if the match is to the subject/narrator, fall through instead.
+      // The AI prompt says NOT to include the narrator in suggestedPeople, so a
+      // match here likely means a different person with a similar name (e.g.,
+      // a parent the narrator is named after).
+      if (resolvedPeople.has(sugFullKey) || resolvedPeople.has(sugFirst)) {
+        const matchedId = resolvedPeople.get(sugFullKey) || resolvedPeople.get(sugFirst);
+        if (subjectPerson && matchedId === subjectPerson.id) {
+          console.log(`[process-interview] Suggested person "${suggested.firstName} ${suggested.lastName || ''}" matches narrator name — checking if different person`);
+          // Fall through to matching loop for careful disambiguation
+        } else {
+          continue;
+        }
       }
 
       // Try to find a match among existing people
@@ -274,13 +300,19 @@ serve(async (req: Request) => {
       let bestScore = 0;
 
       for (const existing of allExisting) {
-        const exFirst = (existing.first_name || '').toLowerCase();
-        const exLast = (existing.last_name || '').toLowerCase();
-        const exNick = (existing.nickname || '').toLowerCase();
+        // Skip the subject/narrator as a matching candidate. The AI prompt
+        // instructs not to include the narrator in suggestedPeople, so any
+        // suggested person here is a different family member — even if they
+        // share a name (e.g., child named after parent).
+        if (subjectPerson && existing.id === subjectPerson.id) continue;
+
+        const exFirst = normalize(existing.first_name || '');
+        const exLast = normalize(existing.last_name || '');
+        const exNick = normalize(existing.nickname || '');
 
         let score = 0;
 
-        // Exact first name match
+        // Exact first name match (after normalization)
         if (sugFirst && exFirst && sugFirst === exFirst) score += 3;
         // First name matches nickname
         else if (sugFirst && exNick && sugFirst === exNick) score += 2;
@@ -293,12 +325,21 @@ serve(async (req: Request) => {
 
         if (score === 0) continue; // No first-name-level match at all
 
-        // Last name match boost
-        if (sugLast && exLast && sugLast === exLast) score += 3;
-        // One side has no last name — don't penalize
-        else if (!sugLast || !exLast) score += 0;
-        // Last names differ — reduce confidence
-        else score -= 2;
+        // Last name matching — with substring/containment support
+        if (sugLast && exLast) {
+          if (sugLast === exLast) {
+            // Exact match
+            score += 3;
+          } else if (sugLast.includes(exLast) || exLast.includes(sugLast)) {
+            // One last name contains the other (e.g. "Bueso" matches "Bueso Mas",
+            // "Renteria" matches "Renteria Montes de Oca")
+            score += 2;
+          } else {
+            // Truly different last names — strong penalty
+            score -= 2;
+          }
+        }
+        // One side has no last name — don't penalize (score += 0)
 
         if (score > bestScore) {
           bestScore = score;
@@ -323,6 +364,8 @@ serve(async (req: Request) => {
         }
 
         resolvedPeople.set(sugFullKey, matchId);
+        // Also seed first-name-only so "Marco" resolves later if AI uses short form
+        if (!resolvedPeople.has(sugFirst)) resolvedPeople.set(sugFirst, matchId);
       } else {
         // No match — create new person
         const { data: newPerson } = await supabase
@@ -341,6 +384,8 @@ serve(async (req: Request) => {
 
         if (newPerson) {
           resolvedPeople.set(sugFullKey, newPerson.id);
+          // Also seed first-name-only and normalized first name
+          if (!resolvedPeople.has(sugFirst)) resolvedPeople.set(sugFirst, newPerson.id);
           allExisting.push(newPerson);
         }
       }
@@ -354,20 +399,22 @@ serve(async (req: Request) => {
         return subjectPerson.id;
       }
 
-      // Direct key match
-      if (resolvedPeople.has(name)) return resolvedPeople.get(name)!;
+      const normName = normalize(name);
+      const normFirst = normName.split(' ')[0];
+
+      // Direct key match (normalized)
+      if (resolvedPeople.has(normName)) return resolvedPeople.get(normName)!;
 
       // Try first-name-only match against resolved map
-      const firstName = name.split(' ')[0].toLowerCase();
       for (const [key, id] of resolvedPeople) {
-        if (key.split(' ')[0].toLowerCase() === firstName) return id;
+        if (key.split(' ')[0] === normFirst) return id;
       }
 
-      // Fall back to DB existing people
+      // Fall back to DB existing people (also normalized)
       for (const p of allExisting) {
-        const exFirst = (p.first_name || '').toLowerCase();
-        const exNick = (p.nickname || '').toLowerCase();
-        if (exFirst === firstName || exNick === firstName) return p.id;
+        const exFirst = normalize(p.first_name || '');
+        const exNick = normalize(p.nickname || '');
+        if (exFirst === normFirst || exNick === normFirst) return p.id;
       }
 
       return null;

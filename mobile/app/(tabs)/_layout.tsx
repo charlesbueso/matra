@@ -7,8 +7,12 @@ import { Tabs } from 'expo-router';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography } from '../../src/theme/tokens';
+import { useNotificationStore } from '../../src/stores/notificationStore';
 
 export default function TabLayout() {
+  const unreadLineage = useNotificationStore((s) => s.unreadLineageCount);
+  const unreadStories = useNotificationStore((s) => s.unreadStoryCount);
+
   return (
     <Tabs
       screenOptions={{
@@ -33,7 +37,14 @@ export default function TabLayout() {
         options={{
           title: 'Lineage',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="git-network-outline" size={size} color={color} />
+            <View>
+              <Ionicons name="git-network-outline" size={size} color={color} />
+              {unreadLineage > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{unreadLineage > 99 ? '99+' : unreadLineage}</Text>
+                </View>
+              )}
+            </View>
           ),
         }}
       />
@@ -55,7 +66,14 @@ export default function TabLayout() {
         options={{
           title: 'Stories',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="book-outline" size={size} color={color} />
+            <View>
+              <Ionicons name="book-outline" size={size} color={color} />
+              {unreadStories > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{unreadStories > 99 ? '99+' : unreadStories}</Text>
+                </View>
+              )}
+            </View>
           ),
         }}
       />
@@ -110,5 +128,23 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fonts.bodyMedium,
     letterSpacing: 0.3,
     marginTop: 1,
+  },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -10,
+    backgroundColor: '#E53935',
+    borderRadius: 9,
+    minWidth: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
+  },
+  badgeText: {
+    color: '#FFFFFF',
+    fontSize: 10,
+    fontFamily: Typography.fonts.bodySemiBold,
+    lineHeight: 14,
   },
 });
