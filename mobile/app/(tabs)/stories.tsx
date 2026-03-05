@@ -1,0 +1,175 @@
+// ============================================================
+// MATRA — Stories Tab
+// ============================================================
+
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, Pressable } from 'react-native';
+import { useRouter } from 'expo-router';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { StarField, Card, BioAlgae, CornerBush } from '../../src/components/ui';
+import { useFamilyStore } from '../../src/stores/familyStore';
+import { Colors, Typography, Spacing } from '../../src/theme/tokens';
+
+export default function StoriesScreen() {
+  const router = useRouter();
+  const { stories, fetchStories } = useFamilyStore();
+
+  useEffect(() => {
+    fetchStories();
+  }, []);
+
+  if (stories.length === 0) {
+    return (
+      <StarField starCount={30}>
+        <BioAlgae strandCount={30} height={0.15} />
+        <CornerBush />
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyIcon}>📖</Text>
+          <Text style={styles.emptyTitle}>No stories yet</Text>
+          <Text style={styles.emptySubtitle}>
+            Record a conversation and AI will extract stories from your family's memories.
+          </Text>
+        </View>
+      </StarField>
+    );
+  }
+
+  return (
+    <StarField starCount={25}>
+      <BioAlgae strandCount={30} height={0.15} />
+      <CornerBush />
+      <View style={styles.container}>
+        <Text style={styles.title}>Stories</Text>
+        <Text style={styles.subtitle}>{stories.length} memories preserved</Text>
+
+        <FlatList
+          data={stories}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item, index }) => (
+            <Animated.View entering={FadeInDown.delay(index * 80).springify()}>
+              <Card
+                variant="default"
+                style={styles.storyCard}
+                onPress={() => router.push(`/story/${item.id}`)}
+              >
+                <View style={styles.storyHeader}>
+                  <Text style={styles.storyTitle}>{item.title}</Text>
+                  {item.ai_generated && (
+                    <Text style={styles.aiBadge}>✨ AI</Text>
+                  )}
+                </View>
+                <Text style={styles.storyContent} numberOfLines={3}>
+                  {item.content}
+                </Text>
+                <View style={styles.storyMeta}>
+                  {item.event_date && (
+                    <Text style={styles.storyDate}>
+                      📅 {new Date(item.event_date).toLocaleDateString()}
+                    </Text>
+                  )}
+                  {item.event_location && (
+                    <Text style={styles.storyLocation}>📍 {item.event_location}</Text>
+                  )}
+                </View>
+              </Card>
+            </Animated.View>
+          )}
+        />
+      </View>
+    </StarField>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    paddingTop: 60,
+    paddingHorizontal: Spacing.xl,
+  },
+  title: {
+    fontSize: Typography.sizes.h2,
+    fontFamily: Typography.fonts.heading,
+    color: Colors.text.starlight,
+  },
+  subtitle: {
+    fontSize: Typography.sizes.caption,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.twilight,
+    marginBottom: Spacing.lg,
+  },
+  list: {
+    gap: Spacing.md,
+    paddingBottom: 100,
+  },
+  storyCard: {},
+  storyHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  storyTitle: {
+    fontSize: Typography.sizes.h4,
+    fontFamily: Typography.fonts.subheading,
+    color: Colors.text.starlight,
+    flex: 1,
+  },
+  aiBadge: {
+    fontSize: Typography.sizes.small,
+    fontFamily: Typography.fonts.bodyMedium,
+    color: Colors.accent.glow,
+    backgroundColor: Colors.background.current,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xxs,
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginLeft: Spacing.sm,
+  },
+  storyContent: {
+    fontSize: Typography.sizes.body,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.moonlight,
+    lineHeight: Typography.sizes.body * Typography.lineHeights.relaxed,
+  },
+  storyMeta: {
+    flexDirection: 'row',
+    gap: Spacing.lg,
+    marginTop: Spacing.md,
+  },
+  storyDate: {
+    fontSize: Typography.sizes.small,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.twilight,
+  },
+  storyLocation: {
+    fontSize: Typography.sizes.small,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.twilight,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.xxl,
+  },
+  emptyIcon: {
+    fontSize: 64,
+    marginBottom: Spacing.xl,
+  },
+  emptyTitle: {
+    fontSize: Typography.sizes.h3,
+    fontFamily: Typography.fonts.heading,
+    color: Colors.text.starlight,
+    textAlign: 'center',
+    marginBottom: Spacing.sm,
+  },
+  emptySubtitle: {
+    fontSize: Typography.sizes.body,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.moonlight,
+    textAlign: 'center',
+    lineHeight: Typography.sizes.body * Typography.lineHeights.relaxed,
+  },
+});

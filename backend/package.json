@@ -1,0 +1,14 @@
+{
+  "name": "galactic-tree-backend",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MATRA — Supabase Edge Functions",
+  "scripts": {
+    "serve": "supabase functions serve",
+    "deploy": "supabase functions deploy",
+    "db:reset": "supabase db reset",
+    "db:push": "supabase db push",
+    "db:diff": "supabase db diff",
+    "types": "supabase gen types typescript --local > supabase/types/database.ts"
+  }
+}
