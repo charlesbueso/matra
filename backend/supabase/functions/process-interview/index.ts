@@ -410,6 +410,150 @@ serve(async (req: Request) => {
       }
     }
 
+    // 8b. Infer transitive relationships
+    // Full siblings share parents. If A is sibling of B and B has parent P,
+    // then A→P is also parent (unless A is a step/half sibling).
+    // We also infer: if A is child of P and A has a spouse S, that doesn't
+    // propagate — only sibling→parent and parent→child of sibling.
+    {
+      // Collect all relationships we just created (plus any pre-existing)
+      const { data: allRels } = await supabase
+        .from('relationships')
+        .select('person_a_id, person_b_id, relationship_type')
+        .eq('family_group_id', familyGroupId);
+
+      const rels = allRels || [];
+
+      // Build adjacency maps
+      const parentsOf = new Map<string, Set<string>>();   // childId → parentIds
+      const childrenOf = new Map<string, Set<string>>();   // parentId → childIds
+      const siblingsOf = new Map<string, Set<string>>();   // personId → full-sibling Ids
+      const existingRelSet = new Set<string>();
+
+      for (const r of rels) {
+        const key = `${r.person_a_id}|${r.person_b_id}|${r.relationship_type}`;
+        existingRelSet.add(key);
+
+        if (r.relationship_type === 'parent') {
+          // A is parent of B
+          if (!parentsOf.has(r.person_b_id)) parentsOf.set(r.person_b_id, new Set());
+          parentsOf.get(r.person_b_id)!.add(r.person_a_id);
+          if (!childrenOf.has(r.person_a_id)) childrenOf.set(r.person_a_id, new Set());
+          childrenOf.get(r.person_a_id)!.add(r.person_b_id);
+        } else if (r.relationship_type === 'child') {
+          // A is child of B → B is parent of A
+          if (!parentsOf.has(r.person_a_id)) parentsOf.set(r.person_a_id, new Set());
+          parentsOf.get(r.person_a_id)!.add(r.person_b_id);
+          if (!childrenOf.has(r.person_b_id)) childrenOf.set(r.person_b_id, new Set());
+          childrenOf.get(r.person_b_id)!.add(r.person_a_id);
+        } else if (r.relationship_type === 'sibling') {
+          if (!siblingsOf.has(r.person_a_id)) siblingsOf.set(r.person_a_id, new Set());
+          if (!siblingsOf.has(r.person_b_id)) siblingsOf.set(r.person_b_id, new Set());
+          siblingsOf.get(r.person_a_id)!.add(r.person_b_id);
+          siblingsOf.get(r.person_b_id)!.add(r.person_a_id);
+        }
+      }
+
+      // Infer: if A and B are full siblings, they share all parents
+      const inferredRels: { person_a_id: string; person_b_id: string; relationship_type: string }[] = [];
+
+      for (const [personId, siblings] of siblingsOf) {
+        const myParents = parentsOf.get(personId) || new Set();
+        for (const sibId of siblings) {
+          // Give sibling all of personId's parents
+          for (const parentId of myParents) {
+            const key = `${parentId}|${sibId}|parent`;
+            if (!existingRelSet.has(key)) {
+              inferredRels.push({ person_a_id: parentId, person_b_id: sibId, relationship_type: 'parent' });
+              existingRelSet.add(key);
+              // Also track in our map for further propagation
+              if (!parentsOf.has(sibId)) parentsOf.set(sibId, new Set());
+              parentsOf.get(sibId)!.add(parentId);
+            }
+          }
+          // And give personId all of sibling's parents
+          const sibParents = parentsOf.get(sibId) || new Set();
+          for (const parentId of sibParents) {
+            const key = `${parentId}|${personId}|parent`;
+            if (!existingRelSet.has(key)) {
+              inferredRels.push({ person_a_id: parentId, person_b_id: personId, relationship_type: 'parent' });
+              existingRelSet.add(key);
+              if (!parentsOf.has(personId)) parentsOf.set(personId, new Set());
+              parentsOf.get(personId)!.add(parentId);
+            }
+          }
+        }
+      }
+
+      // Also infer: if parent P has children A and B (via parent rels),
+      // and A and B are not yet marked as siblings, infer sibling relationship
+      for (const [parentId, children] of childrenOf) {
+        const childArr = [...children];
+        for (let i = 0; i < childArr.length; i++) {
+          for (let j = i + 1; j < childArr.length; j++) {
+            const a = childArr[i];
+            const b = childArr[j];
+            const keyAB = `${a}|${b}|sibling`;
+            const keyBA = `${b}|${a}|sibling`;
+            // Check if they're step siblings — don't infer full sibling
+            const stepKeyAB = `${a}|${b}|step_sibling`;
+            const stepKeyBA = `${b}|${a}|step_sibling`;
+            if (!existingRelSet.has(keyAB) && !existingRelSet.has(keyBA) &&
+                !existingRelSet.has(stepKeyAB) && !existingRelSet.has(stepKeyBA)) {
+              inferredRels.push({ person_a_id: a, person_b_id: b, relationship_type: 'sibling' });
+              existingRelSet.add(keyAB);
+            }
+          }
+        }
+      }
+
+      // Infer step_sibling: if A is step_sibling of B, and B has full siblings,
+      // then A is also step_sibling of all of B's full siblings.
+      // Build step sibling map from existing rels
+      const stepSiblingsOf = new Map<string, Set<string>>();
+      for (const r of rels) {
+        if (r.relationship_type === 'step_sibling') {
+          if (!stepSiblingsOf.has(r.person_a_id)) stepSiblingsOf.set(r.person_a_id, new Set());
+          if (!stepSiblingsOf.has(r.person_b_id)) stepSiblingsOf.set(r.person_b_id, new Set());
+          stepSiblingsOf.get(r.person_a_id)!.add(r.person_b_id);
+          stepSiblingsOf.get(r.person_b_id)!.add(r.person_a_id);
+        }
+      }
+      for (const [personId, stepSibs] of stepSiblingsOf) {
+        // Get personId's full siblings
+        const fullSibs = siblingsOf.get(personId) || new Set();
+        for (const stepSibId of stepSibs) {
+          for (const fullSibId of fullSibs) {
+            if (fullSibId === stepSibId) continue;
+            const keyAB = `${stepSibId}|${fullSibId}|step_sibling`;
+            const keyBA = `${fullSibId}|${stepSibId}|step_sibling`;
+            if (!existingRelSet.has(keyAB) && !existingRelSet.has(keyBA)) {
+              inferredRels.push({ person_a_id: stepSibId, person_b_id: fullSibId, relationship_type: 'step_sibling' });
+              existingRelSet.add(keyAB);
+            }
+          }
+        }
+      }
+
+      // Persist inferred relationships
+      if (inferredRels.length > 0) {
+        console.log(`[process-interview] Inferring ${inferredRels.length} transitive relationships`);
+        for (const inf of inferredRels) {
+          await supabase.from('relationships').upsert(
+            {
+              family_group_id: familyGroupId,
+              person_a_id: inf.person_a_id,
+              person_b_id: inf.person_b_id,
+              relationship_type: inf.relationship_type,
+              source_interview_id: interview.id,
+              confidence: 0.85,
+            },
+            { onConflict: 'person_a_id,person_b_id,relationship_type' }
+          );
+        }
+      }
+    }
+
     // 9. Summarize (premium feature — still run for basic summary)
     await supabase
       .from('interviews')

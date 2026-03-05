@@ -95,24 +95,31 @@ function layoutNodes(
 
   // Build sibling adjacency for same-generation placement
   const siblingOf = new Map<string, Set<string>>();
+  const fullSiblingOf = new Map<string, Set<string>>(); // only true siblings, not step
   for (const rel of relationships) {
     const a = rel.person_a_id;
     const b = rel.person_b_id;
     if (!peopleById.has(a) || !peopleById.has(b)) continue;
-    if (rel.relationship_type === 'sibling') {
+    if (rel.relationship_type === 'sibling' || rel.relationship_type === 'step_sibling') {
       if (!siblingOf.has(a)) siblingOf.set(a, new Set());
       if (!siblingOf.has(b)) siblingOf.set(b, new Set());
       siblingOf.get(a)!.add(b);
       siblingOf.get(b)!.add(a);
     }
+    if (rel.relationship_type === 'sibling') {
+      if (!fullSiblingOf.has(a)) fullSiblingOf.set(a, new Set());
+      if (!fullSiblingOf.has(b)) fullSiblingOf.set(b, new Set());
+      fullSiblingOf.get(a)!.add(b);
+      fullSiblingOf.get(b)!.add(a);
+    }
   }
 
-  // Propagate parent relationships through siblings:
+  // Propagate parent relationships through full siblings only (not step siblings):
   // If A is sibling of B and B has parents, A should also be a child of those parents
   let changed = true;
   while (changed) {
     changed = false;
-    for (const [personId, sibs] of siblingOf) {
+    for (const [personId, sibs] of fullSiblingOf) {
       for (const sibId of sibs) {
         const sibParents = parentOf.get(sibId) || [];
         for (const parentId of sibParents) {
@@ -136,7 +143,21 @@ function layoutNodes(
   const visited = new Set<string>();
 
   // Find roots: people with no parents
-  const roots = people.filter((p) => !parentOf.has(p.id) || parentOf.get(p.id)!.length === 0);
+  // Exclude people who have no parents but ARE siblings/step_siblings of someone
+  // who does have parents — they belong in the child generation, not the root.
+  const roots = people.filter((p) => {
+    if (parentOf.has(p.id) && parentOf.get(p.id)!.length > 0) return false; // has parents → not root
+    // Check if this person is a sibling/step-sibling of someone who has parents
+    const sibs = siblingOf.get(p.id);
+    if (sibs) {
+      for (const sibId of sibs) {
+        if (parentOf.has(sibId) && parentOf.get(sibId)!.length > 0) {
+          return false; // sibling has parents → this person belongs in their generation
+        }
+      }
+    }
+    return true;
+  });
   // If no clear roots, pick the person with the most children
   const startNodes = roots.length > 0 ? roots : [people[0]];
 
@@ -279,6 +300,29 @@ function layoutNodes(
       }
     }
 
+    // Place orphan step/half siblings next to their sibling's parent group
+    // e.g. Cristian (step_sibling of narrator) should be placed in the same
+    // group as narrator, not floating separately.
+    const remainingOrphans: string[] = [];
+    for (const orphanId of orphans) {
+      const sibs = siblingOf.get(orphanId);
+      let placed = false;
+      if (sibs) {
+        for (const sibId of sibs) {
+          // Find which parent group this sibling belongs to
+          for (const [key, children] of parentUnitMap) {
+            if (children.includes(sibId)) {
+              children.push(orphanId);
+              placed = true;
+              break;
+            }
+          }
+          if (placed) break;
+        }
+      }
+      if (!placed) remainingOrphans.push(orphanId);
+    }
+
     // Sort parent groups by their x position (left to right)
     const sortedParentKeys = [...parentUnitMap.keys()].sort((a, b) => {
       const aIds = a.split('|');
@@ -288,12 +332,12 @@ function layoutNodes(
       return aX - bX;
     });
 
-    // Build ordered child list: children grouped under parents, then orphans
+    // Build ordered child list: children grouped under parents, then remaining orphans
     const orderedChildren: string[] = [];
     for (const key of sortedParentKeys) {
       orderedChildren.push(...parentUnitMap.get(key)!);
     }
-    orderedChildren.push(...orphans);
+    orderedChildren.push(...remainingOrphans);
 
     const units = buildUnits(orderedChildren);
     const totalWidth = units.reduce((sum, u) => sum + u.width, 0) +
@@ -325,8 +369,15 @@ function layoutNodes(
     }
   }
 
-  const graphWidth = Math.max(maxRowWidth + PADDING * 2, SCREEN_WIDTH * 1.5);
-  const graphHeight = Math.max(PADDING * 2 + sortedGens.length * VERTICAL_SPACING, SCREEN_HEIGHT);
+  // Compute graph dimensions from actual positioned nodes (not pre-centering estimates)
+  let actualMaxX = 0;
+  let actualMaxY = 0;
+  for (const pos of positions.values()) {
+    if (pos.x > actualMaxX) actualMaxX = pos.x;
+    if (pos.y > actualMaxY) actualMaxY = pos.y;
+  }
+  const graphWidth = Math.max(actualMaxX + PADDING * 3, maxRowWidth + PADDING * 2, SCREEN_WIDTH * 1.5);
+  const graphHeight = Math.max(actualMaxY + PADDING * 3, PADDING * 2 + sortedGens.length * VERTICAL_SPACING, SCREEN_HEIGHT);
 
   // Compute role labels for each person
   for (const p of people) {
@@ -335,8 +386,16 @@ function layoutNodes(
     const hasSpouse = spouseOf.has(p.id) && spouseOf.get(p.id)!.size > 0;
     const hasSiblings = siblingOf.has(p.id) && siblingOf.get(p.id)!.size > 0;
 
+    const hasFullSiblings = fullSiblingOf.has(p.id) && fullSiblingOf.get(p.id)!.size > 0;
+    const hasStepSiblings = relationships.some(
+      (r) => r.relationship_type === 'step_sibling' &&
+        (r.person_a_id === p.id || r.person_b_id === p.id)
+    );
+
     if (hasChildren && hasParents) roleLabels.set(p.id, 'Parent');
     else if (hasChildren) roleLabels.set(p.id, 'Parent');
+    else if (hasFullSiblings) roleLabels.set(p.id, 'Sibling');
+    else if (hasStepSiblings) roleLabels.set(p.id, 'Step Sibling');
     else if (hasParents && hasSiblings) roleLabels.set(p.id, 'Sibling');
     else if (hasParents) roleLabels.set(p.id, 'Child');
     else if (hasSpouse) roleLabels.set(p.id, 'Spouse');
@@ -512,18 +571,26 @@ export default function TreeScreen() {
 
             if (type === 'spouse') {
               // Horizontal line between spouses
+              const leftX = Math.min(posA.x, posB.x) + NODE_RADIUS;
+              const rightX = Math.max(posA.x, posB.x) - NODE_RADIUS;
               return (
                 <Line
                   key={rel.id}
-                  x1={posA.x + NODE_RADIUS}
+                  x1={leftX}
                   y1={posA.y}
-                  x2={posB.x - NODE_RADIUS}
+                  x2={rightX}
                   y2={posB.y}
                   stroke={Colors.accent.amber}
                   strokeWidth={2}
                   strokeDasharray={dash}
                 />
               );
+            }
+
+            if (type === 'sibling' || type === 'step_sibling') {
+              // Siblings at same level — skip individual lines,
+              // we draw a group bar below instead.
+              return null;
             }
 
             // Parent-child (and grandparent/child variants): elbow connector
@@ -539,6 +606,30 @@ export default function TreeScreen() {
                 strokeWidth={sw}
                 strokeDasharray={dash}
                 fill="none"
+              />
+            );
+          })}
+
+          {/* Sibling connector lines (per relationship pair) */}
+          {relationships.map((rel) => {
+            if (rel.relationship_type !== 'sibling' && rel.relationship_type !== 'step_sibling') return null;
+            const posA = positions.get(rel.person_a_id);
+            const posB = positions.get(rel.person_b_id);
+            if (!posA || !posB) return null;
+            const leftX = Math.min(posA.x, posB.x) + NODE_RADIUS;
+            const rightX = Math.max(posA.x, posB.x) - NODE_RADIUS;
+            if (leftX >= rightX) return null;
+            return (
+              <Line
+                key={`sib-${rel.id}`}
+                x1={leftX}
+                y1={posA.y}
+                x2={rightX}
+                y2={posB.y}
+                stroke={Colors.accent.cyan}
+                strokeWidth={1.5}
+                strokeDasharray={rel.relationship_type === 'step_sibling' ? '6 3' : undefined}
+                strokeOpacity={0.7}
               />
             );
           })}
@@ -703,14 +794,14 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   roleTag: {
-    fontSize: 9,
-    fontFamily: Typography.fonts.body,
+    fontSize: 11,
+    fontFamily: Typography.fonts.bodySemiBold,
     color: Colors.accent.cyan,
     textAlign: 'center',
     marginTop: 2,
     textTransform: 'uppercase',
     letterSpacing: 1,
-    opacity: 0.8,
+    opacity: 1,
   },
   // ── Header toggle ──
   headerRow: {

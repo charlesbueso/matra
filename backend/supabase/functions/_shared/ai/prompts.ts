@@ -39,6 +39,18 @@ Rules:
 - Extract ALL relationships that are stated or strongly implied. Possessive references like "my mom", "my dad", "my brother", "my wife" are EXPLICIT statements of relationship — extract them with high confidence (0.9+).
 - When someone says "my parents" or refers to someone as a parent figure (mom, dad, mother, father, mama, papa, etc.), ALWAYS create a parent relationship.
 - When someone says "my [relation]" (brother, sister, uncle, aunt, cousin, grandma, grandpa, etc.), ALWAYS extract that relationship.
+- MULTILINGUAL SUPPORT: The interview may be in ANY language. Recognize kinship terms in all languages, especially Spanish:
+  - Parents: papá, mamá, padre, madre, papi, mami, pa, ma
+  - Siblings: hermano, hermana
+  - Half/step siblings: medio hermano, media hermana, medio(a) hermano(a), hermanastro, hermanastra
+  - Grandparents: abuelo, abuela, abuelito, abuelita
+  - Uncle/aunt: tío, tía
+  - Cousin: primo, prima
+  - Spouse: esposo, esposa, marido, mujer
+  - Child: hijo, hija
+  - "mi papá" = "my dad", "mi mamá" = "my mom", "mi hermano" = "my brother", etc.
+  - "medio hermano" or "media hermana" = half sibling → use "step_sibling" relationship type.
+  Treat all such kinship terms with the SAME confidence as their English equivalents.
 - Deduplicate people (e.g., "Grandma Rose" and "Rose" are likely the same person).
 - Dates should be in ISO 8601 format when possible.
 - If a year is mentioned without month/day, use "YYYY" format only.
