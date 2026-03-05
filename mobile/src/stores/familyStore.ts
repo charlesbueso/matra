@@ -4,6 +4,8 @@
 
 import { create } from 'zustand';
 import { supabase, invokeFunction } from '../services/supabase';
+import { useAuthStore } from './authStore';
+import { useNotificationStore } from './notificationStore';
 
 export interface Person {
   id: string;
@@ -92,6 +94,7 @@ interface FamilyState {
   // Person actions
   createPerson: (person: Partial<Person>) => Promise<Person>;
   updatePerson: (id: string, updates: Partial<Person>) => Promise<void>;
+  renamePerson: (id: string, newFirstName: string, newLastName: string | null) => Promise<void>;
 
   // Relationship actions
   verifyRelationship: (id: string) => Promise<void>;
@@ -236,6 +239,9 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
         get().fetchInterviews(),
         get().fetchStories(),
       ]);
+      // Update unread badge counts
+      const { people, stories } = get();
+      useNotificationStore.getState().updateUnreadCounts(stories.length, people.length);
     } finally {
       set({ isLoading: false });
     }
@@ -274,6 +280,117 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
     set((state) => ({
       people: state.people.map((p) => (p.id === id ? { ...p, ...updates } : p)),
     }));
+  },
+
+  renamePerson: async (id, newFirstName, newLastName) => {
+    const person = get().people.find((p) => p.id === id);
+    if (!person) throw new Error('Person not found');
+
+    const oldFullName = [person.first_name, person.last_name].filter(Boolean).join(' ');
+    const newFullName = [newFirstName, newLastName].filter(Boolean).join(' ');
+    const oldFirstName = person.first_name;
+
+    // 1. Update the person record
+    const { error } = await supabase
+      .from('people')
+      .update({ first_name: newFirstName, last_name: newLastName })
+      .eq('id', id);
+
+    if (error) throw error;
+
+    // 2. Update all story content that mentions this person's name
+    const groupId = get().activeFamilyGroupId;
+    if (groupId) {
+      const { data: stories } = await supabase
+        .from('stories')
+        .select('id, title, content')
+        .eq('family_group_id', groupId)
+        .is('deleted_at', null);
+
+      if (stories) {
+        for (const story of stories) {
+          let updatedTitle = story.title;
+          let updatedContent = story.content;
+          let changed = false;
+
+          // Replace full name first, then first name only (to avoid partial matches)
+          if (oldFullName !== oldFirstName && oldFullName.length > 0) {
+            if (updatedTitle.includes(oldFullName)) {
+              updatedTitle = updatedTitle.split(oldFullName).join(newFullName);
+              changed = true;
+            }
+            if (updatedContent.includes(oldFullName)) {
+              updatedContent = updatedContent.split(oldFullName).join(newFullName);
+              changed = true;
+            }
+          }
+          if (updatedTitle.includes(oldFirstName)) {
+            updatedTitle = updatedTitle.split(oldFirstName).join(newFirstName);
+            changed = true;
+          }
+          if (updatedContent.includes(oldFirstName)) {
+            updatedContent = updatedContent.split(oldFirstName).join(newFirstName);
+            changed = true;
+          }
+
+          if (changed) {
+            await supabase
+              .from('stories')
+              .update({ title: updatedTitle, content: updatedContent })
+              .eq('id', story.id);
+          }
+        }
+      }
+
+      // 3. Update interview summaries that mention this person
+      const { data: interviews } = await supabase
+        .from('interviews')
+        .select('id, ai_summary')
+        .eq('family_group_id', groupId)
+        .is('deleted_at', null)
+        .not('ai_summary', 'is', null);
+
+      if (interviews) {
+        for (const interview of interviews) {
+          let updatedSummary = interview.ai_summary;
+          let changed = false;
+
+          if (oldFullName !== oldFirstName && oldFullName.length > 0 && updatedSummary.includes(oldFullName)) {
+            updatedSummary = updatedSummary.split(oldFullName).join(newFullName);
+            changed = true;
+          }
+          if (updatedSummary.includes(oldFirstName)) {
+            updatedSummary = updatedSummary.split(oldFirstName).join(newFirstName);
+            changed = true;
+          }
+
+          if (changed) {
+            await supabase
+              .from('interviews')
+              .update({ ai_summary: updatedSummary })
+              .eq('id', interview.id);
+          }
+        }
+      }
+
+      // 4. Update biography if exists
+      if (person.ai_biography) {
+        let updatedBio = person.ai_biography;
+        if (oldFullName !== oldFirstName && oldFullName.length > 0) {
+          updatedBio = updatedBio.split(oldFullName).join(newFullName);
+        }
+        updatedBio = updatedBio.split(oldFirstName).join(newFirstName);
+        if (updatedBio !== person.ai_biography) {
+          await supabase
+            .from('people')
+            .update({ ai_biography: updatedBio })
+            .eq('id', id);
+        }
+      }
+    }
+
+    // 5. Refresh all data to get consistent state
+    await get().fetchAllFamilyData();
   },
 
   verifyRelationship: async (id) => {
@@ -378,8 +495,8 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
       .eq('interview_id', id)
       .is('deleted_at', null);
 
-    // Find people linked only to this interview's stories (via story_people).
-    // Get person IDs from this interview's stories
+    // Collect ALL people associated with this interview:
+    // 1) People linked via story_people
     const { data: interviewStoryPeople } = await supabase
       .from('story_people')
       .select('person_id, stories!inner(id, interview_id, deleted_at)')
@@ -389,39 +506,39 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
       (interviewStoryPeople || []).map((sp: any) => sp.person_id)
     );
 
-    // For each person, check if they appear in stories from OTHER interviews
-    const personIdsToDelete: string[] = [];
-    for (const personId of personIdsFromInterview) {
-      const { data: otherLinks } = await supabase
-        .from('story_people')
-        .select('story_id, stories!inner(id, interview_id, deleted_at)')
-        .eq('person_id', personId)
-        .neq('stories.interview_id', id)
-        .is('stories.deleted_at', null)
-        .limit(1);
-
-      if (!otherLinks || otherLinks.length === 0) {
-        // Also check: don't delete if this person is the subject of another interview
-        const { data: otherInterviews } = await supabase
-          .from('interviews')
-          .select('id')
-          .eq('subject_person_id', personId)
-          .neq('id', id)
-          .is('deleted_at', null)
-          .limit(1);
-
-        if (!otherInterviews || otherInterviews.length === 0) {
-          personIdsToDelete.push(personId);
-        }
-      }
+    // 2) The subject person of the interview
+    const interview = get().interviews.find((i) => i.id === id);
+    if (interview?.subject_person_id) {
+      personIdsFromInterview.add(interview.subject_person_id);
     }
 
-    // Soft-delete orphaned people
+    // Never delete the user's self person
+    const selfPersonId = useAuthStore.getState().profile?.self_person_id;
+    const personIdsToDelete = [...personIdsFromInterview].filter(
+      (pid) => pid !== selfPersonId
+    );
+
+    // Soft-delete all people from this conversation and remove their relationships
     if (personIdsToDelete.length > 0) {
+      // Clean up avatar images from DO Spaces before soft-deleting
+      try {
+        await invokeFunction('cleanup-person-avatars', { personIds: personIdsToDelete });
+      } catch {
+        // Best-effort: don't block deletion if cleanup fails
+      }
+
       await supabase
         .from('people')
         .update({ deleted_at: now })
         .in('id', personIdsToDelete);
+
+      // Hard-delete relationships involving deleted people
+      for (const pid of personIdsToDelete) {
+        await supabase
+          .from('relationships')
+          .delete()
+          .or(`person_a_id.eq.${pid},person_b_id.eq.${pid}`);
+      }
     }
 
     // Soft-delete the interview itself
@@ -450,12 +567,41 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
         .in('interview_id', interviewIds)
         .is('deleted_at', null);
 
-      // Soft-delete all people in this group (they came from conversations)
-      await supabase
+      // Clean up avatar images from DO Spaces before soft-deleting
+      const selfPersonId = useAuthStore.getState().profile?.self_person_id;
+      const peopleToDelete = get().people.filter((p) => p.id !== selfPersonId);
+      const avatarPersonIds = peopleToDelete
+        .filter((p) => p.avatar_url)
+        .map((p) => p.id);
+      if (avatarPersonIds.length > 0) {
+        try {
+          await invokeFunction('cleanup-person-avatars', { personIds: avatarPersonIds });
+        } catch {
+          // Best-effort: don't block deletion if cleanup fails
+        }
+      }
+
+      // Soft-delete all people in this group EXCEPT the user's self person
+      let peopleQuery = supabase
         .from('people')
         .update({ deleted_at: now })
         .eq('family_group_id', groupId)
         .is('deleted_at', null);
+      if (selfPersonId) {
+        peopleQuery = peopleQuery.neq('id', selfPersonId);
+      }
+      await peopleQuery;
+
+      // Hard-delete relationships involving deleted people
+      const deletedPersonIds = get().people
+        .filter((p) => p.id !== selfPersonId)
+        .map((p) => p.id);
+      for (const pid of deletedPersonIds) {
+        await supabase
+          .from('relationships')
+          .delete()
+          .or(`person_a_id.eq.${pid},person_b_id.eq.${pid}`);
+      }
     }
 
     // Soft-delete all interviews

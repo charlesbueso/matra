@@ -3,7 +3,7 @@
 // ============================================================
 
 import { create } from 'zustand';
-import { supabase } from '../services/supabase';
+import { supabase, invokeFunction } from '../services/supabase';
 import type { Session, User } from '@supabase/supabase-js';
 
 interface Profile {
@@ -15,6 +15,7 @@ interface Profile {
   interview_count: number;
   storage_used_bytes: number;
   self_person_id: string | null;
+  deactivated_at: string | null;
 }
 
 interface AuthState {
@@ -30,6 +31,9 @@ interface AuthState {
   signOut: () => Promise<void>;
   fetchProfile: () => Promise<void>;
   updateProfile: (updates: Partial<Profile>) => Promise<void>;
+  deleteAccount: () => Promise<void>;
+  deactivateAccount: () => Promise<void>;
+  reactivateAccount: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -129,5 +133,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         profile: state.profile ? { ...state.profile, ...updates } : null,
       }));
     }
+  },
+
+  deleteAccount: async () => {
+    await invokeFunction('delete-account');
+    await supabase.auth.signOut();
+    set({ session: null, user: null, profile: null });
+  },
+
+  deactivateAccount: async () => {
+    await invokeFunction('deactivate-account', { action: 'deactivate' });
+    await supabase.auth.signOut();
+    set({ session: null, user: null, profile: null });
+  },
+
+  reactivateAccount: async () => {
+    await invokeFunction('deactivate-account', { action: 'reactivate' });
+    await get().fetchProfile();
   },
 }));

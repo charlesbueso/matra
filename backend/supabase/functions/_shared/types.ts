@@ -12,6 +12,7 @@ export type SubscriptionTier = 'free' | 'premium' | 'lifetime';
 export interface FeatureLimits {
   maxInterviews: number;
   maxStorageBytes: number;
+  maxStoriesPerInterview: number;
   aiSummarization: boolean;
   aiBiography: boolean;
   memoryBookExport: boolean;
@@ -24,6 +25,7 @@ export const TIER_LIMITS: Record<SubscriptionTier, FeatureLimits> = {
   free: {
     maxInterviews: 2,
     maxStorageBytes: 100 * 1024 * 1024, // 100 MB
+    maxStoriesPerInterview: 1,
     aiSummarization: false,
     aiBiography: false,
     memoryBookExport: false,
@@ -34,6 +36,7 @@ export const TIER_LIMITS: Record<SubscriptionTier, FeatureLimits> = {
   premium: {
     maxInterviews: Infinity,
     maxStorageBytes: 10 * 1024 * 1024 * 1024, // 10 GB
+    maxStoriesPerInterview: 5,
     aiSummarization: true,
     aiBiography: true,
     memoryBookExport: true,
@@ -44,6 +47,7 @@ export const TIER_LIMITS: Record<SubscriptionTier, FeatureLimits> = {
   lifetime: {
     maxInterviews: Infinity,
     maxStorageBytes: 50 * 1024 * 1024 * 1024, // 50 GB
+    maxStoriesPerInterview: 5,
     aiSummarization: true,
     aiBiography: true,
     memoryBookExport: true,

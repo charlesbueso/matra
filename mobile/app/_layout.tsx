@@ -3,6 +3,7 @@
 // ============================================================
 
 import React, { useEffect } from 'react';
+import { Alert } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Stack, useRouter, useSegments, useRootNavigationState } from 'expo-router';
 import { useFonts } from 'expo-font';
@@ -19,6 +20,7 @@ import {
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ThemeProvider } from '../src/theme';
 import { useAuthStore } from '../src/stores/authStore';
+import { useNotificationStore } from '../src/stores/notificationStore';
 import { Colors } from '../src/theme/tokens';
 
 SplashScreen.preventAutoHideAsync();
@@ -27,6 +29,9 @@ export default function RootLayout() {
   const initialize = useAuthStore((s) => s.initialize);
   const isInitialized = useAuthStore((s) => s.isInitialized);
   const session = useAuthStore((s) => s.session);
+  const profile = useAuthStore((s) => s.profile);
+  const reactivateAccount = useAuthStore((s) => s.reactivateAccount);
+  const signOut = useAuthStore((s) => s.signOut);
   const router = useRouter();
   const segments = useSegments();
   const navigationState = useRootNavigationState();
@@ -41,6 +46,7 @@ export default function RootLayout() {
 
   useEffect(() => {
     initialize();
+    useNotificationStore.getState().requestPermissions();
   }, []);
 
   useEffect(() => {
@@ -64,6 +70,33 @@ export default function RootLayout() {
       router.replace('/(tabs)/home');
     }
   }, [session, isInitialized, segments, navigationState?.key]);
+
+  // Prompt reactivation when a deactivated user signs in
+  useEffect(() => {
+    if (!session || !profile?.deactivated_at) return;
+    Alert.alert(
+      'Account Deactivated',
+      'Your account was deactivated. Would you like to reactivate it and restore your data?',
+      [
+        {
+          text: 'Sign Out',
+          style: 'cancel',
+          onPress: () => signOut(),
+        },
+        {
+          text: 'Reactivate',
+          onPress: async () => {
+            try {
+              await reactivateAccount();
+            } catch (err: any) {
+              Alert.alert('Error', err.message);
+            }
+          },
+        },
+      ],
+      { cancelable: false }
+    );
+  }, [session, profile?.deactivated_at]);
 
   if (!fontsLoaded || !isInitialized) {
     return null;

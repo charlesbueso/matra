@@ -17,11 +17,13 @@ export default function SettingsScreen() {
   const { scrollTo } = useLocalSearchParams<{ scrollTo?: string }>();
   const scrollViewRef = useRef<ScrollView>(null);
   const conversationsY = useRef(0);
-  const { profile, signOut, updateProfile } = useAuthStore();
+  const { profile, signOut, updateProfile, deleteAccount, deactivateAccount } = useAuthStore();
   const { uploadPersonAvatar, interviews, deleteInterview, deleteAllInterviews } = useFamilyStore();
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+  const [isDeactivating, setIsDeactivating] = useState(false);
 
   const handleDeleteInterview = (interview: Interview) => {
     Alert.alert(
@@ -264,10 +266,74 @@ export default function SettingsScreen() {
             variant="ghost"
           />
           <Button
-            title="Delete Account"
-            onPress={() => Alert.alert('Delete Account', 'Contact support to delete your account and all data.')}
+            title={isDeactivating ? 'Deactivating...' : 'Deactivate Account'}
+            onPress={() => {
+              Alert.alert(
+                'Deactivate Account',
+                'Your data will be preserved but hidden. You can reactivate your account by signing back in.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Deactivate',
+                    style: 'destructive',
+                    onPress: async () => {
+                      setIsDeactivating(true);
+                      try {
+                        await deactivateAccount();
+                      } catch (err: any) {
+                        Alert.alert('Error', err.message);
+                      } finally {
+                        setIsDeactivating(false);
+                      }
+                    },
+                  },
+                ]
+              );
+            }}
+            variant="ghost"
+            size="sm"
+            loading={isDeactivating}
+          />
+          <Button
+            title={isDeletingAccount ? 'Deleting...' : 'Delete Account'}
+            onPress={() => {
+              Alert.alert(
+                'Delete Account',
+                'This will permanently delete your account and ALL your data. This cannot be undone.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Delete Everything',
+                    style: 'destructive',
+                    onPress: () => {
+                      Alert.alert(
+                        'Are you absolutely sure?',
+                        'All your family data, conversations, and stories will be permanently lost.',
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          {
+                            text: 'Yes, Delete My Account',
+                            style: 'destructive',
+                            onPress: async () => {
+                              setIsDeletingAccount(true);
+                              try {
+                                await deleteAccount();
+                              } catch (err: any) {
+                                Alert.alert('Error', err.message);
+                                setIsDeletingAccount(false);
+                              }
+                            },
+                          },
+                        ]
+                      );
+                    },
+                  },
+                ]
+              );
+            }}
             variant="danger"
             size="sm"
+            loading={isDeletingAccount}
           />
         </View>
 

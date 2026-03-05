@@ -6,6 +6,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, Alert, Pressable, ScrollView, FlatList } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Audio } from 'expo-av';
+import * as FileSystem from 'expo-file-system';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -17,6 +18,7 @@ import Animated, {
 import { StarField, BioAlgae, Button, VoiceWaveform, TreeTrunk, Card } from '../../src/components/ui';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useFamilyStore, Person } from '../../src/stores/familyStore';
+import { useNotificationStore } from '../../src/stores/notificationStore';
 import { Colors, Typography, Spacing } from '../../src/theme/tokens';
 
 const DEV_TRANSCRIPT = `So my grandmother, Maria Santos, she was born in 1932 in a small village outside Lisbon, Portugal. She married my grandfather, Antonio Santos, in 1955. They had three children — my mother Elena, my uncle Carlos, and my aunt Sofia.
@@ -36,14 +38,22 @@ export default function RecordScreen() {
   const { personId: preselectedPersonId } = useLocalSearchParams<{ personId?: string }>();
   const profile = useAuthStore((s) => s.profile);
   const selfPersonId = useAuthStore((s) => s.profile?.self_person_id);
-  const { activeFamilyGroupId, people, processInterview } = useFamilyStore();
+  const { activeFamilyGroupId, people, processInterview, fetchAllFamilyData, fetchFamilyGroups } = useFamilyStore();
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [duration, setDuration] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [recordedUri, setRecordedUri] = useState<string | null>(null);
   const recordingRef = useRef<Audio.Recording | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
+
+  // Ensure data is loaded (the tab may mount before home finishes fetching)
+  React.useEffect(() => {
+    if (people.length === 0) {
+      fetchFamilyGroups().then(() => fetchAllFamilyData());
+    }
+  }, []);
 
   // Auto-select person if passed via route params
   React.useEffect(() => {
@@ -52,6 +62,13 @@ export default function RecordScreen() {
       if (person) setSelectedPerson(person);
     }
   }, [preselectedPersonId, people]);
+
+  // Auto-select self when there's only one person (first-time experience)
+  React.useEffect(() => {
+    if (!selectedPerson && people.length === 1 && selfPersonId && people[0].id === selfPersonId) {
+      setSelectedPerson(people[0]);
+    }
+  }, [people, selfPersonId, selectedPerson]);
 
   // Pulse animation for recording button
   const pulse = useSharedValue(1);
@@ -114,6 +131,7 @@ export default function RecordScreen() {
 
       await recordingRef.current.stopAndUnloadAsync();
       const uri = recordingRef.current.getURI();
+      recordingRef.current = null;
       setIsRecording(false);
 
       if (!uri || !activeFamilyGroupId) {
@@ -121,33 +139,67 @@ export default function RecordScreen() {
         return;
       }
 
-      // Process the conversation
-      setIsProcessing(true);
-      try {
-        const personName = selectedPerson
-          ? `${selectedPerson.first_name}${selectedPerson.last_name ? ' ' + selectedPerson.last_name : ''}`
-          : 'Unknown';
-        await processInterview(
-          uri,
-          activeFamilyGroupId,
-          `Conversation with ${personName}`,
-          undefined,
-          selectedPerson?.id
-        );
-        Alert.alert(
-          'Conversation Saved!',
-          'Your conversation has been transcribed and analyzed. Check your lineage map for new connections!',
-          [{ text: 'View Lineage', onPress: () => router.push('/(tabs)/tree') }]
-        );
-      } catch (err: any) {
-        Alert.alert('Processing failed', err.message);
-      } finally {
-        setIsProcessing(false);
-        recordingRef.current = null;
-      }
+      // Enter review state — let user choose to process or re-record
+      setRecordedUri(uri);
     } catch (err) {
       console.error('Failed to stop recording:', err);
     }
+  };
+
+  const processRecording = async () => {
+    if (!recordedUri || !activeFamilyGroupId) return;
+
+    setIsProcessing(true);
+    try {
+      const personName = selectedPerson
+        ? `${selectedPerson.first_name}${selectedPerson.last_name ? ' ' + selectedPerson.last_name : ''}`
+        : 'Unknown';
+      await processInterview(
+        recordedUri,
+        activeFamilyGroupId,
+        `Conversation with ${personName}`,
+        undefined,
+        selectedPerson?.id
+      );
+      await useNotificationStore.getState().sendLocalNotification(
+        'Conversation Saved!',
+        'Your conversation has been transcribed and analyzed. Check your lineage map for new connections!',
+      );
+      Alert.alert(
+        'Conversation Saved!',
+        'Your conversation has been transcribed and analyzed. Check your lineage map for new connections!',
+        [{ text: 'View Lineage', onPress: () => router.push('/(tabs)/tree') }]
+      );
+    } catch (err: any) {
+      Alert.alert('Processing failed', err.message);
+    } finally {
+      setIsProcessing(false);
+      setRecordedUri(null);
+      setDuration(0);
+    }
+  };
+
+  const cancelRecording = () => {
+    Alert.alert(
+      'Discard Recording?',
+      'This will delete the voice note. Are you sure you want to re-record?',
+      [
+        { text: 'Keep', style: 'cancel' },
+        {
+          text: 'Discard',
+          style: 'destructive',
+          onPress: async () => {
+            if (recordedUri) {
+              try {
+                await FileSystem.deleteAsync(recordedUri, { idempotent: true });
+              } catch (_) {}
+            }
+            setRecordedUri(null);
+            setDuration(0);
+          },
+        },
+      ]
+    );
   };
 
   const formatDuration = (seconds: number): string => {
@@ -169,6 +221,10 @@ export default function RecordScreen() {
         'Dev Conversation',
         DEV_TRANSCRIPT,
         selectedPerson?.id
+      );
+      await useNotificationStore.getState().sendLocalNotification(
+        'Conversation Saved!',
+        'Your conversation has been transcribed and analyzed. Check your lineage map for new connections!',
       );
       Alert.alert(
         'Dev Conversation Processed!',
@@ -250,7 +306,7 @@ export default function RecordScreen() {
       <BioAlgae strandCount={50} height={0.22} />
       <View style={styles.container}>
         <View style={styles.header}>
-          {!isRecording && !isProcessing && (
+          {!isRecording && !isProcessing && !recordedUri && (
             <Pressable onPress={() => setSelectedPerson(null)} style={styles.changePersonButton}>
               <Text style={styles.changePersonText}>← Change person</Text>
             </Pressable>
@@ -260,6 +316,8 @@ export default function RecordScreen() {
               ? 'Recording...'
               : isProcessing
               ? 'Processing...'
+              : recordedUri
+              ? 'Recording Complete'
               : 'Ready to Record'}
           </Text>
           <Text style={styles.subtitle}>
@@ -269,11 +327,13 @@ export default function RecordScreen() {
                 : `Let ${selectedPerson?.first_name} share their stories naturally.`
               : isProcessing
               ? 'AI is transcribing and analyzing the conversation.'
+              : recordedUri
+              ? 'Review your recording before processing.'
               : isSelf
               ? 'Share your own memories, family lore, and experiences.'
               : `Record ${personDisplayName}'s stories and memories.`}
           </Text>
-          {!isRecording && !isProcessing && selectedPerson && (
+          {!isRecording && !isProcessing && !recordedUri && selectedPerson && (
             <View style={styles.selectedPersonChip}>
               <Text style={styles.selectedPersonChipText}>
                 🎙 {personDisplayName}{isSelf ? ' (You)' : ''}
@@ -290,7 +350,7 @@ export default function RecordScreen() {
 
         {/* Recording Controls */}
         <View style={styles.controls}>
-          {!isRecording && !isProcessing && (
+          {!isRecording && !isProcessing && !recordedUri && (
             <Pressable onPress={startRecording} style={styles.recordButtonOuter}>
               <View style={styles.recordButtonInner}>
                 <Text style={styles.recordIcon}>🎙</Text>
@@ -309,6 +369,17 @@ export default function RecordScreen() {
             </View>
           )}
 
+          {recordedUri && !isProcessing && (
+            <View style={styles.reviewControls}>
+              <Pressable onPress={processRecording} style={styles.processButton}>
+                <Text style={styles.processButtonText}>✓ Process</Text>
+              </Pressable>
+              <Pressable onPress={cancelRecording} style={styles.rerecordButton}>
+                <Text style={styles.rerecordButtonText}>Re-record</Text>
+              </Pressable>
+            </View>
+          )}
+
           {isProcessing && (
             <View style={styles.processingContainer}>
               <Text style={styles.processingText}>◈ Analyzing the conversation...</Text>
@@ -320,7 +391,7 @@ export default function RecordScreen() {
         </View>
 
         {/* Tips */}
-        {!isRecording && !isProcessing && (
+        {!isRecording && !isProcessing && !recordedUri && (
           <View style={styles.tips}>
             <Text style={styles.tipTitle}>
               {isSelf ? 'Tips for sharing your story:' : 'Tips for a great conversation:'}
@@ -344,7 +415,7 @@ export default function RecordScreen() {
         )}
 
         {/* Dev mode: fake conversation button */}
-        {__DEV__ && !isRecording && !isProcessing && (
+        {__DEV__ && !isRecording && !isProcessing && !recordedUri && (
           <Pressable onPress={sendDevTranscript} style={styles.devButton}>
             <Text style={styles.devButtonText}>🧪 Dev: Fake Conversation</Text>
           </Pressable>
@@ -457,6 +528,37 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fonts.body,
     color: Colors.text.moonlight,
     textAlign: 'center',
+  },
+  reviewControls: {
+    alignItems: 'center',
+    gap: Spacing.md,
+    width: '100%',
+  },
+  processButton: {
+    width: '100%',
+    backgroundColor: Colors.accent.cyan,
+    borderRadius: 12,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+  },
+  processButtonText: {
+    fontSize: Typography.sizes.body,
+    fontFamily: Typography.fonts.bodySemiBold,
+    color: '#FFFFFF',
+  },
+  rerecordButton: {
+    width: '100%',
+    backgroundColor: 'transparent',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.accent.coral,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+  },
+  rerecordButtonText: {
+    fontSize: Typography.sizes.body,
+    fontFamily: Typography.fonts.bodySemiBold,
+    color: Colors.accent.coral,
   },
   tips: {
     backgroundColor: Colors.background.abyss,
