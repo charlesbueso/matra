@@ -8,9 +8,10 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import Animated, { FadeInDown, FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { StarField, Card, Button, VoiceWaveform, BioAlgae, CornerBush } from '../../src/components/ui';
+import { StarField, Card, Button, VoiceWaveform, BioAlgae, CornerBush, AvatarViewer } from '../../src/components/ui';
 import { useFamilyStore, Person } from '../../src/stores/familyStore';
 import { useAuthStore } from '../../src/stores/authStore';
+import { useSignedUrl } from '../../src/hooks';
 import { Colors, Typography, Spacing, BorderRadius } from '../../src/theme/tokens';
 
 const RELATIONSHIP_TYPES = [
@@ -55,6 +56,7 @@ export default function PersonDetailScreen() {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isViewingAvatar, setIsViewingAvatar] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editFirstName, setEditFirstName] = useState('');
   const [editLastName, setEditLastName] = useState('');
@@ -144,6 +146,20 @@ export default function PersonDetailScreen() {
     }
   };
 
+  const handleAvatarPress = () => {
+    if (isUploadingAvatar) return;
+    if (!avatarUrl) {
+      handlePickAvatar();
+      return;
+    }
+    Alert.alert('Profile Picture', undefined, [
+      { text: 'View Photo', onPress: () => setIsViewingAvatar(true) },
+      { text: 'Change Photo', onPress: handlePickAvatar },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
+  };
+
+  const avatarUrl = useSignedUrl(person.avatar_url);
   const fullName = [person.first_name, person.last_name].filter(Boolean).join(' ');
 
   return (
@@ -159,12 +175,12 @@ export default function PersonDetailScreen() {
 
         {/* Person Header */}
         <Animated.View entering={FadeInDown.delay(100)} style={styles.header}>
-          <Pressable onPress={handlePickAvatar} style={styles.avatarLarge} disabled={isUploadingAvatar}>
+          <Pressable onPress={handleAvatarPress} style={styles.avatarLarge} disabled={isUploadingAvatar}>
             {isUploadingAvatar ? (
               <ActivityIndicator color="#FFFFFF" size="large" />
-            ) : person.avatar_url ? (
+            ) : avatarUrl ? (
               <Image
-                source={{ uri: person.avatar_url }}
+                source={{ uri: avatarUrl }}
                 style={styles.avatarImage}
                 contentFit="cover"
                 transition={300}
@@ -608,6 +624,12 @@ export default function PersonDetailScreen() {
         </Animated.View>
       </Animated.View>
     )}
+    <AvatarViewer
+      visible={isViewingAvatar}
+      uri={avatarUrl}
+      onClose={() => setIsViewingAvatar(false)}
+      name={fullName}
+    />
     </View>
   );
 }

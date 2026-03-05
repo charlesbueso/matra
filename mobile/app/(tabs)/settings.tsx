@@ -7,9 +7,10 @@ import { View, Text, StyleSheet, ScrollView, Pressable, Alert, ActivityIndicator
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { StarField, Card, Button, BioAlgae, CornerBush } from '../../src/components/ui';
+import { StarField, Card, Button, BioAlgae, CornerBush, AvatarViewer } from '../../src/components/ui';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useFamilyStore, Interview } from '../../src/stores/familyStore';
+import { useSignedUrl } from '../../src/hooks';
 import { Colors, Typography, Spacing, BorderRadius } from '../../src/theme/tokens';
 
 export default function SettingsScreen() {
@@ -20,10 +21,12 @@ export default function SettingsScreen() {
   const { profile, signOut, updateProfile, deleteAccount, deactivateAccount } = useAuthStore();
   const { uploadPersonAvatar, interviews, deleteInterview, deleteAllInterviews } = useFamilyStore();
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isViewingAvatar, setIsViewingAvatar] = useState(false);
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [isDeactivating, setIsDeactivating] = useState(false);
+  const avatarUrl = useSignedUrl(profile?.avatar_url);
 
   const handleDeleteInterview = (interview: Interview) => {
     Alert.alert(
@@ -110,13 +113,26 @@ export default function SettingsScreen() {
 
     setIsUploadingAvatar(true);
     try {
-      const avatarUrl = await uploadPersonAvatar(profile.self_person_id, result.assets[0].uri);
-      await updateProfile({ avatar_url: avatarUrl });
+      const avatarKey = await uploadPersonAvatar(profile.self_person_id, result.assets[0].uri);
+      await updateProfile({ avatar_url: avatarKey });
     } catch (err: any) {
       Alert.alert('Upload failed', err.message);
     } finally {
       setIsUploadingAvatar(false);
     }
+  };
+
+  const handleAvatarPress = () => {
+    if (isUploadingAvatar) return;
+    if (!avatarUrl) {
+      handlePickAvatar();
+      return;
+    }
+    Alert.alert('Profile Picture', undefined, [
+      { text: 'View Photo', onPress: () => setIsViewingAvatar(true) },
+      { text: 'Change Photo', onPress: handlePickAvatar },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
   };
 
   return (
@@ -128,12 +144,12 @@ export default function SettingsScreen() {
 
         {/* Profile Card */}
         <Card variant="elevated" style={styles.profileCard}>
-          <Pressable onPress={handlePickAvatar} style={styles.avatar} disabled={isUploadingAvatar}>
+          <Pressable onPress={handleAvatarPress} style={styles.avatar} disabled={isUploadingAvatar}>
             {isUploadingAvatar ? (
               <ActivityIndicator color="#FFFFFF" size="small" />
-            ) : profile?.avatar_url ? (
+            ) : avatarUrl ? (
               <Image
-                source={{ uri: profile.avatar_url }}
+                source={{ uri: avatarUrl }}
                 style={styles.avatarImage}
                 contentFit="cover"
                 transition={300}
@@ -339,6 +355,12 @@ export default function SettingsScreen() {
 
         <Text style={styles.version}>MATRA v1.0.0</Text>
       </ScrollView>
+      <AvatarViewer
+        visible={isViewingAvatar}
+        uri={avatarUrl}
+        onClose={() => setIsViewingAvatar(false)}
+        name={profile?.display_name}
+      />
     </StarField>
   );
 }

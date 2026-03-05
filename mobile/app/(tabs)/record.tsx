@@ -18,7 +18,6 @@ import Animated, {
 import { StarField, BioAlgae, Button, VoiceWaveform, TreeTrunk, Card } from '../../src/components/ui';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useFamilyStore, Person } from '../../src/stores/familyStore';
-import { useNotificationStore } from '../../src/stores/notificationStore';
 import { Colors, Typography, Spacing } from '../../src/theme/tokens';
 
 const DEV_TRANSCRIPT = `So my grandmother, Maria Santos, she was born in 1932 in a small village outside Lisbon, Portugal. She married my grandfather, Antonio Santos, in 1955. They had three children — my mother Elena, my uncle Carlos, and my aunt Sofia.
@@ -38,12 +37,12 @@ export default function RecordScreen() {
   const { personId: preselectedPersonId } = useLocalSearchParams<{ personId?: string }>();
   const profile = useAuthStore((s) => s.profile);
   const selfPersonId = useAuthStore((s) => s.profile?.self_person_id);
-  const { activeFamilyGroupId, people, processInterview, fetchAllFamilyData, fetchFamilyGroups } = useFamilyStore();
+  const { activeFamilyGroupId, people, fetchAllFamilyData, fetchFamilyGroups } = useFamilyStore();
+  const isProcessing = useFamilyStore((s) => s.isProcessingInterview);
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [duration, setDuration] = useState(0);
-  const [isProcessing, setIsProcessing] = useState(false);
   const [recordedUri, setRecordedUri] = useState<string | null>(null);
   const recordingRef = useRef<Audio.Recording | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
@@ -146,37 +145,23 @@ export default function RecordScreen() {
     }
   };
 
-  const processRecording = async () => {
+  const processRecording = () => {
     if (!recordedUri || !activeFamilyGroupId) return;
 
-    setIsProcessing(true);
-    try {
-      const personName = selectedPerson
-        ? `${selectedPerson.first_name}${selectedPerson.last_name ? ' ' + selectedPerson.last_name : ''}`
-        : 'Unknown';
-      await processInterview(
-        recordedUri,
-        activeFamilyGroupId,
-        `Conversation with ${personName}`,
-        undefined,
-        selectedPerson?.id
-      );
-      await useNotificationStore.getState().sendLocalNotification(
-        'Conversation Saved!',
-        'Your conversation has been transcribed and analyzed. Check your lineage map for new connections!',
-      );
-      Alert.alert(
-        'Conversation Saved!',
-        'Your conversation has been transcribed and analyzed. Check your lineage map for new connections!',
-        [{ text: 'View Lineage', onPress: () => router.push('/(tabs)/tree') }]
-      );
-    } catch (err: any) {
-      Alert.alert('Processing failed', err.message);
-    } finally {
-      setIsProcessing(false);
-      setRecordedUri(null);
-      setDuration(0);
-    }
+    const personName = selectedPerson
+      ? `${selectedPerson.first_name}${selectedPerson.last_name ? ' ' + selectedPerson.last_name : ''}`
+      : 'Unknown';
+    useFamilyStore.getState().processInterviewInBackground(
+      recordedUri,
+      activeFamilyGroupId,
+      `Conversation with ${personName}`,
+      undefined,
+      selectedPerson?.id
+    );
+    setRecordedUri(null);
+    setDuration(0);
+    setSelectedPerson(null);
+    router.push('/(tabs)/tree');
   };
 
   const cancelRecording = () => {
@@ -208,34 +193,20 @@ export default function RecordScreen() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const sendDevTranscript = async () => {
+  const sendDevTranscript = () => {
     if (!activeFamilyGroupId) {
       Alert.alert('Error', 'No active family group. Please create one first.');
       return;
     }
-    setIsProcessing(true);
-    try {
-      await processInterview(
-        null,
-        activeFamilyGroupId,
-        'Dev Conversation',
-        DEV_TRANSCRIPT,
-        selectedPerson?.id
-      );
-      await useNotificationStore.getState().sendLocalNotification(
-        'Conversation Saved!',
-        'Your conversation has been transcribed and analyzed. Check your lineage map for new connections!',
-      );
-      Alert.alert(
-        'Dev Conversation Processed!',
-        'Fake transcript was analyzed. Check the lineage map!',
-        [{ text: 'View Lineage', onPress: () => router.push('/(tabs)/tree') }]
-      );
-    } catch (err: any) {
-      Alert.alert('Processing failed', err.message);
-    } finally {
-      setIsProcessing(false);
-    }
+    useFamilyStore.getState().processInterviewInBackground(
+      null,
+      activeFamilyGroupId,
+      'Dev Conversation',
+      DEV_TRANSCRIPT,
+      selectedPerson?.id
+    );
+    setSelectedPerson(null);
+    router.push('/(tabs)/tree');
   };
 
   const isSelf = selectedPerson?.id === selfPersonId;

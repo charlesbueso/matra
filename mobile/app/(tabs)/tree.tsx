@@ -21,6 +21,7 @@ import { StarField, BioAlgae, TreeTrunk, MountainScape, FlyingBirds } from '../.
 import { useFamilyStore, Person, Relationship } from '../../src/stores/familyStore';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useNotificationStore } from '../../src/stores/notificationStore';
+import { useSignedUrls } from '../../src/hooks';
 import { Colors, Typography, Spacing } from '../../src/theme/tokens';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -412,6 +413,7 @@ export default function TreeScreen() {
   const { people, relationships } = useFamilyStore();
   const selfPersonId = useAuthStore((s) => s.profile?.self_person_id);
   const [viewMode, setViewMode] = useState<ViewMode>('graph');
+  const avatarUrls = useSignedUrls(people.map((p) => p.avatar_url));
 
   const { positions, roleLabels, width: GRAPH_WIDTH, height: GRAPH_HEIGHT } = useMemo(
     () => layoutNodes(people, relationships),
@@ -523,9 +525,9 @@ export default function TreeScreen() {
                 style={styles.tableRow}
                 onPress={() => router.push(`/person/${person.id}`)}
               >
-                {person.avatar_url ? (
+                {person.avatar_url && avatarUrls.get(person.avatar_url) ? (
                   <Image
-                    source={{ uri: person.avatar_url }}
+                    source={{ uri: avatarUrls.get(person.avatar_url) }}
                     style={styles.tableAvatar}
                     contentFit="cover"
                     transition={200}
@@ -697,9 +699,9 @@ export default function TreeScreen() {
                   ]}
                 >
                   <Animated.View entering={FadeIn.delay(100)} style={styles.nodeLabelInner}>
-                    {person.avatar_url ? (
+                    {person.avatar_url && avatarUrls.get(person.avatar_url) ? (
                       <Image
-                        source={{ uri: person.avatar_url }}
+                        source={{ uri: avatarUrls.get(person.avatar_url) }}
                         style={styles.nodeAvatar}
                         contentFit="cover"
                         transition={200}

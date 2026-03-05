@@ -2,12 +2,13 @@
 // MATRA — Custom Hooks
 // ============================================================
 
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useState } from 'react';
 import { AppState, AppStateStatus } from 'react-native';
 import { useAuthStore } from '../stores/authStore';
 import { useFamilyStore } from '../stores/familyStore';
 import { useSubscriptionStore } from '../stores/subscriptionStore';
 import { supabase } from '../services/supabase';
+import { getSignedUrl, getSignedUrls } from '../services/signedUrl';
 
 // ----- useAppReady -----
 // Orchestrates app initialization: auth → profile → family → entitlements
@@ -138,4 +139,41 @@ export function useDebounce<T extends (...args: any[]) => void>(fn: T, ms: numbe
   ) as T;
 
   return debounced;
+}
+
+// ----- useSignedUrl -----
+// Resolve a single private storage key to a presigned URL
+export function useSignedUrl(key: string | null | undefined): string | null {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!key) {
+      setUrl(null);
+      return;
+    }
+    let cancelled = false;
+    getSignedUrl(key).then((resolved) => {
+      if (!cancelled) setUrl(resolved);
+    });
+    return () => { cancelled = true; };
+  }, [key]);
+
+  return url;
+}
+
+// ----- useSignedUrls -----
+// Resolve multiple private storage keys to presigned URLs (batch)
+export function useSignedUrls(keys: (string | null | undefined)[]): Map<string, string> {
+  const [urls, setUrls] = useState<Map<string, string>>(new Map());
+  const keysJson = JSON.stringify(keys.filter(Boolean).sort());
+
+  useEffect(() => {
+    let cancelled = false;
+    getSignedUrls(keys).then((resolved) => {
+      if (!cancelled) setUrls(resolved);
+    });
+    return () => { cancelled = true; };
+  }, [keysJson]);
+
+  return urls;
 }

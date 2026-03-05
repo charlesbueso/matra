@@ -2,7 +2,8 @@
 // MATRA — DigitalOcean Spaces (S3) Client
 // ============================================================
 
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from 'https://esm.sh/@aws-sdk/client-s3@3.525.0';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from 'https://esm.sh/@aws-sdk/client-s3@3.525.0';
+import { getSignedUrl as s3GetSignedUrl } from 'https://esm.sh/@aws-sdk/s3-request-presigner@3.525.0';
 
 const DO_SPACES_KEY = Deno.env.get('DO_SPACES_KEY')!;
 const DO_SPACES_SECRET = Deno.env.get('DO_SPACES_SECRET')!;
@@ -35,14 +36,12 @@ function getClient(): S3Client {
  * @param subPath Path within matra/ (e.g. "avatars/{id}.jpg", "audio/{groupId}/{id}.m4a")
  * @param body File bytes
  * @param contentType MIME type
- * @param options Additional options
- * @returns The full CDN URL of the uploaded file
+ * @returns The S3 key of the uploaded file
  */
 export async function uploadToSpaces(
   subPath: string,
   body: Uint8Array,
   contentType: string,
-  options?: { cacheBust?: boolean; cacheControl?: string },
 ): Promise<string> {
   const key = `${MATRA_PREFIX}/${subPath}`;
 
@@ -51,26 +50,51 @@ export async function uploadToSpaces(
     Key: key,
     Body: body,
     ContentType: contentType,
-    ACL: 'public-read',
-    CacheControl: options?.cacheControl || 'public, max-age=31536000',
+    ACL: 'private',
+    CacheControl: 'private, max-age=0',
   }));
 
-  const url = `${DO_SPACES_CDN_URL}/${key}`;
-  return options?.cacheBust ? `${url}?v=${Date.now()}` : url;
+  return key;
 }
 
 /**
- * Delete a file from DO Spaces by its CDN URL or subPath.
+ * Generate a time-limited presigned URL for a private object.
+ * @param keyOrLegacyUrl S3 key (e.g. "matra/avatars/id.jpg") or legacy CDN URL
+ * @param expiresIn Seconds until the URL expires (default: 1 hour)
  */
-export async function deleteFromSpaces(cdnUrlOrSubPath: string): Promise<void> {
-  let key: string;
-  if (cdnUrlOrSubPath.startsWith('http')) {
-    // Extract key from CDN URL: https://bucket.nyc3.cdn.../matra/avatars/id.jpg?v=...
-    const url = new URL(cdnUrlOrSubPath);
-    key = url.pathname.startsWith('/') ? url.pathname.slice(1) : url.pathname;
-  } else {
-    key = `${MATRA_PREFIX}/${cdnUrlOrSubPath}`;
+export async function getPresignedUrl(
+  keyOrLegacyUrl: string,
+  expiresIn = 3600,
+): Promise<string> {
+  const key = resolveKey(keyOrLegacyUrl);
+
+  const command = new GetObjectCommand({
+    Bucket: DO_SPACES_BUCKET,
+    Key: key,
+  });
+
+  return s3GetSignedUrl(getClient(), command, { expiresIn });
+}
+
+/** Resolve a stored value (key or legacy CDN URL) to an S3 key */
+function resolveKey(keyOrUrl: string): string {
+  if (keyOrUrl.startsWith('http')) {
+    const url = new URL(keyOrUrl);
+    const path = url.pathname.startsWith('/') ? url.pathname.slice(1) : url.pathname;
+    return path;
   }
+  // Already a key — ensure it has the prefix
+  if (!keyOrUrl.startsWith(MATRA_PREFIX + '/')) {
+    return `${MATRA_PREFIX}/${keyOrUrl}`;
+  }
+  return keyOrUrl;
+}
+
+/**
+ * Delete a file from DO Spaces by its S3 key or legacy CDN URL.
+ */
+export async function deleteFromSpaces(keyOrUrl: string): Promise<void> {
+  const key = resolveKey(keyOrUrl);
 
   await getClient().send(new DeleteObjectCommand({
     Bucket: DO_SPACES_BUCKET,

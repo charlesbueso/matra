@@ -4,6 +4,7 @@
 
 import { create } from 'zustand';
 import { supabase, invokeFunction } from '../services/supabase';
+import { invalidateSignedUrl } from '../services/signedUrl';
 import { useAuthStore } from './authStore';
 import { useNotificationStore } from './notificationStore';
 
@@ -80,6 +81,7 @@ interface FamilyState {
 
   // Loading states
   isLoading: boolean;
+  isProcessingInterview: boolean;
 
   // Actions
   fetchFamilyGroups: () => Promise<void>;
@@ -104,6 +106,7 @@ interface FamilyState {
 
   // Interview actions
   processInterview: (audioUri: string | null, familyGroupId: string, title?: string, devTranscript?: string, subjectPersonId?: string) => Promise<any>;
+  processInterviewInBackground: (audioUri: string | null, familyGroupId: string, title?: string, devTranscript?: string, subjectPersonId?: string) => void;
   deleteInterview: (id: string) => Promise<void>;
   deleteAllInterviews: () => Promise<void>;
 
@@ -122,6 +125,7 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
   interviews: [],
   stories: [],
   isLoading: false,
+  isProcessingInterview: false,
 
   fetchFamilyGroups: async () => {
     const { data, error } = await supabase
@@ -485,6 +489,27 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
     return result;
   },
 
+  processInterviewInBackground: (audioUri, familyGroupId, title, devTranscript, subjectPersonId) => {
+    set({ isProcessingInterview: true });
+    get()
+      .processInterview(audioUri, familyGroupId, title, devTranscript, subjectPersonId)
+      .then(() => {
+        useNotificationStore.getState().sendLocalNotification(
+          'Your Lineage is Ready!',
+          'Your conversation has been transcribed and analyzed. Tap to see new connections on your lineage map.',
+        );
+      })
+      .catch(() => {
+        useNotificationStore.getState().sendLocalNotification(
+          'Processing Failed',
+          'Something went wrong while analyzing your conversation. Please try again.',
+        );
+      })
+      .finally(() => {
+        set({ isProcessingInterview: false });
+      });
+  },
+
   deleteInterview: async (id) => {
     const now = new Date().toISOString();
 
@@ -618,6 +643,10 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
   },
 
   uploadPersonAvatar: async (personId, imageUri) => {
+    // Invalidate the old signed URL cache entry before uploading
+    const oldKey = get().people.find((p) => p.id === personId)?.avatar_url;
+    if (oldKey) invalidateSignedUrl(oldKey);
+
     const formData = new FormData();
     // React Native FormData needs {uri, type, name} — not a Blob
     formData.append('image', {

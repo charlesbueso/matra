@@ -4,6 +4,7 @@
 
 import { create } from 'zustand';
 import { supabase, invokeFunction } from '../services/supabase';
+import { clearSignedUrlCache } from '../services/signedUrl';
 import type { Session, User } from '@supabase/supabase-js';
 
 interface Profile {
@@ -101,6 +102,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   signOut: async () => {
     await supabase.auth.signOut();
+    clearSignedUrlCache();
     set({ session: null, user: null, profile: null });
   },
 
