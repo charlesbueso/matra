@@ -36,7 +36,7 @@ export default function RecordScreen() {
   const { personId: preselectedPersonId } = useLocalSearchParams<{ personId?: string }>();
   const profile = useAuthStore((s) => s.profile);
   const selfPersonId = useAuthStore((s) => s.profile?.self_person_id);
-  const { activeFamilyGroupId, people, processInterview } = useFamilyStore();
+  const { activeFamilyGroupId, people, processInterview, fetchAllFamilyData, fetchFamilyGroups } = useFamilyStore();
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -45,6 +45,13 @@ export default function RecordScreen() {
   const recordingRef = useRef<Audio.Recording | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
+  // Ensure data is loaded (the tab may mount before home finishes fetching)
+  React.useEffect(() => {
+    if (people.length === 0) {
+      fetchFamilyGroups().then(() => fetchAllFamilyData());
+    }
+  }, []);
+
   // Auto-select person if passed via route params
   React.useEffect(() => {
     if (preselectedPersonId && people.length > 0) {
@@ -52,6 +59,13 @@ export default function RecordScreen() {
       if (person) setSelectedPerson(person);
     }
   }, [preselectedPersonId, people]);
+
+  // Auto-select self when there's only one person (first-time experience)
+  React.useEffect(() => {
+    if (!selectedPerson && people.length === 1 && selfPersonId && people[0].id === selfPersonId) {
+      setSelectedPerson(people[0]);
+    }
+  }, [people, selfPersonId, selectedPerson]);
 
   // Pulse animation for recording button
   const pulse = useSharedValue(1);

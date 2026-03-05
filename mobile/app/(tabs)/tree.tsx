@@ -358,30 +358,11 @@ export default function TreeScreen() {
     [people, relationships]
   );
 
-  if (people.length === 0) {
-    return (
-      <StarField particleCount={30}>
-        <MountainScape mountainOpacity={0.10} cloudCount={6} />
-        <FlyingBirds count={4} />
-        <TreeTrunk opacity={0.18} />
-        <BioAlgae strandCount={50} height={0.22} />
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyIcon}>🌳</Text>
-          <Text style={styles.emptyTitle}>Your family tree is waiting</Text>
-          <Text style={styles.emptySubtitle}>
-            Record your first conversation to start growing your lineage
-          </Text>
-        </View>
-      </StarField>
-    );
-  }
-
-  // ── Pan & Zoom state ──
+  // ── Pan & Zoom state (must be declared before any early return) ──
   const scale = useSharedValue(0.8);
   const translateX = useSharedValue(-GRAPH_WIDTH / 2 + SCREEN_WIDTH / 2);
   const translateY = useSharedValue(-GRAPH_HEIGHT / 2 + SCREEN_HEIGHT / 2);
 
-  // Saved values for gesture start
   const savedScale = useSharedValue(0.8);
   const savedTranslateX = useSharedValue(translateX.value);
   const savedTranslateY = useSharedValue(translateY.value);
@@ -417,6 +398,24 @@ export default function TreeScreen() {
       { scale: scale.value },
     ],
   }));
+
+  if (people.length === 0) {
+    return (
+      <StarField particleCount={30}>
+        <MountainScape mountainOpacity={0.10} cloudCount={6} />
+        <FlyingBirds count={4} />
+        <TreeTrunk opacity={0.18} />
+        <BioAlgae strandCount={50} height={0.22} />
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyIcon}>🌳</Text>
+          <Text style={styles.emptyTitle}>Your family tree is waiting</Text>
+          <Text style={styles.emptySubtitle}>
+            Record your first conversation to start growing your lineage
+          </Text>
+        </View>
+      </StarField>
+    );
+  }
 
   return (
     <StarField particleCount={20}>

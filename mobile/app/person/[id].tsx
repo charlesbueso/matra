@@ -3,7 +3,7 @@
 // ============================================================
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, ActivityIndicator, TextInput } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Animated, { FadeInDown, FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -43,7 +43,7 @@ export default function PersonDetailScreen() {
   const router = useRouter();
   const { people, relationships, stories, interviews,
     generateBiography, verifyRelationship, updateRelationship,
-    createRelationship, deleteRelationship, uploadPersonAvatar,
+    createRelationship, deleteRelationship, uploadPersonAvatar, renamePerson,
   } = useFamilyStore();
   const profile = useAuthStore((s) => s.profile);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -55,6 +55,10 @@ export default function PersonDetailScreen() {
   const [selectedType, setSelectedType] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editFirstName, setEditFirstName] = useState('');
+  const [editLastName, setEditLastName] = useState('');
+  const [isSavingName, setIsSavingName] = useState(false);
 
   const person = people.find((p) => p.id === id);
 
@@ -71,7 +75,7 @@ export default function PersonDetailScreen() {
     );
   }
 
-  // Get relationships for this person
+  // Get relationships for this person, excluding any where the other person was deleted
   const personRelationships = relationships.filter(
     (r) => r.person_a_id === id || r.person_b_id === id
   ).map((r) => {
@@ -81,7 +85,7 @@ export default function PersonDetailScreen() {
       ...r,
       otherPerson: other,
     };
-  });
+  }).filter((r) => r.otherPerson !== undefined);
 
   // Check if person has at least one conversation or is mentioned in stories
   const personInterviews = interviews.filter(
@@ -175,7 +179,72 @@ export default function PersonDetailScreen() {
             </View>
           </Pressable>
 
-          <Text style={styles.name}>{fullName}</Text>
+          {isEditingName ? (
+            <View style={styles.nameEditContainer}>
+              <TextInput
+                style={styles.nameInput}
+                value={editFirstName}
+                onChangeText={setEditFirstName}
+                placeholder="First name"
+                placeholderTextColor={Colors.text.twilight}
+                autoFocus
+              />
+              <TextInput
+                style={styles.nameInput}
+                value={editLastName}
+                onChangeText={setEditLastName}
+                placeholder="Last name"
+                placeholderTextColor={Colors.text.twilight}
+              />
+              <View style={styles.nameEditActions}>
+                <Pressable
+                  style={styles.nameEditCancel}
+                  onPress={() => setIsEditingName(false)}
+                >
+                  <Text style={styles.nameEditCancelText}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.nameEditSave, (!editFirstName.trim() || isSavingName) && styles.nameEditSaveDisabled]}
+                  disabled={!editFirstName.trim() || isSavingName}
+                  onPress={async () => {
+                    const newFirst = editFirstName.trim();
+                    const newLast = editLastName.trim() || null;
+                    if (!newFirst) return;
+                    if (newFirst === person.first_name && newLast === person.last_name) {
+                      setIsEditingName(false);
+                      return;
+                    }
+                    setIsSavingName(true);
+                    try {
+                      await renamePerson(person.id, newFirst, newLast);
+                      setIsEditingName(false);
+                    } catch (err: any) {
+                      Alert.alert('Error', err.message);
+                    } finally {
+                      setIsSavingName(false);
+                    }
+                  }}
+                >
+                  <Text style={styles.nameEditSaveText}>
+                    {isSavingName ? 'Saving...' : 'Save'}
+                  </Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : (
+            <Pressable
+              onPress={() => {
+                setEditFirstName(person.first_name);
+                setEditLastName(person.last_name || '');
+                setIsEditingName(true);
+              }}
+            >
+              <View style={styles.nameRow}>
+                <Text style={styles.name}>{fullName}</Text>
+                <Text style={styles.nameEditIcon}>✎</Text>
+              </View>
+            </Pressable>
+          )}
           {person.nickname && (
             <Text style={styles.nickname}>"{person.nickname}"</Text>
           )}
@@ -617,6 +686,60 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.h1,
     fontFamily: Typography.fonts.heading,
     color: Colors.text.starlight,
+  },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  nameEditIcon: {
+    fontSize: 16,
+    color: Colors.text.twilight,
+    marginTop: 2,
+  },
+  nameEditContainer: {
+    alignItems: 'center',
+    gap: Spacing.sm,
+    width: '100%',
+    paddingHorizontal: Spacing.lg,
+  },
+  nameInput: {
+    fontSize: Typography.sizes.h3,
+    fontFamily: Typography.fonts.heading,
+    color: Colors.text.starlight,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.accent.cyan,
+    paddingVertical: Spacing.xs,
+    textAlign: 'center',
+    width: '100%',
+  },
+  nameEditActions: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    marginTop: Spacing.xs,
+  },
+  nameEditCancel: {
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+  },
+  nameEditCancelText: {
+    fontSize: Typography.sizes.caption,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.twilight,
+  },
+  nameEditSave: {
+    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.md,
+    backgroundColor: Colors.accent.cyan,
+    borderRadius: BorderRadius.sm,
+  },
+  nameEditSaveDisabled: {
+    opacity: 0.4,
+  },
+  nameEditSaveText: {
+    fontSize: Typography.sizes.caption,
+    fontFamily: Typography.fonts.body,
+    color: '#FFFFFF',
   },
   nickname: {
     fontSize: Typography.sizes.body,

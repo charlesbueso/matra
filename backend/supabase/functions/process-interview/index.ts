@@ -12,7 +12,7 @@
 import { serve } from 'https://deno.land/std@0.208.0/http/server.ts';
 import { handleCors, jsonResponse, errorResponse } from '../_shared/cors.ts';
 import { getUserClient, getAuthUserId, getServiceClient } from '../_shared/supabase.ts';
-import { canCreateInterview, checkFeatureAccess } from '../_shared/feature-gate.ts';
+import { canCreateInterview, getUserEntitlements } from '../_shared/feature-gate.ts';
 import { getSTTProvider, getLLMProvider } from '../_shared/ai/registry.ts';
 import { uploadToSpaces } from '../_shared/spaces.ts';
 
@@ -191,11 +191,30 @@ serve(async (req: Request) => {
     }
 
     // 5. Extract entities & relationships
+    // Look up subject person so the AI knows who the narrator is
+    let subjectPerson: { id: string; first_name: string; last_name: string | null } | null = null;
+    if (subjectPersonId) {
+      const { data } = await supabase
+        .from('people')
+        .select('id, first_name, last_name')
+        .eq('id', subjectPersonId)
+        .single();
+      subjectPerson = data;
+    }
+
+    // Prepend narrator context so the AI knows "I" = the subject person
+    const subjectName = subjectPerson
+      ? `${subjectPerson.first_name}${subjectPerson.last_name ? ' ' + subjectPerson.last_name : ''}`
+      : null;
+    const transcriptForAI = subjectName
+      ? `[Narrator/subject of this interview is ${subjectName}. Any first-person references ("I", "me", "my") refer to ${subjectName}. Do NOT create a separate entry for the narrator — they are ${subjectName}. IMPORTANT: When the narrator says "my mom", "my dad", "my brother", etc., create relationships between those people and ${subjectName}. Use ${subjectName} as the personA or personB name in relationships — never use "I" or "me" as a person name.]\n\n${transcriptText}`
+      : transcriptText;
+
     const llmProvider = getLLMProvider();
     let extractionResult;
 
     try {
-      extractionResult = await llmProvider.extractEntities(transcriptText);
+      extractionResult = await llmProvider.extractEntities(transcriptForAI);
     } catch (err) {
       console.error('Entity extraction failed:', err);
       // Non-fatal — continue with summarization
@@ -220,6 +239,16 @@ serve(async (req: Request) => {
     // Build a resolution map: suggested name → person ID in DB
     const resolvedPeople = new Map<string, string>(); // "firstName lastName" → person.id
 
+    // Pre-seed the resolution map with the subject/self person so they are
+    // NEVER duplicated. Any AI-suggested person matching the narrator's name
+    // will resolve to their existing record.
+    if (subjectPerson) {
+      const selfKey = `${subjectPerson.first_name} ${subjectPerson.last_name || ''}`.trim();
+      resolvedPeople.set(selfKey, subjectPerson.id);
+      // Also seed first-name-only key for common references
+      resolvedPeople.set(subjectPerson.first_name, subjectPerson.id);
+    }
+
     // Fetch all existing people in this family group for matching
     const { data: existingPeople } = await supabase
       .from('people')
@@ -234,6 +263,11 @@ serve(async (req: Request) => {
       const sugLast = (suggested.lastName || '').trim().toLowerCase();
       const sugNick = (suggested.nickname || '').trim().toLowerCase();
       const sugFullKey = `${suggested.firstName} ${suggested.lastName || ''}`.trim();
+
+      // If this person was already pre-seeded (e.g. the subject/self), skip
+      if (resolvedPeople.has(sugFullKey) || resolvedPeople.has(suggested.firstName)) {
+        continue;
+      }
 
       // Try to find a match among existing people
       let matchId: string | null = null;
@@ -314,6 +348,12 @@ serve(async (req: Request) => {
 
     // Helper: resolve a name reference (from relationships/stories) to a person ID
     function resolvePersonName(name: string): string | null {
+      // Handle self-references — map to subject person if available
+      const selfRefs = ['i', 'me', 'myself', 'narrator', 'the narrator'];
+      if (subjectPerson && selfRefs.includes(name.toLowerCase().trim())) {
+        return subjectPerson.id;
+      }
+
       // Direct key match
       if (resolvedPeople.has(name)) return resolvedPeople.get(name)!;
 
@@ -339,17 +379,34 @@ serve(async (req: Request) => {
       const personBId = resolvePersonName(rel.personB);
 
       if (personAId && personBId && personAId !== personBId) {
+        // Validate that the relationship type is a known enum value
+        const validTypes = [
+          'parent', 'child', 'spouse', 'sibling', 'grandparent', 'grandchild',
+          'uncle_aunt', 'nephew_niece', 'cousin', 'in_law',
+          'step_parent', 'step_child', 'step_sibling',
+          'adopted_parent', 'adopted_child', 'godparent', 'godchild', 'other',
+        ];
+        const relType = validTypes.includes(rel.relationshipType)
+          ? rel.relationshipType
+          : 'other';
+
         await supabase.from('relationships').upsert(
           {
             family_group_id: familyGroupId,
             person_a_id: personAId,
             person_b_id: personBId,
-            relationship_type: rel.relationshipType,
+            relationship_type: relType,
             source_interview_id: interview.id,
             confidence: rel.confidence,
           },
           { onConflict: 'person_a_id,person_b_id,relationship_type' }
         );
+      } else {
+        console.warn('[process-interview] Could not resolve relationship:', {
+          personA: rel.personA, resolvedA: personAId,
+          personB: rel.personB, resolvedB: personBId,
+          type: rel.relationshipType,
+        });
       }
     }
 
@@ -368,6 +425,7 @@ serve(async (req: Request) => {
     }
 
     // 10. Save summary and stories
+    let storiesCreatedCount = 0;
     if (summaryResult) {
       await supabase
         .from('interviews')
@@ -377,11 +435,13 @@ serve(async (req: Request) => {
         })
         .eq('id', interview.id);
 
-      // Check if user has premium for story extraction
-      const storyAccess = await checkFeatureAccess(userId, 'aiSummarization');
+      // Determine how many stories to save based on subscription tier
+      const entitlements = await getUserEntitlements(userId);
+      const maxStories = entitlements.limits.maxStoriesPerInterview;
+      const storiesToSave = summaryResult.suggestedStories.slice(0, maxStories);
 
-      if (storyAccess.allowed && summaryResult.suggestedStories.length > 0) {
-        for (const story of summaryResult.suggestedStories) {
+      if (storiesToSave.length > 0) {
+        for (const story of storiesToSave) {
           const { data: storyRecord } = await supabase
             .from('stories')
             .insert({
@@ -397,16 +457,20 @@ serve(async (req: Request) => {
             .select()
             .single();
 
-          // Link people to stories
-          if (storyRecord && story.involvedPeople.length > 0) {
-            for (const personName of story.involvedPeople) {
-              const personId = resolvePersonName(personName);
+          if (storyRecord) {
+            storiesCreatedCount++;
 
-              if (personId) {
-                await supabase.from('story_people').upsert(
-                  { story_id: storyRecord.id, person_id: personId, role: 'mentioned' },
-                  { onConflict: 'story_id,person_id' }
-                );
+            // Link people to stories
+            if (story.involvedPeople.length > 0) {
+              for (const personName of story.involvedPeople) {
+                const personId = resolvePersonName(personName);
+
+                if (personId) {
+                  await supabase.from('story_people').upsert(
+                    { story_id: storyRecord.id, person_id: personId, role: 'mentioned' },
+                    { onConflict: 'story_id,person_id' }
+                  );
+                }
               }
             }
           }
@@ -436,7 +500,7 @@ serve(async (req: Request) => {
       extractedEntities: extractionResult.entities.length,
       extractedRelationships: extractionResult.relationships.length,
       suggestedPeople: extractionResult.suggestedPeople.length,
-      storiesCreated: summaryResult?.suggestedStories.length || 0,
+      storiesCreated: storiesCreatedCount,
     });
   } catch (err) {
     console.error('[process-interview] FATAL ERROR:', (err as any)?.message || err, (err as any)?.stack || '');
