@@ -3,7 +3,7 @@
 // ============================================================
 
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, ActivityIndicator, TextInput } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
@@ -87,7 +87,7 @@ export default function SettingsScreen() {
   const { scrollTo } = useLocalSearchParams<{ scrollTo?: string }>();
   const scrollViewRef = useRef<ScrollView>(null);
   const conversationsY = useRef(0);
-  const { profile, signOut, updateProfile, deleteAccount, deactivateAccount } = useAuthStore();
+  const { profile, signOut, updateProfile, deleteAccount, deactivateAccount, updateEmail } = useAuthStore();
   const setLanguage = useAuthStore((s) => s.setLanguage);
   const { t } = useTranslation();
   const { uploadPersonAvatar, interviews, stories, people, deleteInterview, deleteAllInterviews } = useFamilyStore();
@@ -99,6 +99,9 @@ export default function SettingsScreen() {
   const [isDeactivating, setIsDeactivating] = useState(false);
   const [isExportingData, setIsExportingData] = useState(false);
   const [isExportingMemoryBook, setIsExportingMemoryBook] = useState(false);
+  const [isChangingEmail, setIsChangingEmail] = useState(false);
+  const [showEmailInput, setShowEmailInput] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
   const avatarUrl = useSignedUrl(profile?.avatar_url);
 
   const handleDeleteInterview = (interview: Interview) => {
@@ -177,6 +180,30 @@ export default function SettingsScreen() {
   const interviewsToday = isPremium
     ? interviews.filter((i) => new Date(i.created_at) >= dayStart).length
     : 0;
+
+  const handleChangeEmail = async () => {
+    const trimmed = newEmail.trim().toLowerCase();
+    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      Alert.alert(t('settings.changeEmail'), t('settings.changeEmailInvalid'));
+      return;
+    }
+    if (trimmed === profile?.id) return; // same email, no-op
+
+    setIsChangingEmail(true);
+    try {
+      await updateEmail(trimmed);
+      setShowEmailInput(false);
+      setNewEmail('');
+      Alert.alert(
+        t('settings.changeEmailSent'),
+        t('settings.changeEmailSentMessage'),
+      );
+    } catch (err: any) {
+      Alert.alert(t('common.error'), err.message);
+    } finally {
+      setIsChangingEmail(false);
+    }
+  };
 
   const handleExportData = async () => {
     setIsExportingData(true);
@@ -370,8 +397,47 @@ export default function SettingsScreen() {
             <View style={styles.tierBadge}>
               <Text style={styles.tierText}>{tierLabel}</Text>
             </View>
+            <Pressable style={styles.profileEmailRow} onPress={() => setShowEmailInput(true)}>
+              <Text style={styles.profileEmail} numberOfLines={1}>
+                {useAuthStore.getState().user?.email || '—'}
+              </Text>
+              <Text style={styles.profileEmailEdit}>✏️</Text>
+            </Pressable>
           </View>
         </Card>
+
+        {showEmailInput && (
+          <Card variant="elevated" style={{ marginBottom: Spacing.md, padding: Spacing.md }}>
+            <TextInput
+              style={styles.emailInput}
+              value={newEmail}
+              onChangeText={setNewEmail}
+              placeholder={t('settings.newEmailPlaceholder')}
+              placeholderTextColor={Colors.text.shadow}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoFocus
+            />
+            <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm }}>
+              <Button
+                title={t('common.cancel')}
+                onPress={() => { setShowEmailInput(false); setNewEmail(''); }}
+                variant="ghost"
+                size="sm"
+                style={{ flex: 1 }}
+              />
+              <Button
+                title={isChangingEmail ? t('settings.changingEmail') : t('settings.confirmChangeEmail')}
+                onPress={handleChangeEmail}
+                size="sm"
+                loading={isChangingEmail}
+                disabled={isChangingEmail || !newEmail.trim()}
+                style={{ flex: 1 }}
+              />
+            </View>
+          </Card>
+        )}
 
         {/* Subscription */}
         <View style={styles.section}>
@@ -519,6 +585,8 @@ export default function SettingsScreen() {
             <SettingItem label={t('settings.aboutMatra')} onPress={() => router.push('/about')} />
           </Card>
         </View>
+
+
 
         {/* Your Data */}
         <View style={styles.section}>
@@ -724,6 +792,20 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: Spacing.xs,
   },
+  profileEmailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  profileEmail: {
+    fontSize: Typography.sizes.caption,
+    fontFamily: Typography.fonts.body,
+    color: 'rgba(120, 180, 130, 0.85)',
+    flexShrink: 1,
+  },
+  profileEmailEdit: {
+    fontSize: 12,
+  },
   profileName: {
     fontSize: Typography.sizes.h3,
     fontFamily: Typography.fonts.heading,
@@ -826,6 +908,17 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fonts.body,
     color: Colors.text.twilight,
     lineHeight: 18,
+  },
+  emailInput: {
+    borderWidth: 1,
+    borderColor: 'rgba(139, 115, 85, 0.20)',
+    borderRadius: 12,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    fontSize: Typography.sizes.body,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.starlight,
+    backgroundColor: '#FFFFFF',
   },
   conversationRow: {
     flexDirection: 'row',

@@ -77,23 +77,43 @@ function layoutNodes(
       if (!spouseOf.has(b)) spouseOf.set(b, new Set());
       spouseOf.get(a)!.add(b);
       spouseOf.get(b)!.add(a);
-    } else if (type === 'grandparent') {
-      // A is grandparent of B — treat as two-level gap (handled by generation assignment)
-      if (!childrenOf.has(a)) childrenOf.set(a, []);
-      childrenOf.get(a)!.push(b);
-      if (!parentOf.has(b)) parentOf.set(b, []);
-      parentOf.get(b)!.push(a);
-    } else if (type === 'grandchild') {
-      if (!childrenOf.has(b)) childrenOf.set(b, []);
-      childrenOf.get(b)!.push(a);
-      if (!parentOf.has(a)) parentOf.set(a, []);
-      parentOf.get(a)!.push(b);
     } else if (type === 'sibling') {
       // Siblings share a generation — also track for adjacency in layout
       if (!spouseOf.has(a)) spouseOf.set(a, new Set());
       if (!spouseOf.has(b)) spouseOf.set(b, new Set());
       // We don't add siblings as spouses, but we need to ensure
       // they get the same generation. Track siblingOf separately.
+    }
+  }
+
+  // Build multi-generation ancestor maps for proper vertical placement
+  // These track relationships that skip generations (grandparent = 2, great = 3, etc.)
+  const ancestorOf = new Map<string, { descendantId: string; gap: number }[]>();
+  const descendantParentOf = new Map<string, { ancestorId: string; gap: number }[]>();
+  for (const rel of relationships) {
+    const a = rel.person_a_id;
+    const b = rel.person_b_id;
+    if (!peopleById.has(a) || !peopleById.has(b)) continue;
+    const type = rel.relationship_type;
+    let gap = 0;
+    let ancestorId = '';
+    let descendantId = '';
+    if (type === 'grandparent')              { gap = 2; ancestorId = a; descendantId = b; }
+    else if (type === 'grandchild')           { gap = 2; ancestorId = b; descendantId = a; }
+    else if (type === 'great_grandparent')    { gap = 3; ancestorId = a; descendantId = b; }
+    else if (type === 'great_grandchild')     { gap = 3; ancestorId = b; descendantId = a; }
+    else if (type === 'great_great_grandparent') { gap = 4; ancestorId = a; descendantId = b; }
+    else if (type === 'great_great_grandchild')  { gap = 4; ancestorId = b; descendantId = a; }
+    if (gap > 0) {
+      if (!ancestorOf.has(ancestorId)) ancestorOf.set(ancestorId, []);
+      ancestorOf.get(ancestorId)!.push({ descendantId, gap });
+      if (!descendantParentOf.has(descendantId)) descendantParentOf.set(descendantId, []);
+      descendantParentOf.get(descendantId)!.push({ ancestorId, gap });
+      // Also register in parentOf so roots are computed correctly
+      if (!parentOf.has(descendantId)) parentOf.set(descendantId, []);
+      if (!parentOf.get(descendantId)!.includes(ancestorId)) {
+        parentOf.get(descendantId)!.push(ancestorId);
+      }
     }
   }
 
@@ -205,6 +225,15 @@ function layoutNodes(
       if (!visited.has(childId)) {
         visited.add(childId);
         queue.push({ id: childId, gen: gen + 1 });
+      }
+    }
+
+    // Multi-generation descendants (grandchildren, great-grandchildren, etc.)
+    const descendants = ancestorOf.get(id) || [];
+    for (const { descendantId, gap } of descendants) {
+      if (!visited.has(descendantId)) {
+        visited.add(descendantId);
+        queue.push({ id: descendantId, gen: gen + gap });
       }
     }
   }
@@ -724,8 +753,10 @@ export default function TreeScreen() {
               return null;
             }
 
-            // Only draw lines for direct parent-child relationships
-            if (type !== 'parent' && type !== 'child') return null;
+            // Only draw lines for direct parent-child and multi-gen ancestor relationships
+            const ancestorTypes = ['parent', 'child', 'grandparent', 'grandchild',
+              'great_grandparent', 'great_grandchild', 'great_great_grandparent', 'great_great_grandchild'];
+            if (!ancestorTypes.includes(type)) return null;
 
             // Parent-child: elbow connector
             const parent = posA.y < posB.y ? posA : posB;

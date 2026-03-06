@@ -3,7 +3,7 @@
 // ============================================================
 
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert, ActivityIndicator, TextInput, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, ActivityIndicator, TextInput, Platform, KeyboardAvoidingView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Animated, { FadeInDown, FadeIn, FadeOut, SlideInDown, SlideOutDown } from 'react-native-reanimated';
 import { Image } from 'expo-image';
@@ -702,7 +702,14 @@ export default function PersonDetailScreen() {
     {showAddModal && (
       <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(150)} style={styles.modalOverlay}>
         <Pressable style={styles.modalBackdrop} onPress={() => setShowAddModal(false)} />
-        <Animated.View entering={SlideInDown.duration(300)} exiting={SlideOutDown.duration(200)} style={styles.modalContent}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.modalKeyboardWrap}
+          pointerEvents="box-none"
+        >
+        <Animated.View entering={SlideInDown.duration(300).springify().damping(18)} exiting={SlideOutDown.duration(200)} style={styles.modalContent}>
+          {/* Drag handle */}
+          <View style={styles.editDetailHandle} />
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>
               {addStep === 'person' ? t('person.selectPerson') : t('person.selectType')}
@@ -810,13 +817,16 @@ export default function PersonDetailScreen() {
             </ScrollView>
           )}
         </Animated.View>
+        </KeyboardAvoidingView>
       </Animated.View>
     )}
     {/* Merge Person Modal */}
     {showMergeModal && (
       <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(150)} style={styles.modalOverlay}>
         <Pressable style={styles.modalBackdrop} onPress={() => setShowMergeModal(false)} />
-        <Animated.View entering={SlideInDown.duration(300)} exiting={SlideOutDown.duration(200)} style={styles.modalContent}>
+        <Animated.View entering={SlideInDown.duration(300).springify().damping(18)} exiting={SlideOutDown.duration(200)} style={styles.modalContent}>
+          {/* Drag handle */}
+          <View style={styles.editDetailHandle} />
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>{t('person.mergePerson')}</Text>
             <Pressable onPress={() => setShowMergeModal(false)} style={styles.modalClose}>
@@ -885,87 +895,123 @@ export default function PersonDetailScreen() {
       </Animated.View>
     )}
     {editingDetail && (
-      <Animated.View entering={FadeIn} exiting={FadeOut} style={styles.modalOverlay}>
-        <Pressable style={styles.modalOverlay} onPress={() => setEditingDetail(null)}>
-          <Animated.View entering={SlideInDown} exiting={SlideOutDown} style={styles.modalContent}>
-            <Pressable onPress={(e) => e.stopPropagation()}>
-              <Text style={styles.modalTitle}>
-                {editingDetail === 'birth_date' ? `🎂 ${t('person.birthDate')}` :
-                 editingDetail === 'birth_place' ? `📍 ${t('person.birthPlace')}` :
-                 editingDetail === 'current_location' ? `🏠 ${t('person.currentLocation')}` :
-                 editingDetail === 'profession' ? `💼 ${t('person.profession')}` :
-                 editingDetail === 'death_date' ? `🕊️ ${t('person.deathDate')}` : ''}
+      <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(150)} style={styles.editDetailOverlay}>
+        <Pressable style={styles.editDetailBackdrop} onPress={() => setEditingDetail(null)} />
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.editDetailKeyboardWrap}
+          pointerEvents="box-none"
+        >
+          <Animated.View entering={SlideInDown.duration(300).springify().damping(18)} exiting={SlideOutDown.duration(200)} style={styles.editDetailCard}>
+            {/* Drag handle */}
+            <View style={styles.editDetailHandle} />
+
+            {/* Header */}
+            <View style={styles.editDetailHeader}>
+              <Text style={styles.editDetailIcon}>
+                {editingDetail === 'birth_date' ? '🎂' :
+                 editingDetail === 'birth_place' ? '📍' :
+                 editingDetail === 'current_location' ? '🏠' :
+                 editingDetail === 'profession' ? '💼' :
+                 editingDetail === 'death_date' ? '🕊️' : ''}
               </Text>
-              {(editingDetail === 'birth_date' || editingDetail === 'death_date') ? (
-                <View style={styles.datePickerContainer}>
-                  <DateTimePicker
-                    value={editDetailValue ? new Date(editDetailValue + 'T00:00:00') : new Date()}
-                    mode="date"
-                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                    maximumDate={new Date()}
-                    themeVariant="dark"
-                    onChange={(_event: any, selectedDate?: Date) => {
-                      if (selectedDate) {
-                        const iso = selectedDate.toISOString().split('T')[0];
-                        setEditDetailValue(iso);
-                      }
-                    }}
-                  />
-                </View>
-              ) : (
-                <TextInput
-                  style={styles.detailInput}
-                  value={editDetailValue}
-                  onChangeText={setEditDetailValue}
-                  placeholder={
-                    editingDetail === 'birth_place' ? t('person.cityCountry')
-                    : editingDetail === 'current_location' ? t('person.cityCountry')
-                    : editingDetail === 'profession' ? t('person.professionPlaceholder')
-                    : ''
-                  }
-                  placeholderTextColor={Colors.text.starlight + '60'}
-                  autoFocus
+              <Text style={styles.editDetailTitle}>
+                {editingDetail === 'birth_date' ? t('person.birthDate') :
+                 editingDetail === 'birth_place' ? t('person.birthPlace') :
+                 editingDetail === 'current_location' ? t('person.currentLocation') :
+                 editingDetail === 'profession' ? t('person.profession') :
+                 editingDetail === 'death_date' ? t('person.deathDate') : ''}
+              </Text>
+              <Pressable onPress={() => setEditingDetail(null)} style={styles.editDetailClose}>
+                <Ionicons name="close" size={20} color={Colors.text.twilight} />
+              </Pressable>
+            </View>
+
+            {/* Content */}
+            {(editingDetail === 'birth_date' || editingDetail === 'death_date') ? (
+              <View style={styles.datePickerContainer}>
+                <DateTimePicker
+                  value={editDetailValue ? new Date(editDetailValue + 'T00:00:00') : new Date()}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  maximumDate={new Date()}
+                  themeVariant="light"
+                  onChange={(_event: any, selectedDate?: Date) => {
+                    if (selectedDate) {
+                      const iso = selectedDate.toISOString().split('T')[0];
+                      setEditDetailValue(iso);
+                    }
+                  }}
                 />
-              )}
-              <View style={styles.detailModalButtons}>
-                <Pressable
-                  style={styles.detailModalClear}
-                  onPress={async () => {
-                    if (editingDetail === 'profession') {
-                      const meta = { ...person.metadata };
-                      delete meta.profession;
-                      await updatePerson(person.id, { metadata: meta });
-                    } else if (editingDetail === 'death_date') {
-                      await updatePerson(person.id, { death_date: null, metadata: { ...person.metadata, is_deceased: false } });
-                    } else {
-                      await updatePerson(person.id, { [editingDetail]: null });
-                    }
-                    setEditingDetail(null);
-                  }}
-                >
-                  <Text style={styles.detailModalClearText}>{t('common.delete')}</Text>
-                </Pressable>
-                <Pressable
-                  style={styles.detailModalSave}
-                  onPress={async () => {
-                    const val = editDetailValue.trim();
-                    if (!val) { setEditingDetail(null); return; }
-                    if (editingDetail === 'profession') {
-                      await updatePerson(person.id, { metadata: { ...person.metadata, profession: val } });
-                    } else if (editingDetail === 'death_date') {
-                      await updatePerson(person.id, { death_date: val, metadata: { ...person.metadata, is_deceased: true } });
-                    } else {
-                      await updatePerson(person.id, { [editingDetail]: val });
-                    }
-                    setEditingDetail(null);
-                  }}
-                >
-                  <Text style={styles.detailModalSaveText}>{t('common.save')}</Text>
-                </Pressable>
               </View>
-            </Pressable>
+            ) : (
+              <TextInput
+                style={styles.editDetailInput}
+                value={editDetailValue}
+                onChangeText={setEditDetailValue}
+                placeholder={
+                  editingDetail === 'birth_place' ? t('person.cityCountry')
+                  : editingDetail === 'current_location' ? t('person.cityCountry')
+                  : editingDetail === 'profession' ? t('person.professionPlaceholder')
+                  : ''
+                }
+                placeholderTextColor={Colors.text.shadow}
+                autoFocus
+                returnKeyType="done"
+                onSubmitEditing={async () => {
+                  const val = editDetailValue.trim();
+                  if (!val) { setEditingDetail(null); return; }
+                  if (editingDetail === 'profession') {
+                    await updatePerson(person.id, { metadata: { ...person.metadata, profession: val } });
+                  } else {
+                    await updatePerson(person.id, { [editingDetail]: val });
+                  }
+                  setEditingDetail(null);
+                }}
+              />
+            )}
+
+            {/* Actions */}
+            <View style={styles.editDetailActions}>
+              <Pressable
+                style={styles.editDetailClearBtn}
+                onPress={async () => {
+                  if (editingDetail === 'profession') {
+                    const meta = { ...person.metadata };
+                    delete meta.profession;
+                    await updatePerson(person.id, { metadata: meta });
+                  } else if (editingDetail === 'death_date') {
+                    await updatePerson(person.id, { death_date: null, metadata: { ...person.metadata, is_deceased: false } });
+                  } else {
+                    await updatePerson(person.id, { [editingDetail]: null });
+                  }
+                  setEditingDetail(null);
+                }}
+              >
+                <Ionicons name="trash-outline" size={16} color={Colors.accent.coral} />
+                <Text style={styles.editDetailClearText}>{t('common.delete')}</Text>
+              </Pressable>
+              <Pressable
+                style={styles.editDetailSaveBtn}
+                onPress={async () => {
+                  const val = editDetailValue.trim();
+                  if (!val) { setEditingDetail(null); return; }
+                  if (editingDetail === 'profession') {
+                    await updatePerson(person.id, { metadata: { ...person.metadata, profession: val } });
+                  } else if (editingDetail === 'death_date') {
+                    await updatePerson(person.id, { death_date: val, metadata: { ...person.metadata, is_deceased: true } });
+                  } else {
+                    await updatePerson(person.id, { [editingDetail]: val });
+                  }
+                  setEditingDetail(null);
+                }}
+              >
+                <Ionicons name="checkmark" size={18} color="#FFFFFF" />
+                <Text style={styles.editDetailSaveText}>{t('common.save')}</Text>
+              </Pressable>
+            </View>
           </Animated.View>
-        </Pressable>
+        </KeyboardAvoidingView>
       </Animated.View>
     )}
     <AvatarViewer
@@ -1143,21 +1189,116 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fonts.body,
     color: Colors.text.moonlight,
   },
-  detailInput: {
-    backgroundColor: 'rgba(255,255,255,0.06)',
+  // ── Edit Detail Modal ──
+  editDetailOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+    zIndex: 1000,
+  },
+  editDetailBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  editDetailKeyboardWrap: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  editDetailCard: {
+    backgroundColor: Colors.background.void,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: Spacing.xl,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 28,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    elevation: 16,
+  },
+  editDetailHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.text.shadow,
+    alignSelf: 'center',
+    marginTop: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  editDetailHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: Spacing.md,
+    gap: Spacing.sm,
+  },
+  editDetailIcon: {
+    fontSize: 24,
+  },
+  editDetailTitle: {
+    flex: 1,
+    fontSize: Typography.sizes.h4,
+    fontFamily: Typography.fonts.subheading,
+    color: Colors.text.starlight,
+  },
+  editDetailClose: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.background.depth,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editDetailInput: {
+    backgroundColor: Colors.background.abyss,
     borderRadius: BorderRadius.md,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm + 2,
+    borderWidth: 1.5,
+    borderColor: Colors.background.current,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Platform.OS === 'ios' ? Spacing.lg : Spacing.md,
     color: Colors.text.starlight,
     fontFamily: Typography.fonts.body,
     fontSize: Typography.sizes.body,
+    marginTop: Spacing.sm,
     marginBottom: Spacing.lg,
+  },
+  editDetailActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: Spacing.md,
+    marginTop: Spacing.sm,
+  },
+  editDetailClearBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: BorderRadius.md,
+    backgroundColor: 'rgba(196, 102, 90, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(196, 102, 90, 0.15)',
+  },
+  editDetailClearText: {
+    color: Colors.accent.coral,
+    fontFamily: Typography.fonts.bodySemiBold,
+    fontSize: Typography.sizes.body,
+  },
+  editDetailSaveBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.xs,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    backgroundColor: Colors.accent.cyan,
+  },
+  editDetailSaveText: {
+    color: '#FFFFFF',
+    fontFamily: Typography.fonts.bodySemiBold,
+    fontSize: Typography.sizes.body,
   },
   datePickerContainer: {
     alignItems: 'center',
-    marginBottom: Spacing.lg,
+    marginVertical: Spacing.md,
   },
   detailModalButtons: {
     flexDirection: 'row',
@@ -1167,10 +1308,10 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     paddingHorizontal: Spacing.lg,
     borderRadius: BorderRadius.md,
-    backgroundColor: 'rgba(255,100,100,0.15)',
+    backgroundColor: 'rgba(196, 102, 90, 0.08)',
   },
   detailModalClearText: {
-    color: '#ff8888',
+    color: Colors.accent.coral,
     fontFamily: Typography.fonts.heading,
     fontSize: Typography.sizes.body,
   },
@@ -1376,7 +1517,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.md,
     paddingTop: Spacing.md,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(139, 115, 85, 0.12)',
+    borderTopColor: Colors.background.current,
   },
   typePickerLabel: {
     fontSize: Typography.sizes.caption,
@@ -1390,19 +1531,19 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   typeOption: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: BorderRadius.full,
-    backgroundColor: 'rgba(139, 115, 85, 0.08)',
-    borderWidth: 1,
-    borderColor: 'rgba(139, 115, 85, 0.15)',
+    backgroundColor: Colors.background.trench,
+    borderWidth: 1.5,
+    borderColor: Colors.background.current,
   },
   typeOptionSelected: {
     backgroundColor: Colors.accent.glow,
     borderColor: Colors.accent.glow,
   },
   typeOptionText: {
-    fontSize: 12,
+    fontSize: Typography.sizes.caption,
     fontFamily: Typography.fonts.body,
     color: Colors.text.moonlight,
   },
@@ -1412,29 +1553,38 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
     justifyContent: 'flex-end',
     zIndex: 1000,
   },
   modalBackdrop: {
     ...StyleSheet.absoluteFillObject,
   },
+  modalKeyboardWrap: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
   modalContent: {
     backgroundColor: Colors.background.void,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: '75%',
-    paddingBottom: 40,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    maxHeight: '80%',
+    paddingBottom: Platform.OS === 'ios' ? 40 : 28,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    elevation: 16,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: Spacing.xl,
-    paddingTop: Spacing.lg,
+    paddingTop: Spacing.sm,
     paddingBottom: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(139, 115, 85, 0.12)',
+    borderBottomColor: Colors.background.current,
   },
   modalTitle: {
     fontSize: Typography.sizes.h4,
@@ -1442,10 +1592,10 @@ const styles = StyleSheet.create({
     color: Colors.text.starlight,
   },
   modalClose: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(139, 115, 85, 0.1)',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: Colors.background.depth,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1462,8 +1612,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.md,
     paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(139, 115, 85, 0.08)',
+    borderBottomColor: Colors.background.current,
+    borderRadius: BorderRadius.sm,
   },
   modalOptionDisabled: {
     opacity: 0.4,
@@ -1505,9 +1657,9 @@ const styles = StyleSheet.create({
   },
   modalBackButton: {
     paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.sm,
+    paddingVertical: Spacing.md,
     borderRadius: BorderRadius.full,
-    backgroundColor: 'rgba(139, 115, 85, 0.1)',
+    backgroundColor: Colors.background.depth,
   },
   modalBackButtonText: {
     fontSize: Typography.sizes.caption,
@@ -1516,7 +1668,7 @@ const styles = StyleSheet.create({
   },
   modalSaveButton: {
     flex: 1,
-    paddingVertical: Spacing.sm,
+    paddingVertical: Spacing.md,
     borderRadius: BorderRadius.full,
     backgroundColor: Colors.accent.glow,
     alignItems: 'center',

@@ -53,7 +53,9 @@
           "microphonePermission": "Allow MATRA to access your microphone to record family interviews."
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-localization",
+      "@sentry/react-native"
     ],
     "experiments": {
       "typedRoutes": true
@@ -64,7 +66,10 @@
       },
       "supabaseUrl": "http://10.0.2.2:54321",
       "supabaseAnonKey": "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH",
-      "revenueCatApiKey": "test_bmWiLIcOcpPxCGzNauOeQftXnaJ"
+      "revenueCatApiKey": "test_bmWiLIcOcpPxCGzNauOeQftXnaJ",
+      "posthogApiKey": "phc_AGRWKlaTN8wVMWYH3eAg4xDsEmJhO4ZwLadWIW4Akwn",
+      "posthogHost": "https://us.i.posthog.com",
+      "sentryDsn": "https://5b79a6e81fec8e1aeca5a59c9b4927ed@o4510999365287936.ingest.us.sentry.io/4510999396417536"
     }
   }
 }

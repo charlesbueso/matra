@@ -11,6 +11,7 @@ import { StarField, Card, Button, BioAlgae, CornerBush } from '../../src/compone
 import { Ionicons } from '@expo/vector-icons';
 import { useFamilyStore, type AudioSnippet } from '../../src/stores/familyStore';
 import { useAuthStore } from '../../src/stores/authStore';
+import { trackEvent, AnalyticsEvents } from '../../src/services/analytics';
 import { useTranslation } from 'react-i18next';
 import { useSignedUrl } from '../../src/hooks';
 import { Colors, Typography, Spacing, BorderRadius } from '../../src/theme/tokens';
@@ -37,6 +38,7 @@ export default function StoryDetailScreen() {
 
   // Cleanup on unmount
   useEffect(() => {
+    if (story) trackEvent(AnalyticsEvents.STORY_VIEWED, { storyId: id });
     return () => {
       if (stopTimerRef.current) clearTimeout(stopTimerRef.current);
       soundRef.current?.unloadAsync();

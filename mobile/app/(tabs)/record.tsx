@@ -19,6 +19,7 @@ import { StarField, BioAlgae, Button, VoiceWaveform, TreeTrunk, Card } from '../
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useFamilyStore, Person, BackgroundJob } from '../../src/stores/familyStore';
+import { trackEvent, AnalyticsEvents } from '../../src/services/analytics';
 import { Colors, Typography, Spacing } from '../../src/theme/tokens';
 
 const DEV_TRANSCRIPT = `So my grandmother, Rose Thompson, she was born in 1932 in a small town in the countryside. She married my grandfather, Walter Thompson, in 1955. They had three children — my mother Helen, my uncle James, and my aunt Dorothy.
@@ -133,6 +134,9 @@ export default function RecordScreen() {
       recordingRef.current = recording;
       setIsRecording(true);
       setDuration(0);
+      trackEvent(AnalyticsEvents.RECORDING_STARTED, {
+        person: selectedPerson?.first_name,
+      });
 
       // Start pulse
       pulse.value = withRepeat(
@@ -177,6 +181,7 @@ export default function RecordScreen() {
 
       // Enter review state — let user choose to process or re-record
       setRecordedUri(uri);
+      trackEvent(AnalyticsEvents.RECORDING_STOPPED, { duration });
     } catch (err) {
       console.error('Failed to stop recording:', err);
     }

@@ -589,6 +589,20 @@ serve(async (req: Request) => {
     }
 
     // 8. Create relationships
+    // First, load user-rejected relationships so we don't recreate them
+    const { data: rejectedRows } = await supabase
+      .from('rejected_relationships')
+      .select('person_a_id, person_b_id, relationship_type')
+      .eq('family_group_id', familyGroupId);
+    const rejectedSet = new Set(
+      (rejectedRows || []).map((r: { person_a_id: string; person_b_id: string; relationship_type: string }) =>
+        `${r.person_a_id}|${r.person_b_id}|${r.relationship_type}`
+      )
+    );
+    function isRejected(aId: string, bId: string, type: string): boolean {
+      return rejectedSet.has(`${aId}|${bId}|${type}`);
+    }
+
     for (const rel of extractionResult.relationships) {
       const personAId = resolvePersonName(rel.personA);
       const personBId = resolvePersonName(rel.personB);
@@ -605,6 +619,12 @@ serve(async (req: Request) => {
         const relType = validTypes.includes(rel.relationshipType)
           ? rel.relationshipType
           : 'other';
+
+        // Skip if user previously rejected this relationship
+        if (isRejected(personAId, personBId, relType)) {
+          console.log(`[process-interview] Skipping rejected relationship: ${rel.personA} → ${rel.personB} (${relType})`);
+          continue;
+        }
 
         await supabase.from('relationships').upsert(
           {
@@ -679,6 +699,8 @@ serve(async (req: Request) => {
         const fwd = `${a}|${b}|${type}`;
         const rev = `${b}|${a}|${type}`;
         if (existingRelSet.has(fwd) || existingRelSet.has(rev)) return false;
+        // Don't infer relationships the user explicitly rejected
+        if (isRejected(a, b, type) || isRejected(b, a, type)) return false;
         inferredRels.push({ person_a_id: a, person_b_id: b, relationship_type: type });
         existingRelSet.add(fwd);
         return true;

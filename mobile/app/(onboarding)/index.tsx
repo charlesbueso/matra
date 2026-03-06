@@ -3,7 +3,7 @@
 // ============================================================
 
 import React, { useState, useRef } from 'react';
-import { View, Text, TextInput, StyleSheet, FlatList, Dimensions, Pressable, Alert } from 'react-native';
+import { View, Text, TextInput, StyleSheet, FlatList, Dimensions, Pressable, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import Animated, { 
   useSharedValue, useAnimatedStyle, withSpring, interpolate,
@@ -129,45 +129,54 @@ export default function OnboardingScreen() {
       <StarField particleCount={30}>
         <BioAlgae strandCount={30} height={0.15} />
         <CornerBush />
-        <View style={styles.identityContainer}>
-          <Text style={styles.identityIcon}>🌳</Text>
-          <Text style={styles.identityTitle}>{t('onboarding.whoAreYou')}</Text>
-          <Text style={styles.identitySubtitle}>
-            {t('onboarding.firstNode')}
-          </Text>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <ScrollView
+            contentContainerStyle={styles.identityContainer}
+            keyboardShouldPersistTaps="handled"
+            bounces={false}
+          >
+            <Text style={styles.identityIcon}>🌳</Text>
+            <Text style={styles.identityTitle}>{t('onboarding.whoAreYou')}</Text>
+            <Text style={styles.identitySubtitle}>
+              {t('onboarding.firstNode')}
+            </Text>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>{t('onboarding.firstName')}</Text>
-            <TextInput
-              style={styles.input}
-              value={firstName}
-              onChangeText={setFirstName}
-              placeholder={t('onboarding.firstNamePlaceholder')}
-              placeholderTextColor={Colors.text.shadow}
-              autoFocus
-            />
-          </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>{t('onboarding.firstName')}</Text>
+              <TextInput
+                style={styles.input}
+                value={firstName}
+                onChangeText={setFirstName}
+                placeholder={t('onboarding.firstNamePlaceholder')}
+                placeholderTextColor={Colors.text.shadow}
+                autoFocus
+              />
+            </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>{t('onboarding.lastName')}</Text>
-            <TextInput
-              style={styles.input}
-              value={lastName}
-              onChangeText={setLastName}
-              placeholder={t('onboarding.lastNamePlaceholder')}
-              placeholderTextColor={Colors.text.shadow}
-            />
-          </View>
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>{t('onboarding.lastName')}</Text>
+              <TextInput
+                style={styles.input}
+                value={lastName}
+                onChangeText={setLastName}
+                placeholder={t('onboarding.lastNamePlaceholder')}
+                placeholderTextColor={Colors.text.shadow}
+              />
+            </View>
 
-          <View style={{ marginTop: Spacing.xl }}>
-            <Button
-              title={isSubmitting ? t('onboarding.creating') : t('onboarding.plantRoots')}
-              onPress={handleCompleteOnboarding}
-              size="lg"
-              disabled={isSubmitting}
-            />
-          </View>
-        </View>
+            <View style={{ marginTop: Spacing.xl }}>
+              <Button
+                title={isSubmitting ? t('onboarding.creating') : t('onboarding.plantYourRoots')}
+                onPress={handleCompleteOnboarding}
+                size="lg"
+                disabled={isSubmitting}
+              />
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </StarField>
     );
   }
@@ -214,7 +223,7 @@ export default function OnboardingScreen() {
           </View>
 
           <Button
-            title={currentIndex === ONBOARDING_STEPS.length - 1 ? t('onboarding.plantRoots') : t('common.next')}
+            title={currentIndex === ONBOARDING_STEPS.length - 1 ? t('onboarding.plantYourRoots') : t('common.next')}
             onPress={handleNext}
             size="lg"
           />
@@ -283,7 +292,7 @@ const styles = StyleSheet.create({
     width: 24,
   },
   identityContainer: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: Spacing.xxl,
   },

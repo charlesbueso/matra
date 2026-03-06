@@ -21,17 +21,19 @@ import {
 } from '@expo-google-fonts/inter';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Purchases from 'react-native-purchases';
+import * as Sentry from '@sentry/react-native';
 import { ThemeProvider } from '../src/theme';
 import { useAuthStore } from '../src/stores/authStore';
 import { useSubscriptionStore } from '../src/stores/subscriptionStore';
 import { useNotificationStore } from '../src/stores/notificationStore';
 import { configurePurchases, isPremiumActive } from '../src/services/purchases';
+import { initAnalytics, identifyUser, resetUser, trackScreen, flushAnalytics } from '../src/services/analytics';
 import { Colors } from '../src/theme/tokens';
 import '../src/i18n'; // Initialize i18n
 
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+function RootLayout() {
   const initialize = useAuthStore((s) => s.initialize);
   const isInitialized = useAuthStore((s) => s.isInitialized);
   const session = useAuthStore((s) => s.session);
@@ -53,10 +55,32 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
+    initAnalytics();
     initialize();
     useNotificationStore.getState().requestPermissions();
     configurePurchases();
   }, []);
+
+  // Identify / reset user in analytics when auth changes
+  useEffect(() => {
+    if (session?.user?.id && profile) {
+      identifyUser(session.user.id, {
+        email: session.user.email,
+        subscription_tier: profile.subscription_tier,
+        interview_count: profile.interview_count,
+        onboarding_completed: profile.onboarding_completed,
+      });
+    } else if (!session) {
+      resetUser();
+    }
+  }, [session?.user?.id, profile?.subscription_tier]);
+
+  // Track screen views when navigation segments change
+  useEffect(() => {
+    if (segments.length > 0) {
+      trackScreen(segments.join('/'));
+    }
+  }, [segments.join('/')]);
 
   // Sync RevenueCat user when auth session changes
   useEffect(() => {
@@ -132,6 +156,15 @@ export default function RootLayout() {
       // Password recovery: matra://reset-password (Supabase redirects here after email link)
       if (parsed.hostname === 'reset-password' || parsed.path?.startsWith('reset-password')) {
         router.push('/(auth)/reset-password');
+        return;
+      }
+
+      // Email change confirmation: matra://email-changed
+      if (parsed.hostname === 'email-changed' || parsed.path?.startsWith('email-changed')) {
+        Alert.alert(
+          t('settings.changeEmailSent'),
+          t('settings.emailChangedSuccess'),
+        );
       }
     };
 
@@ -241,6 +274,8 @@ export default function RootLayout() {
     </GestureHandlerRootView>
   );
 }
+
+export default Sentry.wrap(RootLayout);
 
 const reactivationStyles = StyleSheet.create({
   overlay: {

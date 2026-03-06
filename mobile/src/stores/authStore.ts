@@ -6,6 +6,7 @@ import { create } from 'zustand';
 import { supabase, invokeFunction } from '../services/supabase';
 import { clearSignedUrlCache } from '../services/signedUrl';
 import { changeLanguage, getCurrentLanguage, type LanguageCode } from '../i18n';
+import { trackEvent, captureError, AnalyticsEvents } from '../services/analytics';
 import type { Session, User } from '@supabase/supabase-js';
 
 interface Profile {
@@ -40,6 +41,7 @@ interface AuthState {
   reactivateAccount: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   updatePassword: (newPassword: string) => Promise<void>;
+  updateEmail: (newEmail: string) => Promise<void>;
   setLanguage: (lang: LanguageCode) => Promise<void>;
 }
 
@@ -96,6 +98,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         },
       });
       if (error) throw error;
+      trackEvent(AnalyticsEvents.SIGN_UP);
     } finally {
       set({ isLoading: false });
     }
@@ -106,12 +109,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      trackEvent(AnalyticsEvents.SIGN_IN);
     } finally {
       set({ isLoading: false });
     }
   },
 
   signOut: async () => {
+    trackEvent(AnalyticsEvents.SIGN_OUT);
     await supabase.auth.signOut();
     clearSignedUrlCache();
     set({ session: null, user: null, profile: null });
@@ -155,12 +160,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   deleteAccount: async () => {
+    trackEvent(AnalyticsEvents.ACCOUNT_DELETED);
     await invokeFunction('delete-account');
     await supabase.auth.signOut();
     set({ session: null, user: null, profile: null });
   },
 
   deactivateAccount: async () => {
+    trackEvent(AnalyticsEvents.ACCOUNT_DEACTIVATED);
     await invokeFunction('deactivate-account', { action: 'deactivate' });
     await supabase.auth.signOut();
     set({ session: null, user: null, profile: null });
@@ -169,6 +176,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   reactivateAccount: async () => {
     await invokeFunction('deactivate-account', { action: 'reactivate' });
     await get().fetchProfile();
+    trackEvent(AnalyticsEvents.ACCOUNT_REACTIVATED);
   },
 
   resetPassword: async (email: string) => {
@@ -176,12 +184,21 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       redirectTo: 'matra://reset-password',
     });
     if (error) throw error;
+    trackEvent(AnalyticsEvents.PASSWORD_RESET_REQUESTED);
   },
 
   updatePassword: async (newPassword: string) => {
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) throw error;
     set({ pendingPasswordRecovery: false });
+  },
+
+  updateEmail: async (newEmail: string) => {
+    const { error } = await supabase.auth.updateUser(
+      { email: newEmail },
+      { emailRedirectTo: 'matra://email-changed' },
+    );
+    if (error) throw error;
   },
 
   setLanguage: async (lang: LanguageCode) => {
@@ -196,6 +213,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       .eq('id', user.id);
     if (!error) {
       set({ profile: { ...profile, preferences: newPrefs } });
+      trackEvent(AnalyticsEvents.LANGUAGE_CHANGED, { language: lang });
     }
   },
 }));

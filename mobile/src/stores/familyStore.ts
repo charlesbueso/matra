@@ -8,6 +8,7 @@ import { supabase, invokeFunction } from '../services/supabase';
 import { invalidateSignedUrl } from '../services/signedUrl';
 import { useAuthStore } from './authStore';
 import { useNotificationStore } from './notificationStore';
+import { trackEvent, captureError, AnalyticsEvents } from '../services/analytics';
 
 export interface Person {
   id: string;
@@ -642,12 +643,26 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
 
     if (error) throw error;
 
-    set((state) => ({ relationships: [...state.relationships, data] }));
+    // Clear any prior rejection for this pair so it won't be blocked
+    await supabase.from('rejected_relationships')
+      .delete()
+      .eq('family_group_id', groupId)
+      .eq('person_a_id', personAId)
+      .eq('person_b_id', personBId)
+      .eq('relationship_type', relationshipType);
+
+    set((state) => ({
+      relationships: state.relationships
+        .filter((r) => r.id !== data.id)
+        .concat(data),
+    }));
   },
 
   deleteRelationship: async (id) => {
     // Find the relationship being deleted so we can remove its inverse too
     const rel = get().relationships.find((r) => r.id === id);
+    const groupId = get().activeFamilyGroupId;
+    const userId = useAuthStore.getState().profile?.id;
 
     const { error } = await supabase
       .from('relationships')
@@ -658,7 +673,19 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
 
     const removedIds = new Set<string>([id]);
 
-    // Also delete the inverse/symmetric counterpart
+    // Record this as a user-rejected relationship so AI inference won't recreate it
+    if (rel && groupId && userId) {
+      await supabase.from('rejected_relationships').upsert({
+        family_group_id: groupId,
+        person_a_id: rel.person_a_id,
+        person_b_id: rel.person_b_id,
+        relationship_type: rel.relationship_type,
+        rejected_by: userId,
+      }, { onConflict: 'family_group_id,person_a_id,person_b_id,relationship_type' });
+    }
+
+    // Also delete the inverse/symmetric counterpart — query the DATABASE
+    // directly instead of the local store, which may be out of sync.
     if (rel) {
       const inverseType: Record<string, string> = {
         parent: 'child', child: 'parent',
@@ -675,14 +702,32 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
         (symmetricTypes.includes(rel.relationship_type) ? rel.relationship_type : null);
 
       if (counterType) {
-        const counterRel = get().relationships.find(
-          (r) => r.person_a_id === rel.person_b_id &&
-            r.person_b_id === rel.person_a_id &&
-            r.relationship_type === counterType
-        );
-        if (counterRel) {
-          await supabase.from('relationships').delete().eq('id', counterRel.id);
-          removedIds.add(counterRel.id);
+        // Query DB for the inverse relationship
+        const { data: counterRows } = await supabase
+          .from('relationships')
+          .select('id')
+          .eq('person_a_id', rel.person_b_id)
+          .eq('person_b_id', rel.person_a_id)
+          .eq('relationship_type', counterType);
+
+        if (counterRows && counterRows.length > 0) {
+          const counterIds = counterRows.map((r) => r.id);
+          await supabase
+            .from('relationships')
+            .delete()
+            .in('id', counterIds);
+          counterIds.forEach((cid) => removedIds.add(cid));
+        }
+
+        // Also reject the inverse direction
+        if (groupId && userId) {
+          await supabase.from('rejected_relationships').upsert({
+            family_group_id: groupId,
+            person_a_id: rel.person_b_id,
+            person_b_id: rel.person_a_id,
+            relationship_type: counterType,
+            rejected_by: userId,
+          }, { onConflict: 'family_group_id,person_a_id,person_b_id,relationship_type' });
         }
       }
     }
@@ -715,6 +760,8 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
 
     const result = await invokeFunction('process-interview', undefined, { formData });
 
+    trackEvent(AnalyticsEvents.INTERVIEW_PROCESSING_COMPLETED);
+
     // Refresh all data after processing
     await get().fetchAllFamilyData();
 
@@ -731,6 +778,7 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
       processingInterviewId: null,
       processingError: null,
     }));
+    trackEvent(AnalyticsEvents.INTERVIEW_PROCESSING_STARTED, { title: jobTitle });
     get()
       .processInterview(audioUri, familyGroupId, title, devTranscript, subjectPersonId)
       .then((result) => {
@@ -747,6 +795,8 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
         );
       })
       .catch((err) => {
+        trackEvent(AnalyticsEvents.INTERVIEW_PROCESSING_FAILED, { error: err?.message });
+        captureError(err instanceof Error ? err : new Error(err?.message || 'Interview processing failed'));
         set((state) => ({
           backgroundJobs: state.backgroundJobs.map((j) =>
             j.id === jobId ? { ...j, status: 'failed' as const, error: err?.message || 'Processing failed' } : j
@@ -778,10 +828,15 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
     const selfPersonId = useAuthStore.getState().profile?.self_person_id;
 
     // 1. Hard-delete ALL relationships sourced from this interview
-    await supabase
+    const { error: relDeleteError } = await supabase
       .from('relationships')
       .delete()
       .eq('source_interview_id', id);
+
+    if (relDeleteError) {
+      captureError(new Error(`Failed to delete relationships for interview ${id}: ${relDeleteError.message}`));
+      throw new Error('Failed to delete interview relationships');
+    }
 
     // 2. Soft-delete stories from this interview
     await supabase
@@ -855,6 +910,8 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
       .eq('id', id);
 
     if (error) throw error;
+
+    trackEvent(AnalyticsEvents.INTERVIEW_DELETED);
 
     // Refresh all data to get consistent state
     await get().fetchAllFamilyData();
@@ -956,6 +1013,7 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
   generateBiography: async (personId) => {
     const language = useAuthStore.getState().profile?.preferences?.language;
     const result = await invokeFunction<{ biography: string }>('generate-biography', { personId, language });
+    trackEvent(AnalyticsEvents.BIOGRAPHY_GENERATED);
     
     // Update local state with biography and generation timestamp
     const now = new Date().toISOString();

@@ -10,6 +10,7 @@ import { StarField, Button, BioAlgae, CornerBush } from '../src/components/ui';
 import { useTranslation } from 'react-i18next';
 import { Colors, Typography, Spacing, BorderRadius } from '../src/theme/tokens';
 import { useSubscriptionStore } from '../src/stores/subscriptionStore';
+import { trackEvent, AnalyticsEvents } from '../src/services/analytics';
 import {
   getOfferings,
   purchasePackage,
@@ -37,6 +38,7 @@ export default function PaywallScreen() {
 
   // Load offerings from RevenueCat (prices from App Store / Play Store)
   useEffect(() => {
+    trackEvent(AnalyticsEvents.PAYWALL_VIEWED);
     let mounted = true;
     (async () => {
       try {
