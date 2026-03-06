@@ -16,7 +16,14 @@ serve(async (req: Request) => {
   try {
     const userId = await getAuthUserId(req);
     const entitlements = await getUserEntitlements(userId);
-    return jsonResponse(entitlements);
+    return jsonResponse({
+      tier: entitlements.tier,
+      limits: entitlements.limits,
+      usage: {
+        interview_count: entitlements.interviewCount,
+      },
+      familySharingActive: entitlements.familySharingActive,
+    });
   } catch (err) {
     return errorResponse(
       err.message || 'Internal server error',

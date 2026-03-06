@@ -32,8 +32,7 @@ i18n.use(initReactI18next).init({
   interpolation: {
     escapeValue: false,
   },
-  // Pluralization: i18next uses _plural suffix
-  compatibilityJSON: 'v3',
+  // Pluralization: i18next v4 uses _one/_other suffixes
 });
 
 export default i18n;

@@ -64,9 +64,9 @@ export default function HomeScreen() {
 
         {/* Quick Stats */}
         <View style={styles.statsRow}>
-          <StatCard label={t('home.people')} value={people.length} icon="🌳" onPress={() => router.push('/(tabs)/tree')} />
-          <StatCard label={t('home.sessions')} value={interviews.length} icon="🎙" onPress={() => router.push({ pathname: '/(tabs)/settings', params: { scrollTo: 'conversations' } })} />
-          <StatCard label={t('home.stories')} value={stories.length} icon="📖" onPress={() => router.push('/(tabs)/stories')} />
+          <StatCard label={t('home.people', { count: people.length })} value={people.length} icon="🌳" onPress={() => router.push('/(tabs)/tree')} />
+          <StatCard label={t('home.sessions', { count: interviews.length })} value={interviews.length} icon="🎙" onPress={() => router.push({ pathname: '/(tabs)/settings', params: { scrollTo: 'conversations' } })} />
+          <StatCard label={t('home.stories', { count: stories.length })} value={stories.length} icon="📖" onPress={() => router.push('/(tabs)/stories')} />
         </View>
 
         {/* Processing / Completed Job Banners */}

@@ -27,6 +27,7 @@ interface AuthState {
   profile: Profile | null;
   isLoading: boolean;
   isInitialized: boolean;
+  pendingPasswordRecovery: boolean;
 
   initialize: () => Promise<void>;
   signUp: (email: string, password: string, displayName: string) => Promise<void>;
@@ -38,6 +39,7 @@ interface AuthState {
   deactivateAccount: () => Promise<void>;
   reactivateAccount: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  updatePassword: (newPassword: string) => Promise<void>;
   setLanguage: (lang: LanguageCode) => Promise<void>;
 }
 
@@ -47,6 +49,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   profile: null,
   isLoading: false,
   isInitialized: false,
+  pendingPasswordRecovery: false,
 
   initialize: async () => {
     try {
@@ -66,6 +69,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Listen for auth changes
       supabase.auth.onAuthStateChange(async (event, session) => {
         set({ session, user: session?.user ?? null });
+
+        if (event === 'PASSWORD_RECOVERY') {
+          set({ pendingPasswordRecovery: true });
+        }
         
         if (session) {
           await get().fetchProfile();
@@ -165,8 +172,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   resetPassword: async (email: string) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: 'matra://reset-password',
+    });
     if (error) throw error;
+  },
+
+  updatePassword: async (newPassword: string) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw error;
+    set({ pendingPasswordRecovery: false });
   },
 
   setLanguage: async (lang: LanguageCode) => {

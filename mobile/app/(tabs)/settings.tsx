@@ -7,10 +7,13 @@ import { View, Text, StyleSheet, ScrollView, Pressable, Alert, ActivityIndicator
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
+import { File as FSFile, Directory, Paths } from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { useTranslation } from 'react-i18next';
 import { StarField, Card, Button, BioAlgae, CornerBush, AvatarViewer } from '../../src/components/ui';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useFamilyStore, Interview } from '../../src/stores/familyStore';
+import { invokeFunction } from '../../src/services/supabase';
 import { useSignedUrl } from '../../src/hooks';
 import { Colors, Typography, Spacing, BorderRadius } from '../../src/theme/tokens';
 import { SUPPORTED_LANGUAGES, getCurrentLanguage, type LanguageCode } from '../../src/i18n';
@@ -93,6 +96,7 @@ export default function SettingsScreen() {
   const [isDeletingAll, setIsDeletingAll] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [isDeactivating, setIsDeactivating] = useState(false);
+  const [isExportingData, setIsExportingData] = useState(false);
   const avatarUrl = useSignedUrl(profile?.avatar_url);
 
   const handleDeleteInterview = (interview: Interview) => {
@@ -171,6 +175,66 @@ export default function SettingsScreen() {
   const interviewsToday = isPremium
     ? interviews.filter((i) => new Date(i.created_at) >= dayStart).length
     : 0;
+
+  const handleExportData = async () => {
+    setIsExportingData(true);
+    try {
+      const result = await invokeFunction<{
+        csvFiles: Record<string, string>;
+        fileDownloads: Record<string, string>;
+        summary: Record<string, number>;
+        exportedAt: string;
+      }>('export-my-data', {});
+
+      const { csvFiles, fileDownloads } = result;
+
+      if (Object.keys(csvFiles).length === 0) {
+        Alert.alert(t('common.error'), t('settings.noDataToExport'));
+        return;
+      }
+
+      // Build a single combined text file with all CSV sections
+      const sections: string[] = [];
+      for (const [filename, content] of Object.entries(csvFiles)) {
+        sections.push(`=== ${filename} ===\n${content}`);
+      }
+
+      // Append media download links at the end
+      if (Object.keys(fileDownloads).length > 0) {
+        const manifest = Object.entries(fileDownloads)
+          .map(([key, url]) => `${key}\n${url}`)
+          .join('\n\n');
+        sections.push(`=== media_download_links ===\n${manifest}`);
+      }
+
+      const combinedContent = sections.join('\n\n\n');
+
+      // Write to cache and share
+      const exportDir = new Directory(Paths.cache, 'matra-export');
+      if (exportDir.exists) {
+        exportDir.delete();
+      }
+      exportDir.create({ intermediates: true });
+
+      const timestamp = new Date().toISOString().slice(0, 10);
+      const exportFile = new FSFile(exportDir, `matra-export-${timestamp}.csv`);
+      exportFile.create();
+      exportFile.write(combinedContent);
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(exportFile.uri, {
+          mimeType: 'text/csv',
+          dialogTitle: t('settings.downloadMyData'),
+        });
+      }
+
+      Alert.alert(t('settings.downloadReady'), t('settings.downloadReadyMessage'));
+    } catch (err: any) {
+      Alert.alert(t('settings.downloadFailed'), t('settings.downloadFailedMessage'));
+    } finally {
+      setIsExportingData(false);
+    }
+  };
 
   const handlePickAvatar = async () => {
     if (!profile?.self_person_id) {
@@ -314,7 +378,7 @@ export default function SettingsScreen() {
           <Text style={styles.sectionTitle}>{t('settings.family')}</Text>
           <Card variant="default">
             <SettingItem label={t('settings.manageFamilyGroups')} onPress={() => router.push('/family-group')} />
-            <SettingItem label={t('settings.inviteFamilyMembers')} onPress={() => profile?.subscription_tier === 'free' ? router.push('/paywall') : Alert.alert(t('common.comingSoon'), t('settings.inviteComingSoon'))} locked={profile?.subscription_tier === 'free'} />
+            <SettingItem label={t('settings.inviteFamilyMembers')} onPress={() => profile?.subscription_tier === 'free' ? router.push('/paywall') : router.push('/invite-family')} locked={profile?.subscription_tier === 'free'} />
             <SettingItem label={t('settings.exportMemoryBook')} onPress={() => profile?.subscription_tier === 'free' ? router.push('/paywall') : Alert.alert(t('common.comingSoon'), t('settings.exportComingSoon'))} locked={profile?.subscription_tier === 'free'} />
           </Card>
         </View>
@@ -397,6 +461,22 @@ export default function SettingsScreen() {
             <SettingItem label={t('settings.privacyPolicy')} onPress={() => router.push('/privacy-policy')} />
             <SettingItem label={t('settings.termsOfService')} onPress={() => router.push('/terms-of-service')} />
             <SettingItem label={t('settings.aboutMatra')} onPress={() => router.push('/about')} />
+          </Card>
+        </View>
+
+        {/* Your Data */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('settings.data')}</Text>
+          <Card variant="default">
+            <Text style={styles.dataExportDesc}>{t('settings.downloadMyDataDesc')}</Text>
+            <Button
+              title={isExportingData ? t('settings.downloading') : t('settings.downloadMyData')}
+              onPress={handleExportData}
+              variant="ghost"
+              size="sm"
+              loading={isExportingData}
+              style={{ marginTop: Spacing.sm }}
+            />
           </Card>
         </View>
 
@@ -660,6 +740,12 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fonts.body,
     color: Colors.text.twilight,
     paddingVertical: Spacing.sm,
+  },
+  dataExportDesc: {
+    fontSize: Typography.sizes.caption,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.twilight,
+    lineHeight: 18,
   },
   conversationRow: {
     flexDirection: 'row',

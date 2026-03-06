@@ -2,12 +2,13 @@
 // MATRA — Root Layout
 // ============================================================
 
-import React, { useEffect } from 'react';
-import { Alert } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Alert, ActivityIndicator, View, Text, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Stack, useRouter, useSegments, useRootNavigationState } from 'expo-router';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Linking from 'expo-linking';
 import { useTranslation } from 'react-i18next';
 import {
   SpaceGrotesk_700Bold,
@@ -32,6 +33,7 @@ export default function RootLayout() {
   const isInitialized = useAuthStore((s) => s.isInitialized);
   const session = useAuthStore((s) => s.session);
   const profile = useAuthStore((s) => s.profile);
+  const pendingPasswordRecovery = useAuthStore((s) => s.pendingPasswordRecovery);
   const reactivateAccount = useAuthStore((s) => s.reactivateAccount);
   const signOut = useAuthStore((s) => s.signOut);
   const router = useRouter();
@@ -69,37 +71,95 @@ export default function RootLayout() {
     if (!session && !inAuthGroup && !inPublicPage) {
       // Signed out but not on auth screen → redirect to welcome
       router.replace('/(auth)/welcome');
-    } else if (session && inAuthGroup) {
+    } else if (session && inAuthGroup && !pendingPasswordRecovery) {
       // Signed in but still on auth screen → redirect to app
       router.replace('/(tabs)/home');
     }
-  }, [session, isInitialized, segments, navigationState?.key]);
+  }, [session, isInitialized, segments, navigationState?.key, pendingPasswordRecovery]);
+
+  // Navigate to reset-password screen when a recovery event is detected
+  useEffect(() => {
+    if (!isInitialized || !navigationState?.key) return;
+    if (pendingPasswordRecovery && session) {
+      router.push('/(auth)/reset-password');
+    }
+  }, [pendingPasswordRecovery, session, isInitialized, navigationState?.key]);
+
+  // Handle deep links (invitations + password recovery)
+  useEffect(() => {
+    if (!isInitialized || !navigationState?.key) return;
+
+    const handleUrl = (event: { url: string }) => {
+      const parsed = Linking.parse(event.url);
+
+      // Family invitations: matra://invite/{code}
+      if (parsed.hostname === 'invite' || parsed.path?.startsWith('invite/')) {
+        const code = parsed.path?.replace('invite/', '') || parsed.queryParams?.code;
+        if (code) {
+          router.push(`/accept-invite?code=${encodeURIComponent(String(code))}`);
+        }
+        return;
+      }
+
+      // Password recovery: matra://reset-password (Supabase redirects here after email link)
+      if (parsed.hostname === 'reset-password' || parsed.path?.startsWith('reset-password')) {
+        router.push('/(auth)/reset-password');
+      }
+    };
+
+    // Handle URL if app was opened via deep link
+    Linking.getInitialURL().then((url) => {
+      if (url) handleUrl({ url });
+    });
+
+    // Listen for deep links while app is open
+    const subscription = Linking.addEventListener('url', handleUrl);
+    return () => subscription.remove();
+  }, [isInitialized, navigationState?.key]);
+
+  const [isReactivating, setIsReactivating] = useState(false);
 
   // Prompt reactivation when a deactivated user signs in
   useEffect(() => {
-    if (!session || !profile?.deactivated_at) return;
-    Alert.alert(
-      t('layout.accountDeactivatedTitle'),
-      t('layout.accountDeactivatedMessage'),
-      [
-        {
-          text: t('common.signOut'),
-          style: 'cancel',
-          onPress: () => signOut(),
-        },
-        {
-          text: t('layout.reactivate'),
-          onPress: async () => {
-            try {
-              await reactivateAccount();
-            } catch (err: any) {
-              Alert.alert(t('common.error'), err.message);
-            }
+    if (!session || !profile?.deactivated_at || isReactivating) return;
+
+    const showReactivationPrompt = () => {
+      Alert.alert(
+        t('layout.accountDeactivatedTitle'),
+        t('layout.accountDeactivatedMessage'),
+        [
+          {
+            text: t('common.signOut'),
+            style: 'cancel',
+            onPress: () => signOut(),
           },
-        },
-      ],
-      { cancelable: false }
-    );
+          {
+            text: t('layout.reactivate'),
+            onPress: async () => {
+              setIsReactivating(true);
+              try {
+                await reactivateAccount();
+              } catch (err: any) {
+                Alert.alert(
+                  t('common.error'),
+                  t('layout.reactivationFailed'),
+                  [
+                    { text: t('common.signOut'), style: 'cancel', onPress: () => signOut() },
+                    { text: t('layout.tryAgain'), onPress: () => showReactivationPrompt() },
+                  ],
+                  { cancelable: false },
+                );
+              } finally {
+                setIsReactivating(false);
+              }
+            },
+          },
+        ],
+        { cancelable: false },
+      );
+    };
+
+    showReactivationPrompt();
   }, [session, profile?.deactivated_at]);
 
   if (!fontsLoaded || !isInitialized) {
@@ -135,8 +195,43 @@ export default function RootLayout() {
           <Stack.Screen name="terms-of-service" options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="about" options={{ animation: 'slide_from_right' }} />
           <Stack.Screen name="family-group" options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen name="invite-family" options={{ animation: 'slide_from_right' }} />
+          <Stack.Screen
+            name="accept-invite"
+            options={{ animation: 'slide_from_bottom', presentation: 'fullScreenModal' }}
+          />
         </Stack>
+        {isReactivating && (
+          <View style={reactivationStyles.overlay}>
+            <View style={reactivationStyles.card}>
+              <ActivityIndicator size="large" color={Colors.primary.green} />
+              <Text style={reactivationStyles.text}>{t('layout.reactivating')}</Text>
+            </View>
+          </View>
+        )}
       </ThemeProvider>
     </GestureHandlerRootView>
   );
 }
+
+const reactivationStyles = StyleSheet.create({
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
+  },
+  card: {
+    backgroundColor: Colors.background.cream,
+    borderRadius: 16,
+    padding: 32,
+    alignItems: 'center',
+    gap: 16,
+  },
+  text: {
+    fontFamily: 'Inter-Medium',
+    fontSize: 16,
+    color: Colors.text.primary,
+  },
+});

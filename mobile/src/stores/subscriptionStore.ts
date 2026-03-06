@@ -36,6 +36,8 @@ interface SubscriptionState {
   interviewCount: number;
   storageUsedMb: number;
   isLoading: boolean;
+  /** True if user belongs to a premium user's family group. */
+  familySharingActive: boolean;
 
   fetchEntitlements: () => Promise<void>;
   canPerform: (feature: keyof FeatureLimits) => boolean;
@@ -48,6 +50,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   interviewCount: 0,
   storageUsedMb: 0,
   isLoading: false,
+  familySharingActive: false,
 
   fetchEntitlements: async () => {
     set({ isLoading: true });
@@ -56,6 +59,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
         tier: SubscriptionTier;
         limits: FeatureLimits;
         usage: { interview_count: number; storage_used_mb: number };
+        familySharingActive?: boolean;
       }>('get-entitlements');
 
       set({
@@ -63,6 +67,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
         limits: data.limits,
         interviewCount: data.usage.interview_count,
         storageUsedMb: data.usage.storage_used_mb,
+        familySharingActive: data.familySharingActive ?? false,
       });
     } catch {
       // Fallback to free tier on error

@@ -12,6 +12,8 @@ export interface UserEntitlements {
   tier: SubscriptionTier;
   limits: FeatureLimits;
   interviewCount: number;
+  /** True if user belongs to a family group owned by a premium user. */
+  familySharingActive: boolean;
 }
 
 /**
@@ -62,10 +64,47 @@ export async function getUserEntitlements(userId: string): Promise<UserEntitleme
       .eq('id', userId);
   }
 
+  // Check if user is part of a family group owned by a premium user
+  let familySharingActive = false;
+  if (tier === 'free') {
+    const { data: memberships } = await supabase
+      .from('family_group_members')
+      .select('family_group_id')
+      .eq('user_id', userId)
+      .not('accepted_at', 'is', null);
+
+    if (memberships && memberships.length > 0) {
+      const groupIds = memberships.map((m: any) => m.family_group_id);
+      // Check if any group has an owner who is premium
+      for (const gid of groupIds) {
+        const { data: owner } = await supabase
+          .from('family_group_members')
+          .select('user_id')
+          .eq('family_group_id', gid)
+          .eq('role', 'owner')
+          .single();
+
+        if (owner && owner.user_id !== userId) {
+          const { data: ownerProfile } = await supabase
+            .from('profiles')
+            .select('subscription_tier')
+            .eq('id', owner.user_id)
+            .single();
+
+          if (ownerProfile?.subscription_tier === 'premium') {
+            familySharingActive = true;
+            break;
+          }
+        }
+      }
+    }
+  }
+
   return {
     tier,
     limits: TIER_LIMITS[tier],
     interviewCount: profile.interview_count,
+    familySharingActive,
   };
 }
 
