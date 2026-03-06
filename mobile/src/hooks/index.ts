@@ -115,7 +115,7 @@ export function usePaywall() {
   const canPerform = useSubscriptionStore((s) => s.canPerform);
   const isAtInterviewLimit = useSubscriptionStore((s) => s.isAtInterviewLimit);
 
-  const isPremium = tier === 'premium' || tier === 'lifetime';
+  const isPremium = tier === 'premium';
 
   return {
     tier,

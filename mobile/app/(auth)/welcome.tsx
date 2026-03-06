@@ -6,9 +6,11 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StarField, BioAlgae, Button } from '../../src/components/ui';
+import { useTranslation } from 'react-i18next';
 import { Colors, Typography, Spacing } from '../../src/theme/tokens';
 
 export default function WelcomeScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
 
   return (
@@ -21,38 +23,38 @@ export default function WelcomeScreen() {
             <Text style={styles.logoGlyph}>🌳</Text>
           </View>
 
-          <Text style={styles.title}>MATRA</Text>
+          <Text style={styles.title}>{t('welcome.title')}</Text>
           <Text style={styles.subtitle}>
-            A living tree of your ancestry
+            {t('welcome.subtitle')}
           </Text>
         </View>
 
         <View style={styles.features}>
           <FeatureItem
             icon="🎙"
-            title="Record Family Conversations"
-            description="Record conversations and let AI capture every detail"
+            title={t('welcome.feature1Title')}
+            description={t('welcome.feature1Desc')}
           />
           <FeatureItem
             icon="🌳"
-            title="Grow Your Family Tree"
-            description="Watch your lineage come alive as a growing canopy"
+            title={t('welcome.feature2Title')}
+            description={t('welcome.feature2Desc')}
           />
           <FeatureItem
             icon="📖"
-            title="Stories That Last Forever"
-            description="AI-crafted biographies and memory books"
+            title={t('welcome.feature3Title')}
+            description={t('welcome.feature3Desc')}
           />
         </View>
 
         <View style={styles.actions}>
           <Button
-            title="Get Started"
+            title={t('welcome.getStarted')}
             onPress={() => router.push('/(auth)/sign-up')}
             size="lg"
           />
           <Button
-            title="I already have an account"
+            title={t('welcome.haveAccount')}
             onPress={() => router.push('/(auth)/sign-in')}
             variant="ghost"
             size="md"

@@ -7,11 +7,76 @@ import { View, Text, StyleSheet, ScrollView, Pressable, Alert, ActivityIndicator
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
+import { useTranslation } from 'react-i18next';
 import { StarField, Card, Button, BioAlgae, CornerBush, AvatarViewer } from '../../src/components/ui';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useFamilyStore, Interview } from '../../src/stores/familyStore';
 import { useSignedUrl } from '../../src/hooks';
 import { Colors, Typography, Spacing, BorderRadius } from '../../src/theme/tokens';
+import { SUPPORTED_LANGUAGES, getCurrentLanguage, type LanguageCode } from '../../src/i18n';
+
+// ── Usage Row with Progress Bar ──
+function UsageRow({ label, used, max, suffix, formatLabel }: {
+  label: string;
+  used: number;
+  max: number;
+  suffix?: string;
+  formatLabel?: (used: number, max: number) => string;
+}) {
+  const ratio = Math.min(used / max, 1);
+  const isNearLimit = ratio >= 0.8;
+  const displayLabel = formatLabel
+    ? formatLabel(used, max)
+    : `${used} / ${max}${suffix ? ` ${suffix}` : ''}`;
+
+  return (
+    <View style={usageStyles.container}>
+      <View style={usageStyles.row}>
+        <Text style={usageStyles.label}>{label}</Text>
+        <Text style={[usageStyles.value, isNearLimit && usageStyles.valueWarn]}>
+          {displayLabel}
+        </Text>
+      </View>
+      <View style={usageStyles.barTrack}>
+        <View
+          style={[
+            usageStyles.barFill,
+            { width: `${Math.max(ratio * 100, 2)}%` },
+            isNearLimit && usageStyles.barFillWarn,
+          ]}
+        />
+      </View>
+    </View>
+  );
+}
+
+const usageStyles = StyleSheet.create({
+  container: { paddingVertical: Spacing.sm, gap: 4 },
+  row: { flexDirection: 'row', justifyContent: 'space-between' },
+  label: {
+    fontSize: Typography.sizes.body,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.moonlight,
+  },
+  value: {
+    fontSize: Typography.sizes.body,
+    fontFamily: Typography.fonts.bodySemiBold,
+    color: Colors.text.starlight,
+  },
+  valueWarn: { color: Colors.accent.coral },
+  barTrack: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.overlay.medium,
+    overflow: 'hidden',
+  },
+  barFill: {
+    height: '100%',
+    borderRadius: 2,
+    backgroundColor: Colors.accent.cyan,
+  },
+  barFillWarn: { backgroundColor: Colors.accent.coral },
+});
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -19,7 +84,9 @@ export default function SettingsScreen() {
   const scrollViewRef = useRef<ScrollView>(null);
   const conversationsY = useRef(0);
   const { profile, signOut, updateProfile, deleteAccount, deactivateAccount } = useAuthStore();
-  const { uploadPersonAvatar, interviews, deleteInterview, deleteAllInterviews } = useFamilyStore();
+  const setLanguage = useAuthStore((s) => s.setLanguage);
+  const { t } = useTranslation();
+  const { uploadPersonAvatar, interviews, stories, people, deleteInterview, deleteAllInterviews } = useFamilyStore();
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isViewingAvatar, setIsViewingAvatar] = useState(false);
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
@@ -30,18 +97,18 @@ export default function SettingsScreen() {
 
   const handleDeleteInterview = (interview: Interview) => {
     Alert.alert(
-      'Delete Conversation',
-      `Are you sure you want to delete "${interview.title || 'Untitled Conversation'}"? This cannot be undone.`,
+      t('settings.deleteConversation'),
+      t('settings.deleteConversationConfirm', { title: interview.title || t('settings.untitledConversation') }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete', style: 'destructive',
+          text: t('common.delete'), style: 'destructive',
           onPress: async () => {
             setIsDeletingId(interview.id);
             try {
               await deleteInterview(interview.id);
             } catch (err: any) {
-              Alert.alert('Error', err.message);
+              Alert.alert(t('common.error'), err.message);
             } finally {
               setIsDeletingId(null);
             }
@@ -54,18 +121,18 @@ export default function SettingsScreen() {
   const handleDeleteAllInterviews = () => {
     if (interviews.length === 0) return;
     Alert.alert(
-      'Delete All Conversations',
-      `Are you sure you want to delete all ${interviews.length} conversation${interviews.length !== 1 ? 's' : ''}? This cannot be undone.`,
+      t('settings.deleteAllConversations'),
+      t('settings.deleteAllConversationsConfirm', { count: interviews.length }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete All', style: 'destructive',
+          text: t('settings.deleteAll'), style: 'destructive',
           onPress: async () => {
             setIsDeletingAll(true);
             try {
               await deleteAllInterviews();
             } catch (err: any) {
-              Alert.alert('Error', err.message);
+              Alert.alert(t('common.error'), err.message);
             } finally {
               setIsDeletingAll(false);
             }
@@ -76,29 +143,44 @@ export default function SettingsScreen() {
   };
 
   const handleSignOut = () => {
-    Alert.alert('Sign out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign Out', style: 'destructive', onPress: () => signOut() },
+    Alert.alert(t('settings.signOutConfirmTitle'), t('settings.signOutConfirmMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.signOut'), style: 'destructive', onPress: () => signOut() },
     ]);
   };
 
   const tierLabel = {
-    free: 'Free',
-    premium: 'Premium ◈',
-    lifetime: 'Lifetime ◈◈',
+    free: t('settings.free'),
+    premium: t('settings.premium'),
   }[profile?.subscription_tier || 'free'];
 
-  const storageUsedMB = Math.round((profile?.storage_used_bytes || 0) / (1024 * 1024));
+  // Tier limits (mirrors backend)
+  const tierLimits = {
+    free:    { maxPerMonth: Infinity, maxPerDay: Infinity, maxRecordingMin: 5 },
+    premium: { maxPerMonth: 30, maxPerDay: 5,  maxRecordingMin: 30 },
+  }[profile?.subscription_tier || 'free'];
+
+  // Count interviews this month and today (only relevant for premium)
+  const isPremium = profile?.subscription_tier === 'premium';
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const interviewsThisMonth = isPremium
+    ? interviews.filter((i) => new Date(i.created_at) >= monthStart).length
+    : 0;
+  const interviewsToday = isPremium
+    ? interviews.filter((i) => new Date(i.created_at) >= dayStart).length
+    : 0;
 
   const handlePickAvatar = async () => {
     if (!profile?.self_person_id) {
-      Alert.alert('No profile node', 'Record your first conversation to create your profile in the family tree.');
+      Alert.alert(t('settings.noProfileNode'), t('settings.noProfileNodeMessage'));
       return;
     }
 
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Please allow access to your photo library to add a profile picture.');
+      Alert.alert(t('settings.permissionNeeded'), t('settings.photoLibraryPermission'));
       return;
     }
 
@@ -116,7 +198,7 @@ export default function SettingsScreen() {
       const avatarKey = await uploadPersonAvatar(profile.self_person_id, result.assets[0].uri);
       await updateProfile({ avatar_url: avatarKey });
     } catch (err: any) {
-      Alert.alert('Upload failed', err.message);
+      Alert.alert(t('settings.uploadFailed'), err.message);
     } finally {
       setIsUploadingAvatar(false);
     }
@@ -128,10 +210,10 @@ export default function SettingsScreen() {
       handlePickAvatar();
       return;
     }
-    Alert.alert('Profile Picture', undefined, [
-      { text: 'View Photo', onPress: () => setIsViewingAvatar(true) },
-      { text: 'Change Photo', onPress: handlePickAvatar },
-      { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('settings.profilePicture'), undefined, [
+      { text: t('settings.viewPhoto'), onPress: () => setIsViewingAvatar(true) },
+      { text: t('settings.changePhoto'), onPress: handlePickAvatar },
+      { text: t('common.cancel'), style: 'cancel' },
     ]);
   };
 
@@ -140,7 +222,7 @@ export default function SettingsScreen() {
       <BioAlgae strandCount={30} height={0.15} />
       <CornerBush />
       <ScrollView ref={scrollViewRef} style={styles.container} contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Settings</Text>
+        <Text style={styles.title}>{t('settings.title')}</Text>
 
         {/* Profile Card */}
         <Card variant="elevated" style={styles.profileCard}>
@@ -163,52 +245,77 @@ export default function SettingsScreen() {
               <Text style={styles.avatarEditBadgeText}>📷</Text>
             </View>
           </Pressable>
-          <Text style={styles.profileName}>{profile?.display_name || 'Explorer'}</Text>
-          <View style={styles.tierBadge}>
-            <Text style={styles.tierText}>{tierLabel}</Text>
+          <View style={styles.profileInfo}>
+            <Text style={styles.profileName}>{profile?.display_name || t('settings.explorer')}</Text>
+            <View style={styles.tierBadge}>
+              <Text style={styles.tierText}>{tierLabel}</Text>
+            </View>
           </View>
         </Card>
 
         {/* Subscription */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Subscription</Text>
+          <Text style={styles.sectionTitle}>{t('settings.subscription')}</Text>
           
           <Card variant="default">
             <View style={styles.settingRow}>
-              <Text style={styles.settingLabel}>Current Plan</Text>
+              <Text style={styles.settingLabel}>{t('settings.currentPlan')}</Text>
               <Text style={styles.settingValue}>{tierLabel}</Text>
-            </View>
-            <View style={styles.settingRow}>
-              <Text style={styles.settingLabel}>Conversations Used</Text>
-              <Text style={styles.settingValue}>
-                {profile?.interview_count || 0}
-                {profile?.subscription_tier === 'free' ? ' / 2' : ''}
-              </Text>
-            </View>
-            <View style={styles.settingRow}>
-              <Text style={styles.settingLabel}>Storage Used</Text>
-              <Text style={styles.settingValue}>{storageUsedMB} MB</Text>
             </View>
 
             {profile?.subscription_tier === 'free' && (
               <Button
-                title="Upgrade to Premium"
+                title={t('settings.upgradeToPremium')}
                 onPress={() => router.push('/paywall')}
                 variant="premium"
                 size="sm"
-                style={{ marginTop: Spacing.md }}
+                style={{ marginTop: Spacing.sm }}
               />
             )}
           </Card>
         </View>
 
+        {/* Usage & Limits */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('settings.usageLimits')}</Text>
+          <Card variant="default">
+            {isPremium && (
+              <>
+                <UsageRow
+                  label="Monthly conversations"
+                  used={interviewsThisMonth}
+                  max={tierLimits.maxPerMonth}
+                  suffix="this month"
+                />
+                <UsageRow
+                  label="Daily conversations"
+                  used={interviewsToday}
+                  max={tierLimits.maxPerDay}
+                  suffix="today"
+                />
+              </>
+            )}
+            <View style={styles.settingRow}>
+              <Text style={styles.settingLabel}>{t('settings.maxRecordingLength')}</Text>
+              <Text style={styles.settingValue}>{tierLimits.maxRecordingMin} min</Text>
+            </View>
+            <View style={styles.settingRow}>
+              <Text style={styles.settingLabel}>{t('settings.totalConversations')}</Text>
+              <Text style={styles.settingValue}>
+                {profile?.interview_count || 0}
+                {profile?.subscription_tier === 'free' ? ' / 2' : ''}
+              </Text>
+            </View>
+          </Card>
+        </View>
+
         {/* Family */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Family</Text>
+          <Text style={styles.sectionTitle}>{t('settings.family')}</Text>
           <Card variant="default">
-            <SettingItem label="Manage Family Groups" onPress={() => {}} />
-            <SettingItem label="Invite Family Members" onPress={() => {}} locked={profile?.subscription_tier === 'free'} />
-            <SettingItem label="Export Memory Book" onPress={() => {}} locked={profile?.subscription_tier === 'free'} />
+            <SettingItem label={t('settings.manageFamilyGroups')} onPress={() => router.push('/family-group')} />
+            <SettingItem label={t('settings.inviteFamilyMembers')} onPress={() => profile?.subscription_tier === 'free' ? router.push('/paywall') : Alert.alert(t('common.comingSoon'), t('settings.inviteComingSoon'))} locked={profile?.subscription_tier === 'free'} />
+            <SettingItem label={t('settings.exportMemoryBook')} onPress={() => profile?.subscription_tier === 'free' ? router.push('/paywall') : Alert.alert(t('common.comingSoon'), t('settings.exportComingSoon'))} locked={profile?.subscription_tier === 'free'} />
           </Card>
         </View>
 
@@ -222,17 +329,17 @@ export default function SettingsScreen() {
             }
           }}
         >
-          <Text style={styles.sectionTitle}>Conversations</Text>
+          <Text style={styles.sectionTitle}>{t('settings.conversations')}</Text>
           <Card variant="default">
             {interviews.length === 0 ? (
-              <Text style={styles.emptyText}>No conversations recorded yet.</Text>
+              <Text style={styles.emptyText}>{t('settings.noConversations')}</Text>
             ) : (
               <>
                 {interviews.map((interview) => (
                   <View key={interview.id} style={styles.conversationRow}>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.conversationTitle} numberOfLines={1}>
-                        {interview.title || 'Untitled Conversation'}
+                        {interview.title || t('settings.untitledConversation')}
                       </Text>
                       <Text style={styles.conversationDate}>
                         {new Date(interview.created_at).toLocaleDateString()}
@@ -252,7 +359,7 @@ export default function SettingsScreen() {
                   </View>
                 ))}
                 <Button
-                  title={isDeletingAll ? 'Deleting...' : 'Delete All Conversations'}
+                  title={isDeletingAll ? t('settings.deleting') : t('settings.deleteAllConversationsButton')}
                   onPress={handleDeleteAllInterviews}
                   variant="danger"
                   size="sm"
@@ -266,38 +373,57 @@ export default function SettingsScreen() {
 
         {/* App */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>App</Text>
+          <Text style={styles.sectionTitle}>{t('settings.app')}</Text>
           <Card variant="default">
-            <SettingItem label="Privacy Policy" onPress={() => {}} />
-            <SettingItem label="Terms of Service" onPress={() => {}} />
-            <SettingItem label="About MATRA" onPress={() => {}} />
+            <View style={styles.settingRow}>
+              <Text style={styles.settingLabel}>{t('settings.language')}</Text>
+              <View style={styles.languageSelector}>
+                {SUPPORTED_LANGUAGES.map((lang) => {
+                  const isActive = getCurrentLanguage() === lang.code;
+                  return (
+                    <Pressable
+                      key={lang.code}
+                      style={[styles.languagePill, isActive && styles.languagePillActive]}
+                      onPress={() => setLanguage(lang.code as LanguageCode)}
+                    >
+                      <Text style={[styles.languagePillText, isActive && styles.languagePillTextActive]}>
+                        {lang.nativeLabel}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+            <SettingItem label={t('settings.privacyPolicy')} onPress={() => router.push('/privacy-policy')} />
+            <SettingItem label={t('settings.termsOfService')} onPress={() => router.push('/terms-of-service')} />
+            <SettingItem label={t('settings.aboutMatra')} onPress={() => router.push('/about')} />
           </Card>
         </View>
 
         {/* Account */}
         <View style={styles.section}>
           <Button
-            title="Sign Out"
+            title={t('common.signOut')}
             onPress={handleSignOut}
             variant="ghost"
           />
           <Button
-            title={isDeactivating ? 'Deactivating...' : 'Deactivate Account'}
+            title={isDeactivating ? t('settings.deactivating') : t('settings.deactivateAccount')}
             onPress={() => {
               Alert.alert(
-                'Deactivate Account',
-                'Your data will be preserved but hidden. You can reactivate your account by signing back in.',
+                t('settings.deactivateAccount'),
+                t('settings.deactivateAccountMessage'),
                 [
-                  { text: 'Cancel', style: 'cancel' },
+                  { text: t('common.cancel'), style: 'cancel' },
                   {
-                    text: 'Deactivate',
+                    text: t('settings.deactivate'),
                     style: 'destructive',
                     onPress: async () => {
                       setIsDeactivating(true);
                       try {
                         await deactivateAccount();
                       } catch (err: any) {
-                        Alert.alert('Error', err.message);
+                        Alert.alert(t('common.error'), err.message);
                       } finally {
                         setIsDeactivating(false);
                       }
@@ -311,31 +437,31 @@ export default function SettingsScreen() {
             loading={isDeactivating}
           />
           <Button
-            title={isDeletingAccount ? 'Deleting...' : 'Delete Account'}
+            title={isDeletingAccount ? t('settings.deletingAccount') : t('settings.deleteAccount')}
             onPress={() => {
               Alert.alert(
-                'Delete Account',
-                'This will permanently delete your account and ALL your data. This cannot be undone.',
+                t('settings.deleteAccount'),
+                t('settings.deleteAccountMessage'),
                 [
-                  { text: 'Cancel', style: 'cancel' },
+                  { text: t('common.cancel'), style: 'cancel' },
                   {
-                    text: 'Delete Everything',
+                    text: t('settings.deleteEverything'),
                     style: 'destructive',
                     onPress: () => {
                       Alert.alert(
-                        'Are you absolutely sure?',
-                        'All your family data, conversations, and stories will be permanently lost.',
+                        t('settings.absolutelySure'),
+                        t('settings.absolutelySureMessage'),
                         [
-                          { text: 'Cancel', style: 'cancel' },
+                          { text: t('common.cancel'), style: 'cancel' },
                           {
-                            text: 'Yes, Delete My Account',
+                            text: t('settings.yesDeleteAccount'),
                             style: 'destructive',
                             onPress: async () => {
                               setIsDeletingAccount(true);
                               try {
                                 await deleteAccount();
                               } catch (err: any) {
-                                Alert.alert('Error', err.message);
+                                Alert.alert(t('common.error'), err.message);
                                 setIsDeletingAccount(false);
                               }
                             },
@@ -390,17 +516,18 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   profileCard: {
+    flexDirection: 'row',
     alignItems: 'center',
     marginBottom: Spacing.xl,
+    gap: Spacing.lg,
   },
   avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     backgroundColor: Colors.accent.cyan,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: Spacing.md,
     shadowColor: Colors.accent.cyan,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -408,9 +535,9 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   avatarImage: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
   },
   avatarEditBadge: {
     position: 'absolute',
@@ -429,17 +556,21 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
   avatarText: {
-    fontSize: Typography.sizes.h1,
+    fontSize: 36,
     fontFamily: Typography.fonts.heading,
     color: '#FFFFFF',
+  },
+  profileInfo: {
+    flex: 1,
+    gap: Spacing.xs,
   },
   profileName: {
     fontSize: Typography.sizes.h3,
     fontFamily: Typography.fonts.heading,
     color: Colors.text.starlight,
-    marginBottom: Spacing.sm,
   },
   tierBadge: {
+    alignSelf: 'flex-start',
     backgroundColor: Colors.background.current,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
@@ -476,6 +607,16 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fonts.bodySemiBold,
     color: Colors.text.starlight,
   },
+  storageBreakdown: {
+    paddingLeft: Spacing.sm,
+    paddingBottom: Spacing.xs,
+    gap: 2,
+  },
+  storageDetail: {
+    fontSize: Typography.sizes.small,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.twilight,
+  },
   settingItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -491,6 +632,28 @@ const styles = StyleSheet.create({
   },
   lockIcon: {
     fontSize: 14,
+  },
+  languageSelector: {
+    flexDirection: 'row',
+    gap: Spacing.xs,
+  },
+  languagePill: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.overlay.light,
+  },
+  languagePillActive: {
+    backgroundColor: Colors.accent.cyan,
+  },
+  languagePillText: {
+    fontSize: Typography.sizes.caption,
+    fontFamily: Typography.fonts.bodyMedium,
+    color: Colors.text.moonlight,
+  },
+  languagePillTextActive: {
+    color: '#FFFFFF',
+    fontFamily: Typography.fonts.bodySemiBold,
   },
   emptyText: {
     fontSize: Typography.sizes.body,

@@ -8,8 +8,10 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography } from '../../src/theme/tokens';
 import { useNotificationStore } from '../../src/stores/notificationStore';
+import { useTranslation } from 'react-i18next';
 
 export default function TabLayout() {
+  const { t } = useTranslation();
   const unreadLineage = useNotificationStore((s) => s.unreadLineageCount);
   const unreadStories = useNotificationStore((s) => s.unreadStoryCount);
 
@@ -26,7 +28,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="home"
         options={{
-          title: 'Home',
+          title: t('tabs.home'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="water-outline" size={size} color={color} />
           ),
@@ -35,7 +37,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="tree"
         options={{
-          title: 'Lineage',
+          title: t('tabs.lineage'),
           tabBarIcon: ({ color, size }) => (
             <View>
               <Ionicons name="git-network-outline" size={size} color={color} />
@@ -51,12 +53,12 @@ export default function TabLayout() {
       <Tabs.Screen
         name="record"
         options={{
-          title: 'Record',
+          title: t('tabs.record'),
           tabBarLabel: () => null,
           tabBarIcon: ({ size }) => (
             <View style={styles.recordButton}>
               <Ionicons name="mic" size={size + 4} color="#FFFFFF" />
-              <Text style={styles.recordLabel}>Record</Text>
+              <Text style={styles.recordLabel}>{t('tabs.record')}</Text>
             </View>
           ),
         }}
@@ -64,7 +66,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="stories"
         options={{
-          title: 'Stories',
+          title: t('tabs.stories'),
           tabBarIcon: ({ color, size }) => (
             <View>
               <Ionicons name="book-outline" size={size} color={color} />
@@ -80,7 +82,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="settings"
         options={{
-          title: 'Settings',
+          title: t('tabs.settings'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="settings-outline" size={size} color={color} />
           ),

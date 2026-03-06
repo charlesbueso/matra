@@ -5,6 +5,7 @@
 import { create } from 'zustand';
 import { supabase, invokeFunction } from '../services/supabase';
 import { clearSignedUrlCache } from '../services/signedUrl';
+import { changeLanguage, getCurrentLanguage, type LanguageCode } from '../i18n';
 import type { Session, User } from '@supabase/supabase-js';
 
 interface Profile {
@@ -12,11 +13,12 @@ interface Profile {
   display_name: string;
   avatar_url: string | null;
   onboarding_completed: boolean;
-  subscription_tier: 'free' | 'premium' | 'lifetime';
+  subscription_tier: 'free' | 'premium';
   interview_count: number;
   storage_used_bytes: number;
   self_person_id: string | null;
   deactivated_at: string | null;
+  preferences: { language?: LanguageCode; [key: string]: any };
 }
 
 interface AuthState {
@@ -35,6 +37,8 @@ interface AuthState {
   deleteAccount: () => Promise<void>;
   deactivateAccount: () => Promise<void>;
   reactivateAccount: () => Promise<void>;
+  resetPassword: (email: string) => Promise<void>;
+  setLanguage: (lang: LanguageCode) => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -117,7 +121,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       .single();
 
     if (!error && data) {
-      set({ profile: data as Profile });
+      const profile = data as Profile;
+      if (!profile.preferences) profile.preferences = {};
+      set({ profile });
+      // Sync i18n language from stored preference
+      if (profile.preferences.language) {
+        changeLanguage(profile.preferences.language);
+      }
     }
   },
 
@@ -152,5 +162,25 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   reactivateAccount: async () => {
     await invokeFunction('deactivate-account', { action: 'reactivate' });
     await get().fetchProfile();
+  },
+
+  resetPassword: async (email: string) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email);
+    if (error) throw error;
+  },
+
+  setLanguage: async (lang: LanguageCode) => {
+    changeLanguage(lang);
+    const user = get().user;
+    const profile = get().profile;
+    if (!user || !profile) return;
+    const newPrefs = { ...(profile.preferences || {}), language: lang };
+    const { error } = await supabase
+      .from('profiles')
+      .update({ preferences: newPrefs })
+      .eq('id', user.id);
+    if (!error) {
+      set({ profile: { ...profile, preferences: newPrefs } });
+    }
   },
 }));

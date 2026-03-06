@@ -12,13 +12,17 @@
       "resizeMode": "contain",
       "backgroundColor": "#04070B"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.matra.app",
       "infoPlist": {
         "NSMicrophoneUsageDescription": "MATRA needs microphone access to record family interviews.",
-        "UIBackgroundModes": ["audio"]
+        "UIBackgroundModes": [
+          "audio"
+        ]
       }
     },
     "android": {
@@ -27,7 +31,9 @@
         "backgroundColor": "#04070B"
       },
       "package": "com.matra.app",
-      "permissions": ["RECORD_AUDIO"]
+      "permissions": [
+        "RECORD_AUDIO"
+      ]
     },
     "plugins": [
       "expo-router",
@@ -45,7 +51,8 @@
         {
           "microphonePermission": "Allow MATRA to access your microphone to record family interviews."
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true

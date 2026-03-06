@@ -4,7 +4,7 @@
 
 import type { LLMProvider, PersonBiographyInput, FamilyDocumentaryInput } from './provider.ts';
 import type { ExtractionResult, SummaryResult, BiographyResult } from '../types.ts';
-import { EXTRACTION_PROMPT, SUMMARY_PROMPT, BIOGRAPHY_PROMPT, DOCUMENTARY_PROMPT } from './prompts.ts';
+import { getExtractionPrompt, getSummaryPrompt, getBiographyPrompt, getDocumentaryPrompt } from './prompts.ts';
 import { fetchWithRetry } from './fetch-retry.ts';
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1';
@@ -51,9 +51,9 @@ export class AnthropicLLMProvider implements LLMProvider {
     return result.content[0].text;
   }
 
-  async extractEntities(transcriptText: string): Promise<ExtractionResult> {
+  async extractEntities(transcriptText: string, language?: string): Promise<ExtractionResult> {
     const raw = await this.message(
-      EXTRACTION_PROMPT + '\n\nIMPORTANT: Respond ONLY with valid JSON, no other text.',
+      getExtractionPrompt(language) + '\n\nIMPORTANT: Respond ONLY with valid JSON, no other text.',
       transcriptText
     );
     // Extract JSON from response (Claude may wrap in markdown code blocks)
@@ -62,9 +62,9 @@ export class AnthropicLLMProvider implements LLMProvider {
     return JSON.parse(jsonMatch[0]) as ExtractionResult;
   }
 
-  async summarizeInterview(transcriptText: string): Promise<SummaryResult> {
+  async summarizeInterview(transcriptText: string, language?: string): Promise<SummaryResult> {
     const raw = await this.message(
-      SUMMARY_PROMPT + '\n\nIMPORTANT: Respond ONLY with valid JSON, no other text.',
+      getSummaryPrompt(language) + '\n\nIMPORTANT: Respond ONLY with valid JSON, no other text.',
       transcriptText
     );
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
@@ -72,10 +72,10 @@ export class AnthropicLLMProvider implements LLMProvider {
     return JSON.parse(jsonMatch[0]) as SummaryResult;
   }
 
-  async generateBiography(personInfo: PersonBiographyInput): Promise<BiographyResult> {
+  async generateBiography(personInfo: PersonBiographyInput, language?: string): Promise<BiographyResult> {
     const input = JSON.stringify(personInfo);
     const raw = await this.message(
-      BIOGRAPHY_PROMPT + '\n\nIMPORTANT: Respond ONLY with valid JSON, no other text.',
+      getBiographyPrompt(language) + '\n\nIMPORTANT: Respond ONLY with valid JSON, no other text.',
       input
     );
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
@@ -83,8 +83,8 @@ export class AnthropicLLMProvider implements LLMProvider {
     return JSON.parse(jsonMatch[0]) as BiographyResult;
   }
 
-  async generateDocumentaryScript(familyInfo: FamilyDocumentaryInput): Promise<string> {
+  async generateDocumentaryScript(familyInfo: FamilyDocumentaryInput, language?: string): Promise<string> {
     const input = JSON.stringify(familyInfo);
-    return await this.message(DOCUMENTARY_PROMPT, input);
+    return await this.message(getDocumentaryPrompt(language), input);
   }
 }

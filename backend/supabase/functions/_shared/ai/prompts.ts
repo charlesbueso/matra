@@ -5,6 +5,29 @@
 // Tuning these is the #1 lever for extraction quality.
 // ============================================================
 
+function languageInstruction(language?: string): string {
+  if (!language || language === 'en') return '';
+  const langNames: Record<string, string> = { es: 'Spanish' };
+  const name = langNames[language] || language;
+  return `\n\nIMPORTANT: Generate ALL output text (summaries, stories, biographies, titles, descriptions) in ${name}. Field names/keys in the JSON must remain in English, but all human-readable string values must be in ${name}.`;
+}
+
+export function getExtractionPrompt(language?: string): string {
+  return EXTRACTION_PROMPT + languageInstruction(language);
+}
+
+export function getSummaryPrompt(language?: string): string {
+  return SUMMARY_PROMPT + languageInstruction(language);
+}
+
+export function getBiographyPrompt(language?: string): string {
+  return BIOGRAPHY_PROMPT + languageInstruction(language);
+}
+
+export function getDocumentaryPrompt(language?: string): string {
+  return DOCUMENTARY_PROMPT + languageInstruction(language);
+}
+
 export const EXTRACTION_PROMPT = `You are an AI assistant specialized in analyzing family interview transcripts. Your job is to extract structured information about people, relationships, dates, locations, and events.
 
 Analyze the provided transcript and extract:

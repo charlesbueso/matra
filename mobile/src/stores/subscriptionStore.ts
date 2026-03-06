@@ -28,16 +28,6 @@ export const TIER_LIMITS: Record<SubscriptionTier, FeatureLimits> = {
     can_generate_documentary: true,
     ai_summary: true,
   },
-  lifetime: {
-    max_interviews: -1,
-    max_audio_minutes: 120,
-    max_family_members: -1,
-    max_storage_mb: 25_000,
-    can_export: true,
-    can_generate_biography: true,
-    can_generate_documentary: true,
-    ai_summary: true,
-  },
 };
 
 interface SubscriptionState {

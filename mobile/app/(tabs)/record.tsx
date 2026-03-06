@@ -16,29 +16,40 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 import { StarField, BioAlgae, Button, VoiceWaveform, TreeTrunk, Card } from '../../src/components/ui';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../src/stores/authStore';
-import { useFamilyStore, Person } from '../../src/stores/familyStore';
+import { useFamilyStore, Person, BackgroundJob } from '../../src/stores/familyStore';
 import { Colors, Typography, Spacing } from '../../src/theme/tokens';
 
-const DEV_TRANSCRIPT = `So my grandmother, Maria Santos, she was born in 1932 in a small village outside Lisbon, Portugal. She married my grandfather, Antonio Santos, in 1955. They had three children — my mother Elena, my uncle Carlos, and my aunt Sofia.
+const DEV_TRANSCRIPT = `So my grandmother, Rose Thompson, she was born in 1932 in a small town in the countryside. She married my grandfather, Walter Thompson, in 1955. They had three children — my mother Helen, my uncle James, and my aunt Dorothy.
 
-Grandma Maria always told us stories about growing up on the farm. She said her father, my great-grandfather José, used to wake up before sunrise every morning to tend to the olive trees. He passed away in 1968, and that's when the family decided to move to America.
+Grandma Rose always told us stories about growing up on the farm. She said her father, my great-grandfather Arthur, used to wake up before sunrise every morning to tend to the orchard. He passed away in 1968, and that's when the family decided to move to the city.
 
-They settled in Newark, New Jersey in 1970. Antonio got a job at a factory and Maria worked as a seamstress. My mother Elena was born in Portugal in 1958, but she grew up mostly in New Jersey. She met my father, David Chen, at a community college in 1982. They got married in 1985.
+They settled in a small apartment in 1970. Walter got a job at a factory and Rose worked as a seamstress. My mother Helen was born in 1958, but she grew up mostly in the city. She met my father, Robert Lee, at a community college in 1982. They got married in 1985.
 
-Uncle Carlos, he stayed in Portugal actually. He married a woman named Isabel and they have two kids — my cousins Pedro and Ana. We used to visit them every summer when I was a kid.
+Uncle James, he stayed in the countryside actually. He married a woman named Margaret and they have two kids — my cousins Peter and Anne. We used to visit them every summer when I was a kid.
 
-Aunt Sofia became a nurse. She never married but she was everyone's favorite aunt. She used to make this incredible bacalhau recipe that grandma taught her. Sofia passed away in 2019 and we all miss her terribly.
+Aunt Dorothy became a nurse. She never married but she was everyone's favorite aunt. She used to make this incredible stew recipe that grandma taught her. Dorothy passed away in 2019 and we all miss her terribly.
 
-One of my favorite memories is Christmas at grandma's house. The whole family would gather — sometimes twenty people crammed into that little house in Newark. She'd cook for days. Her caldo verde soup was legendary in the neighborhood.`;
+One of my favorite memories is Christmas at grandma's house. The whole family would gather — sometimes twenty people crammed into that little house. She'd cook for days. Her soup was legendary in the neighborhood.`;
 
 export default function RecordScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { personId: preselectedPersonId } = useLocalSearchParams<{ personId?: string }>();
   const profile = useAuthStore((s) => s.profile);
   const selfPersonId = useAuthStore((s) => s.profile?.self_person_id);
+
+  // Recording duration limits per tier (seconds) — mirrors backend TIER_LIMITS
+  const MAX_RECORDING_SECONDS: Record<string, number> = {
+    free: 5 * 60,      // 5 minutes
+    premium: 30 * 60,  // 30 minutes
+  };
+  const maxSeconds = MAX_RECORDING_SECONDS[profile?.subscription_tier || 'free'];
   const { activeFamilyGroupId, people, fetchAllFamilyData, fetchFamilyGroups } = useFamilyStore();
   const isProcessing = useFamilyStore((s) => s.isProcessingInterview);
+  const backgroundJobs = useFamilyStore((s) => s.backgroundJobs);
+  const dismissJob = useFamilyStore((s) => s.dismissJob);
   const [selectedPerson, setSelectedPerson] = useState<Person | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -46,6 +57,7 @@ export default function RecordScreen() {
   const [recordedUri, setRecordedUri] = useState<string | null>(null);
   const recordingRef = useRef<Audio.Recording | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
+  const [processingStage, setProcessingStage] = useState(0);
 
   // Ensure data is loaded (the tab may mount before home finishes fetching)
   React.useEffect(() => {
@@ -53,6 +65,24 @@ export default function RecordScreen() {
       fetchFamilyGroups().then(() => fetchAllFamilyData());
     }
   }, []);
+
+  // Animate processing stages for visual feedback
+  const activeJobs = backgroundJobs.filter((j) => j.status === 'processing');
+  const completedJobs = backgroundJobs.filter((j) => j.status === 'completed');
+  const failedJobs = backgroundJobs.filter((j) => j.status === 'failed');
+
+  React.useEffect(() => {
+    if (activeJobs.length === 0) {
+      setProcessingStage(0);
+      return;
+    }
+    let current = 0;
+    const interval = setInterval(() => {
+      current = Math.min(current + 1, 3);
+      setProcessingStage(current);
+    }, 8000);
+    return () => clearInterval(interval);
+  }, [activeJobs.length]);
 
   // Auto-select person if passed via route params
   React.useEffect(() => {
@@ -87,7 +117,7 @@ export default function RecordScreen() {
 
       const { status } = await Audio.requestPermissionsAsync();
       if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Microphone access is required to record conversations.');
+        Alert.alert(t('record.micPermission'), t('record.micPermissionMessage'));
         return;
       }
 
@@ -113,11 +143,18 @@ export default function RecordScreen() {
 
       // Start timer
       timerRef.current = setInterval(() => {
-        setDuration((d) => d + 1);
+        setDuration((d) => {
+          const next = d + 1;
+          // Auto-stop 1 second before hard limit to ensure clean cutoff
+          if (next >= maxSeconds) {
+            stopRecording();
+          }
+          return next;
+        });
       }, 1000);
     } catch (err) {
       console.error('Failed to start recording:', err);
-      Alert.alert('Error', 'Failed to start recording. Please try again.');
+      Alert.alert(t('common.error'), t('record.recordError'));
     }
   };
 
@@ -134,7 +171,7 @@ export default function RecordScreen() {
       setIsRecording(false);
 
       if (!uri || !activeFamilyGroupId) {
-        Alert.alert('Error', 'Recording failed. Please try again.');
+        Alert.alert(t('common.error'), t('record.recordingFailed'));
         return;
       }
 
@@ -160,18 +197,16 @@ export default function RecordScreen() {
     );
     setRecordedUri(null);
     setDuration(0);
-    setSelectedPerson(null);
-    router.push('/(tabs)/tree');
   };
 
   const cancelRecording = () => {
     Alert.alert(
-      'Discard Recording?',
-      'This will delete the voice note. Are you sure you want to re-record?',
+      t('record.discardTitle'),
+      t('record.discardMessage'),
       [
-        { text: 'Keep', style: 'cancel' },
+        { text: t('record.keep'), style: 'cancel' },
         {
-          text: 'Discard',
+          text: t('record.discard'),
           style: 'destructive',
           onPress: async () => {
             if (recordedUri) {
@@ -195,7 +230,7 @@ export default function RecordScreen() {
 
   const sendDevTranscript = () => {
     if (!activeFamilyGroupId) {
-      Alert.alert('Error', 'No active family group. Please create one first.');
+      Alert.alert(t('common.error'), t('record.noFamilyGroup'));
       return;
     }
     useFamilyStore.getState().processInterviewInBackground(
@@ -205,8 +240,6 @@ export default function RecordScreen() {
       DEV_TRANSCRIPT,
       selectedPerson?.id
     );
-    setSelectedPerson(null);
-    router.push('/(tabs)/tree');
   };
 
   const isSelf = selectedPerson?.id === selfPersonId;
@@ -215,16 +248,16 @@ export default function RecordScreen() {
     : null;
 
   // ── Person Selection Screen ──
-  if (!selectedPerson && !isRecording && !isProcessing) {
+  if (!selectedPerson && !isRecording && !recordedUri) {
     return (
       <StarField starCount={30}>
         <TreeTrunk opacity={0.18} />
         <BioAlgae strandCount={50} height={0.22} />
         <View style={styles.container}>
           <View style={styles.header}>
-            <Text style={styles.title}>Who's sharing today?</Text>
+            <Text style={styles.title}>{t('record.whoSharing')}</Text>
             <Text style={styles.subtitle}>
-              Select the person whose stories you'd like to capture.
+              {t('record.selectPerson')}
             </Text>
           </View>
 
@@ -248,7 +281,7 @@ export default function RecordScreen() {
                     <View style={styles.personInfo}>
                       <Text style={styles.personName}>{name}</Text>
                       {isUserSelf && (
-                        <Text style={styles.personSelfBadge}>You</Text>
+                        <Text style={styles.personSelfBadge}>{t('common.you')}</Text>
                       )}
                     </View>
                     <Text style={styles.personArrow}>→</Text>
@@ -261,8 +294,51 @@ export default function RecordScreen() {
           {/* Dev mode: fake conversation button */}
           {__DEV__ && (
             <Pressable onPress={sendDevTranscript} style={styles.devButton}>
-              <Text style={styles.devButtonText}>🧪 Dev: Fake Conversation</Text>
+              <Text style={styles.devButtonText}>{t('record.devFake')}</Text>
             </Pressable>
+          )}
+
+          {/* Background job notifications */}
+          {backgroundJobs.length > 0 && (
+            <View style={styles.jobNotifications}>
+              {activeJobs.length > 0 && (
+                <View style={styles.jobCard}>
+                  <Text style={styles.jobCardIcon}>🧠</Text>
+                  <Text style={styles.jobCardText}>
+                    {t('record.processingConversations', { count: activeJobs.length })}
+                  </Text>
+                </View>
+              )}
+              {completedJobs.map((job) => (
+                <Pressable
+                  key={job.id}
+                  style={styles.jobCardCompleted}
+                  onPress={() => {
+                    dismissJob(job.id);
+                    if (job.interviewId) router.push(`/interview/${job.interviewId}`);
+                  }}
+                >
+                  <Text style={styles.jobCardIcon}>✅</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.jobCardText}>{t('record.jobReady', { title: job.title })}</Text>
+                    <Text style={styles.jobCardHint}>{t('record.tapToView')}</Text>
+                  </View>
+                </Pressable>
+              ))}
+              {failedJobs.map((job) => (
+                <Pressable
+                  key={job.id}
+                  style={styles.jobCardFailed}
+                  onPress={() => dismissJob(job.id)}
+                >
+                  <Text style={styles.jobCardIcon}>❌</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.jobCardText}>{t('record.jobFailed', { title: job.title })}</Text>
+                    <Text style={styles.jobCardHint}>{t('record.tapToDismiss')}</Text>
+                  </View>
+                </Pressable>
+              ))}
+            </View>
           )}
         </View>
         <BioAlgae strandCount={50} height={0.22} />
@@ -279,37 +355,42 @@ export default function RecordScreen() {
         <View style={styles.header}>
           {!isRecording && !isProcessing && !recordedUri && (
             <Pressable onPress={() => setSelectedPerson(null)} style={styles.changePersonButton}>
-              <Text style={styles.changePersonText}>← Change person</Text>
+              <Text style={styles.changePersonText}>{t('record.changePerson')}</Text>
             </Pressable>
           )}
           <Text style={styles.title}>
             {isRecording
-              ? 'Recording...'
+              ? t('record.recording')
               : isProcessing
-              ? 'Processing...'
+              ? t('record.processingTitle')
               : recordedUri
-              ? 'Recording Complete'
-              : 'Ready to Record'}
+              ? t('record.recordingComplete')
+              : t('record.readyToRecord')}
           </Text>
           <Text style={styles.subtitle}>
             {isRecording
               ? isSelf
-                ? 'Share your memories and family stories naturally.'
-                : `Let ${selectedPerson?.first_name} share their stories naturally.`
+                ? t('record.shareYourMemories')
+                : t('record.letPersonShare', { name: selectedPerson?.first_name })
               : isProcessing
-              ? 'AI is transcribing and analyzing the conversation.'
+              ? t('record.aiTranscribing')
               : recordedUri
-              ? 'Review your recording before processing.'
+              ? t('record.reviewRecording')
               : isSelf
-              ? 'Share your own memories, family lore, and experiences.'
-              : `Record ${personDisplayName}'s stories and memories.`}
+              ? t('record.shareOwnMemories')
+              : t('record.recordPersonStories', { name: personDisplayName })}
           </Text>
           {!isRecording && !isProcessing && !recordedUri && selectedPerson && (
             <View style={styles.selectedPersonChip}>
               <Text style={styles.selectedPersonChipText}>
-                🎙 {personDisplayName}{isSelf ? ' (You)' : ''}
+                {isSelf ? t('record.selectedPersonYou', { name: personDisplayName }) : t('record.selectedPerson', { name: personDisplayName })}
               </Text>
             </View>
+          )}
+          {!isRecording && !isProcessing && !recordedUri && (
+            <Text style={styles.recordingLimitHint}>
+              {t('record.upToMinutes', { minutes: Math.floor(maxSeconds / 60) })}
+            </Text>
           )}
         </View>
 
@@ -317,6 +398,14 @@ export default function RecordScreen() {
         <View style={styles.waveformContainer}>
           <VoiceWaveform isActive={isRecording} barCount={32} />
           <Text style={styles.timer}>{formatDuration(duration)}</Text>
+          {isRecording && (
+            <Text style={[
+              styles.limitText,
+              maxSeconds - duration <= 60 && { color: Colors.semantic.error },
+            ]}>
+              {t('record.remaining', { time: formatDuration(maxSeconds - duration) })}
+            </Text>
+          )}
         </View>
 
         {/* Recording Controls */}
@@ -343,20 +432,40 @@ export default function RecordScreen() {
           {recordedUri && !isProcessing && (
             <View style={styles.reviewControls}>
               <Pressable onPress={processRecording} style={styles.processButton}>
-                <Text style={styles.processButtonText}>✓ Process</Text>
+                <Text style={styles.processButtonText}>{t('record.process')}</Text>
               </Pressable>
               <Pressable onPress={cancelRecording} style={styles.rerecordButton}>
-                <Text style={styles.rerecordButtonText}>Re-record</Text>
+                <Text style={styles.rerecordButtonText}>{t('record.reRecord')}</Text>
               </Pressable>
             </View>
           )}
 
-          {isProcessing && (
+          {isProcessing && !isRecording && !recordedUri && (
             <View style={styles.processingContainer}>
-              <Text style={styles.processingText}>◈ Analyzing the conversation...</Text>
+              {[
+                { icon: '☁️', label: t('record.uploadingAudio') },
+                { icon: '🎧', label: t('record.transcribingConversation') },
+                { icon: '🧠', label: t('record.extractingPeople') },
+                { icon: '🌳', label: t('record.buildingTree') },
+              ].map((stage, i) => (
+                <View key={i} style={[styles.processingStep, i <= processingStage && styles.processingStepActive]}>
+                  <Text style={[styles.processingStepIcon, i <= processingStage && styles.processingStepIconActive]}>
+                    {i < processingStage ? '✓' : stage.icon}
+                  </Text>
+                  <Text style={[styles.processingStepLabel, i <= processingStage && styles.processingStepLabelActive]}>
+                    {stage.label}
+                  </Text>
+                </View>
+              ))}
               <Text style={styles.processingDetail}>
-                This may take a minute. You'll be notified when it's done.
+                {t('record.processingTime')}
               </Text>
+              <Pressable
+                style={styles.recordAnotherButton}
+                onPress={() => setSelectedPerson(null)}
+              >
+                <Text style={styles.recordAnotherText}>{t('record.recordAnother')}</Text>
+              </Pressable>
             </View>
           )}
         </View>
@@ -365,21 +474,21 @@ export default function RecordScreen() {
         {!isRecording && !isProcessing && !recordedUri && (
           <View style={styles.tips}>
             <Text style={styles.tipTitle}>
-              {isSelf ? 'Tips for sharing your story:' : 'Tips for a great conversation:'}
+              {isSelf ? t('record.tipsTitle') : t('record.tipsConversationTitle')}
             </Text>
             {isSelf ? (
               <>
-                <Text style={styles.tip}>• Find a quiet, comfortable place</Text>
-                <Text style={styles.tip}>• Talk about your earliest family memories</Text>
-                <Text style={styles.tip}>• Mention names, places, and dates you recall</Text>
-                <Text style={styles.tip}>• Share stories your parents or grandparents told you</Text>
+                <Text style={styles.tip}>{t('record.tipSelf1')}</Text>
+                <Text style={styles.tip}>{t('record.tipSelf2')}</Text>
+                <Text style={styles.tip}>{t('record.tipSelf3')}</Text>
+                <Text style={styles.tip}>{t('record.tipSelf4')}</Text>
               </>
             ) : (
               <>
-                <Text style={styles.tip}>• Find a quiet place</Text>
-                <Text style={styles.tip}>• Encourage them to share freely</Text>
-                <Text style={styles.tip}>• Let them tell stories in their own words</Text>
-                <Text style={styles.tip}>• Ask about specific memories and people</Text>
+                <Text style={styles.tip}>{t('record.tipOther1')}</Text>
+                <Text style={styles.tip}>{t('record.tipOther2')}</Text>
+                <Text style={styles.tip}>{t('record.tipOther3')}</Text>
+                <Text style={styles.tip}>{t('record.tipOther4')}</Text>
               </>
             )}
           </View>
@@ -388,7 +497,7 @@ export default function RecordScreen() {
         {/* Dev mode: fake conversation button */}
         {__DEV__ && !isRecording && !isProcessing && !recordedUri && (
           <Pressable onPress={sendDevTranscript} style={styles.devButton}>
-            <Text style={styles.devButtonText}>🧪 Dev: Fake Conversation</Text>
+            <Text style={styles.devButtonText}>{t('record.devFake')}</Text>
           </Pressable>
         )}
       </View>
@@ -430,6 +539,11 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fonts.heading,
     color: Colors.text.starlight,
     letterSpacing: Typography.letterSpacing.wider,
+  },
+  limitText: {
+    fontSize: Typography.sizes.caption,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.twilight,
   },
   controls: {
     alignItems: 'center',
@@ -486,8 +600,36 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.text.starlight,
   },
   processingContainer: {
+    alignItems: 'flex-start',
+    gap: Spacing.md,
+    width: '100%',
+    paddingHorizontal: Spacing.lg,
+  },
+  processingStep: {
+    flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
+    opacity: 0.35,
+  },
+  processingStepActive: {
+    opacity: 1,
+  },
+  processingStepIcon: {
+    fontSize: 18,
+    width: 28,
+    textAlign: 'center',
+  },
+  processingStepIconActive: {
+    opacity: 1,
+  },
+  processingStepLabel: {
+    fontSize: Typography.sizes.body,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.moonlight,
+  },
+  processingStepLabelActive: {
+    color: Colors.text.starlight,
+    fontFamily: Typography.fonts.subheading,
   },
   processingText: {
     fontSize: Typography.sizes.h4,
@@ -499,6 +641,69 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fonts.body,
     color: Colors.text.moonlight,
     textAlign: 'center',
+    alignSelf: 'center',
+    marginTop: Spacing.sm,
+  },
+  recordAnotherButton: {
+    marginTop: Spacing.lg,
+    alignSelf: 'center',
+    backgroundColor: Colors.accent.cyan,
+    paddingVertical: Spacing.sm + 2,
+    paddingHorizontal: Spacing.xl,
+    borderRadius: 20,
+  },
+  recordAnotherText: {
+    fontSize: Typography.sizes.caption,
+    fontFamily: Typography.fonts.bodySemiBold,
+    color: '#FFFFFF',
+  },
+  jobNotifications: {
+    gap: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  jobCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    backgroundColor: Colors.background.depth,
+    borderRadius: 12,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.accent.cyan + '30',
+  },
+  jobCardCompleted: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    backgroundColor: Colors.background.depth,
+    borderRadius: 12,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.accent.cyan,
+  },
+  jobCardFailed: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    backgroundColor: Colors.background.depth,
+    borderRadius: 12,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.accent.coral + '60',
+  },
+  jobCardIcon: {
+    fontSize: 18,
+  },
+  jobCardText: {
+    fontSize: Typography.sizes.caption,
+    fontFamily: Typography.fonts.bodySemiBold,
+    color: Colors.text.starlight,
+  },
+  jobCardHint: {
+    fontSize: Typography.sizes.small,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.twilight,
+    marginTop: 2,
   },
   reviewControls: {
     alignItems: 'center',
@@ -638,5 +843,13 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.caption,
     fontFamily: Typography.fonts.bodySemiBold,
     color: Colors.accent.cyan,
+  },
+  recordingLimitHint: {
+    fontSize: Typography.sizes.small,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.twilight,
+    textAlign: 'center',
+    marginTop: Spacing.sm,
+    opacity: 0.7,
   },
 });

@@ -4,7 +4,7 @@
 
 import type { STTProvider, LLMProvider, PersonBiographyInput, FamilyDocumentaryInput } from './provider.ts';
 import type { TranscriptionResult, ExtractionResult, SummaryResult, BiographyResult } from '../types.ts';
-import { EXTRACTION_PROMPT, SUMMARY_PROMPT, BIOGRAPHY_PROMPT, DOCUMENTARY_PROMPT } from './prompts.ts';
+import { getExtractionPrompt, getSummaryPrompt, getBiographyPrompt, getDocumentaryPrompt } from './prompts.ts';
 import { fetchWithRetry } from './fetch-retry.ts';
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1';
@@ -204,24 +204,24 @@ export class GroqLLMProvider implements LLMProvider {
     throw new Error('Groq LLM: all models unavailable');
   }
 
-  async extractEntities(transcriptText: string): Promise<ExtractionResult> {
-    const raw = await this.chatCompletion(EXTRACTION_PROMPT, transcriptText);
+  async extractEntities(transcriptText: string, language?: string): Promise<ExtractionResult> {
+    const raw = await this.chatCompletion(getExtractionPrompt(language), transcriptText);
     return JSON.parse(raw) as ExtractionResult;
   }
 
-  async summarizeInterview(transcriptText: string): Promise<SummaryResult> {
-    const raw = await this.chatCompletion(SUMMARY_PROMPT, transcriptText);
+  async summarizeInterview(transcriptText: string, language?: string): Promise<SummaryResult> {
+    const raw = await this.chatCompletion(getSummaryPrompt(language), transcriptText);
     return JSON.parse(raw) as SummaryResult;
   }
 
-  async generateBiography(personInfo: PersonBiographyInput): Promise<BiographyResult> {
+  async generateBiography(personInfo: PersonBiographyInput, language?: string): Promise<BiographyResult> {
     const input = JSON.stringify(personInfo);
-    const raw = await this.chatCompletion(BIOGRAPHY_PROMPT, input);
+    const raw = await this.chatCompletion(getBiographyPrompt(language), input);
     return JSON.parse(raw) as BiographyResult;
   }
 
-  async generateDocumentaryScript(familyInfo: FamilyDocumentaryInput): Promise<string> {
+  async generateDocumentaryScript(familyInfo: FamilyDocumentaryInput, language?: string): Promise<string> {
     const input = JSON.stringify(familyInfo);
-    return await this.chatCompletion(DOCUMENTARY_PROMPT, input, false);
+    return await this.chatCompletion(getDocumentaryPrompt(language), input, false);
   }
 }

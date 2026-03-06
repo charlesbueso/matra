@@ -35,22 +35,22 @@ export interface LLMProvider {
   /**
    * Extract entities and relationships from transcript text.
    */
-  extractEntities(transcriptText: string): Promise<ExtractionResult>;
+  extractEntities(transcriptText: string, language?: string): Promise<ExtractionResult>;
 
   /**
    * Generate a summary of an interview transcript.
    */
-  summarizeInterview(transcriptText: string): Promise<SummaryResult>;
+  summarizeInterview(transcriptText: string, language?: string): Promise<SummaryResult>;
 
   /**
    * Generate a biography for a person based on all known stories and information.
    */
-  generateBiography(personInfo: PersonBiographyInput): Promise<BiographyResult>;
+  generateBiography(personInfo: PersonBiographyInput, language?: string): Promise<BiographyResult>;
 
   /**
    * Generate a documentary script for a family group.
    */
-  generateDocumentaryScript(familyInfo: FamilyDocumentaryInput): Promise<string>;
+  generateDocumentaryScript(familyInfo: FamilyDocumentaryInput, language?: string): Promise<string>;
 }
 
 /**

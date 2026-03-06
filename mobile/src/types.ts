@@ -2,15 +2,19 @@
 // MATRA — Shared Client Types
 // ============================================================
 
-export type SubscriptionTier = 'free' | 'premium' | 'lifetime';
+export type SubscriptionTier = 'free' | 'premium';
 export type SubscriptionStatus = 'active' | 'past_due' | 'cancelled' | 'expired';
 export type InterviewStatus = 'draft' | 'uploading' | 'transcribing' | 'extracting' | 'summarising' | 'complete' | 'failed';
 export type RelationshipType =
-  | 'parent' | 'child' | 'sibling' | 'spouse' | 'grandparent'
-  | 'grandchild' | 'aunt_uncle' | 'niece_nephew' | 'cousin'
+  | 'parent' | 'child' | 'sibling' | 'spouse' | 'ex_spouse'
+  | 'grandparent' | 'grandchild'
+  | 'great_grandparent' | 'great_grandchild'
+  | 'great_great_grandparent' | 'great_great_grandchild'
+  | 'uncle_aunt' | 'nephew_niece' | 'cousin'
   | 'step_parent' | 'step_child' | 'step_sibling' | 'in_law'
-  | 'godparent' | 'godchild' | 'partner' | 'friend'
-  | 'mentor' | 'other';
+  | 'adopted_parent' | 'adopted_child'
+  | 'godparent' | 'godchild'
+  | 'other';
 
 export interface FeatureLimits {
   max_interviews: number;        // -1 = unlimited

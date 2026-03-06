@@ -22,7 +22,7 @@ serve(async (req: Request) => {
       return errorResponse(access.reason!, 'FEATURE_LOCKED', 403);
     }
 
-    const { personId } = await req.json();
+    const { personId, language } = await req.json();
     if (!personId) {
       return errorResponse('Missing personId', 'MISSING_FIELDS', 400);
     }
@@ -194,7 +194,7 @@ serve(async (req: Request) => {
 
     // Generate biography
     const llm = getLLMProviderWithFallback();
-    const result = await llm.generateBiography(input);
+    const result = await llm.generateBiography(input, language || undefined);
 
     // Save to person record
     await supabase

@@ -22,6 +22,7 @@ import { useFamilyStore, Person, Relationship } from '../../src/stores/familySto
 import { useAuthStore } from '../../src/stores/authStore';
 import { useNotificationStore } from '../../src/stores/notificationStore';
 import { useSignedUrls } from '../../src/hooks';
+import { useTranslation } from 'react-i18next';
 import { Colors, Typography, Spacing } from '../../src/theme/tokens';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -33,7 +34,8 @@ const COUPLE_GAP = 100;
 // Build a proper genealogical tree layout from relationships
 function layoutNodes(
   people: Person[],
-  relationships: Relationship[]
+  relationships: Relationship[],
+  selfPersonId?: string | null
 ): {
   positions: Map<string, { x: number; y: number }>;
   roleLabels: Map<string, string>;
@@ -70,7 +72,7 @@ function layoutNodes(
       childrenOf.get(b)!.push(a);
       if (!parentOf.has(a)) parentOf.set(a, []);
       parentOf.get(a)!.push(b);
-    } else if (type === 'spouse') {
+    } else if (type === 'spouse' || type === 'ex_spouse') {
       if (!spouseOf.has(a)) spouseOf.set(a, new Set());
       if (!spouseOf.has(b)) spouseOf.set(b, new Set());
       spouseOf.get(a)!.add(b);
@@ -303,7 +305,7 @@ function layoutNodes(
     }
 
     // Place orphan step/half siblings next to their sibling's parent group
-    // e.g. Cristian (step_sibling of narrator) should be placed in the same
+    // e.g. a step_sibling of the narrator should be placed in the same
     // group as narrator, not floating separately.
     const remainingOrphans: string[] = [];
     for (const orphanId of orphans) {
@@ -381,26 +383,100 @@ function layoutNodes(
   const graphWidth = Math.max(actualMaxX + PADDING * 3, maxRowWidth + PADDING * 2, SCREEN_WIDTH * 1.5);
   const graphHeight = Math.max(actualMaxY + PADDING * 3, PADDING * 2 + sortedGens.length * VERTICAL_SPACING, SCREEN_HEIGHT);
 
-  // Compute role labels for each person
-  for (const p of people) {
-    const hasChildren = childrenOf.has(p.id) && childrenOf.get(p.id)!.length > 0;
-    const hasParents = parentOf.has(p.id) && parentOf.get(p.id)!.length > 0;
-    const hasSpouse = spouseOf.has(p.id) && spouseOf.get(p.id)!.size > 0;
-    const hasSiblings = siblingOf.has(p.id) && siblingOf.get(p.id)!.size > 0;
+  // Compute role labels relative to the self person
+  // Each person's label describes their relationship TO the user
+  if (selfPersonId) {
+    // Inverse map: when self is personA with type X, what is personB's label?
+    const inverseLabel: Record<string, string> = {
+      parent: 'Child',
+      child: 'Parent',
+      spouse: 'Spouse',
+      ex_spouse: 'Ex-Spouse',
+      sibling: 'Sibling',
+      step_sibling: 'Step Sibling',
+      grandparent: 'Grandchild',
+      grandchild: 'Grandparent',
+      great_grandparent: 'Great Grandchild',
+      great_grandchild: 'Great Grandparent',
+      great_great_grandparent: 'Great Great Grandchild',
+      great_great_grandchild: 'Great Great Grandparent',
+      uncle_aunt: 'Nephew/Niece',
+      nephew_niece: 'Uncle/Aunt',
+      cousin: 'Cousin',
+      in_law: 'In-law',
+      step_parent: 'Step Child',
+      step_child: 'Step Parent',
+      adopted_parent: 'Adopted Child',
+      adopted_child: 'Adopted Parent',
+      godparent: 'Godchild',
+      godchild: 'Godparent',
+    };
+    // Direct map: when self is personB with type X, what is personA's label?
+    const directLabel: Record<string, string> = {
+      parent: 'Parent',
+      child: 'Child',
+      spouse: 'Spouse',
+      ex_spouse: 'Ex-Spouse',
+      sibling: 'Sibling',
+      step_sibling: 'Step Sibling',
+      grandparent: 'Grandparent',
+      grandchild: 'Grandchild',
+      great_grandparent: 'Great Grandparent',
+      great_grandchild: 'Great Grandchild',
+      great_great_grandparent: 'Great Great Grandparent',
+      great_great_grandchild: 'Great Great Grandchild',
+      uncle_aunt: 'Uncle/Aunt',
+      nephew_niece: 'Nephew/Niece',
+      cousin: 'Cousin',
+      in_law: 'In-law',
+      step_parent: 'Step Parent',
+      step_child: 'Step Child',
+      adopted_parent: 'Adopted Parent',
+      adopted_child: 'Adopted Child',
+      godparent: 'Godparent',
+      godchild: 'Godchild',
+    };
 
-    const hasFullSiblings = fullSiblingOf.has(p.id) && fullSiblingOf.get(p.id)!.size > 0;
-    const hasStepSiblings = relationships.some(
-      (r) => r.relationship_type === 'step_sibling' &&
-        (r.person_a_id === p.id || r.person_b_id === p.id)
-    );
+    for (const rel of relationships) {
+      const type = rel.relationship_type;
+      if (rel.person_a_id === selfPersonId && rel.person_b_id !== selfPersonId) {
+        // Self is personA → personB's label is the inverse
+        const label = inverseLabel[type];
+        if (label && !roleLabels.has(rel.person_b_id)) {
+          roleLabels.set(rel.person_b_id, label);
+        }
+      } else if (rel.person_b_id === selfPersonId && rel.person_a_id !== selfPersonId) {
+        // Self is personB → personA's label is the direct
+        const label = directLabel[type];
+        if (label && !roleLabels.has(rel.person_a_id)) {
+          roleLabels.set(rel.person_a_id, label);
+        }
+      }
+    }
+    // Label self
+    roleLabels.set(selfPersonId, 'Me');
+  } else {
+    // Fallback: no self person — use generic labels
+    for (const p of people) {
+      const hasChildren = childrenOf.has(p.id) && childrenOf.get(p.id)!.length > 0;
+      const hasParents = parentOf.has(p.id) && parentOf.get(p.id)!.length > 0;
+      const hasSpouse = spouseOf.has(p.id) && spouseOf.get(p.id)!.size > 0;
+      const hasSiblings = siblingOf.has(p.id) && siblingOf.get(p.id)!.size > 0;
 
-    if (hasChildren && hasParents) roleLabels.set(p.id, 'Parent');
-    else if (hasChildren) roleLabels.set(p.id, 'Parent');
-    else if (hasFullSiblings) roleLabels.set(p.id, 'Sibling');
-    else if (hasStepSiblings) roleLabels.set(p.id, 'Step Sibling');
-    else if (hasParents && hasSiblings) roleLabels.set(p.id, 'Sibling');
-    else if (hasParents) roleLabels.set(p.id, 'Child');
-    else if (hasSpouse) roleLabels.set(p.id, 'Spouse');
+      const hasFullSiblings = fullSiblingOf.has(p.id) && fullSiblingOf.get(p.id)!.size > 0;
+      const hasStepSiblings = relationships.some(
+        (r) => r.relationship_type === 'step_sibling' &&
+          (r.person_a_id === p.id || r.person_b_id === p.id)
+      );
+
+      if (hasChildren && hasParents) roleLabels.set(p.id, 'Parent');
+      else if (hasChildren) roleLabels.set(p.id, 'Parent');
+      else if (hasFullSiblings) roleLabels.set(p.id, 'Sibling');
+      else if (hasStepSiblings) roleLabels.set(p.id, 'Step Sibling');
+      else if (hasParents && hasSiblings) roleLabels.set(p.id, 'Sibling');
+      else if (hasParents) roleLabels.set(p.id, 'Child');
+      else if (hasSpouse) roleLabels.set(p.id, 'Spouse');
+    }
   }
 
   return { positions, roleLabels, width: graphWidth, height: graphHeight };
@@ -409,15 +485,44 @@ function layoutNodes(
 type ViewMode = 'graph' | 'table';
 
 export default function TreeScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { people, relationships } = useFamilyStore();
   const selfPersonId = useAuthStore((s) => s.profile?.self_person_id);
   const [viewMode, setViewMode] = useState<ViewMode>('graph');
   const avatarUrls = useSignedUrls(people.map((p) => p.avatar_url));
 
+  const roleTranslations: Record<string, string> = useMemo(() => ({
+    'Me': t('tree.me'),
+    'Parent': t('tree.roleParent'),
+    'Child': t('tree.roleChild'),
+    'Spouse': t('tree.roleSpouse'),
+    'Ex-Spouse': t('tree.roleExSpouse'),
+    'Sibling': t('tree.roleSibling'),
+    'Step Sibling': t('tree.roleStepSibling'),
+    'Grandparent': t('tree.roleGrandparent'),
+    'Grandchild': t('tree.roleGrandchild'),
+    'Great Grandparent': t('tree.roleGreatGrandparent'),
+    'Great Grandchild': t('tree.roleGreatGrandchild'),
+    'Great Great Grandparent': t('tree.roleGreatGreatGrandparent'),
+    'Great Great Grandchild': t('tree.roleGreatGreatGrandchild'),
+    'Uncle/Aunt': t('tree.roleUncleAunt'),
+    'Nephew/Niece': t('tree.roleNephewNiece'),
+    'Cousin': t('tree.roleCousin'),
+    'In-law': t('tree.roleInLaw'),
+    'Step Parent': t('tree.roleStepParent'),
+    'Step Child': t('tree.roleStepChild'),
+    'Adopted Parent': t('tree.roleAdoptedParent'),
+    'Adopted Child': t('tree.roleAdoptedChild'),
+    'Godparent': t('tree.roleGodparent'),
+    'Godchild': t('tree.roleGodchild'),
+  }), [t]);
+
+  const translateRole = (role: string) => roleTranslations[role] || role;
+
   const { positions, roleLabels, width: GRAPH_WIDTH, height: GRAPH_HEIGHT } = useMemo(
-    () => layoutNodes(people, relationships),
-    [people, relationships]
+    () => layoutNodes(people, relationships, selfPersonId),
+    [people, relationships, selfPersonId]
   );
 
   // Mark lineage as read when this tab is viewed
@@ -475,9 +580,9 @@ export default function TreeScreen() {
         <BioAlgae strandCount={50} height={0.22} />
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyIcon}>🌳</Text>
-          <Text style={styles.emptyTitle}>Your family tree is waiting</Text>
+          <Text style={styles.emptyTitle}>{t('tree.emptyTitle')}</Text>
           <Text style={styles.emptySubtitle}>
-            Record your first conversation to start growing your lineage
+            {t('tree.emptySubtitle')}
           </Text>
         </View>
       </StarField>
@@ -493,21 +598,21 @@ export default function TreeScreen() {
       <View style={styles.header}>
         <View style={styles.headerRow}>
           <View>
-            <Text style={styles.title}>Family Tree</Text>
-            <Text style={styles.subtitle}>{people.length} souls · {relationships.length} connections</Text>
+            <Text style={styles.title}>{t('tree.title')}</Text>
+            <Text style={styles.subtitle}>{t('tree.subtitle', { people: people.length, connections: relationships.length })}</Text>
           </View>
           <View style={styles.toggleContainer}>
             <Pressable
               onPress={() => setViewMode('graph')}
               style={[styles.toggleButton, viewMode === 'graph' && styles.toggleButtonActive]}
             >
-              <Text style={[styles.toggleText, viewMode === 'graph' && styles.toggleTextActive]}>Graph</Text>
+              <Text style={[styles.toggleText, viewMode === 'graph' && styles.toggleTextActive]}>{t('tree.graph')}</Text>
             </Pressable>
             <Pressable
               onPress={() => setViewMode('table')}
               style={[styles.toggleButton, viewMode === 'table' && styles.toggleButtonActive]}
             >
-              <Text style={[styles.toggleText, viewMode === 'table' && styles.toggleTextActive]}>Table</Text>
+              <Text style={[styles.toggleText, viewMode === 'table' && styles.toggleTextActive]}>{t('tree.table')}</Text>
             </Pressable>
           </View>
         </View>
@@ -518,7 +623,7 @@ export default function TreeScreen() {
           {people.map((person) => {
             const isSelf = person.id === selfPersonId;
             const initials = (person.first_name?.[0] || '') + (person.last_name?.[0] || '');
-            const role = isSelf ? 'Me' : roleLabels.get(person.id) || '';
+            const role = isSelf ? t('tree.me') : roleLabels.get(person.id) ? translateRole(roleLabels.get(person.id)!) : '';
             return (
               <Pressable
                 key={person.id}
@@ -595,13 +700,34 @@ export default function TreeScreen() {
               );
             }
 
+            if (type === 'ex_spouse') {
+              // Dashed gray line between ex-spouses
+              const leftX = Math.min(posA.x, posB.x) + NODE_RADIUS;
+              const rightX = Math.max(posA.x, posB.x) - NODE_RADIUS;
+              return (
+                <Line
+                  key={rel.id}
+                  x1={leftX}
+                  y1={posA.y}
+                  x2={rightX}
+                  y2={posB.y}
+                  stroke="rgba(255,255,255,0.25)"
+                  strokeWidth={1.5}
+                  strokeDasharray="6 4"
+                />
+              );
+            }
+
             if (type === 'sibling' || type === 'step_sibling') {
               // Siblings at same level — skip individual lines,
               // we draw a group bar below instead.
               return null;
             }
 
-            // Parent-child (and grandparent/child variants): elbow connector
+            // Only draw lines for direct parent-child relationships
+            if (type !== 'parent' && type !== 'child') return null;
+
+            // Parent-child: elbow connector
             const parent = posA.y < posB.y ? posA : posB;
             const child = posA.y < posB.y ? posB : posA;
             const midY = parent.y + (child.y - parent.y) / 2;
@@ -713,7 +839,7 @@ export default function TreeScreen() {
                       {person.first_name}
                     </Text>
                     <Text style={styles.roleTag}>
-                      {person.id === selfPersonId ? 'Me' : roleLabels.get(person.id) || ''}
+                      {person.id === selfPersonId ? t('tree.me') : roleLabels.get(person.id) ? translateRole(roleLabels.get(person.id)!) : ''}
                     </Text>
                   </Animated.View>
                 </Pressable>

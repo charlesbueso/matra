@@ -3,18 +3,23 @@
 // ============================================================
 
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { StarField, BioAlgae, Card, Button, TreeTrunk } from '../../src/components/ui';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useFamilyStore } from '../../src/stores/familyStore';
+import { useTranslation } from 'react-i18next';
 import { Colors, Typography, Spacing } from '../../src/theme/tokens';
 
 export default function HomeScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const profile = useAuthStore((s) => s.profile);
   const selfPersonId = useAuthStore((s) => s.profile?.self_person_id);
   const { people, interviews, stories, isLoading, fetchAllFamilyData, fetchFamilyGroups } = useFamilyStore();
+  const isProcessingInterview = useFamilyStore((s) => s.isProcessingInterview);
+  const backgroundJobs = useFamilyStore((s) => s.backgroundJobs);
+  const dismissJob = useFamilyStore((s) => s.dismissJob);
   const [refreshing, setRefreshing] = React.useState(false);
 
   useEffect(() => {
@@ -50,34 +55,80 @@ export default function HomeScreen() {
         {/* Greeting */}
         <View style={styles.greeting}>
           <Text style={styles.greetingText}>
-            Welcome back, {profile?.display_name || 'Explorer'}
+            {t('home.welcomeBack', { name: profile?.display_name || 'Explorer' })}
           </Text>
           <Text style={styles.greetingSubtext}>
-            {people.length <= 1 ? 'Start a conversation to grow your tree' : 'Your family tree is growing'}
+            {people.length <= 1 ? t('home.startConversation') : t('home.treeGrowing')}
           </Text>
         </View>
 
         {/* Quick Stats */}
         <View style={styles.statsRow}>
-          <StatCard label="People" value={people.length} icon="🌳" onPress={() => router.push('/(tabs)/tree')} />
-          <StatCard label="Sessions" value={interviews.length} icon="🎙" onPress={() => router.push({ pathname: '/(tabs)/settings', params: { scrollTo: 'conversations' } })} />
-          <StatCard label="Stories" value={stories.length} icon="📖" onPress={() => router.push('/(tabs)/stories')} />
+          <StatCard label={t('home.people')} value={people.length} icon="🌳" onPress={() => router.push('/(tabs)/tree')} />
+          <StatCard label={t('home.sessions')} value={interviews.length} icon="🎙" onPress={() => router.push({ pathname: '/(tabs)/settings', params: { scrollTo: 'conversations' } })} />
+          <StatCard label={t('home.stories')} value={stories.length} icon="📖" onPress={() => router.push('/(tabs)/stories')} />
         </View>
+
+        {/* Processing / Completed Job Banners */}
+        {backgroundJobs.filter((j) => j.status === 'processing').length > 0 && (
+          <Card variant="glow" style={styles.processingBanner} onPress={() => router.push('/(tabs)/record')}>
+            <View style={styles.processingBannerContent}>
+              <ActivityIndicator size="small" color={Colors.accent.glow} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.processingBannerTitle}>
+                  {t('home.processingCount', { count: backgroundJobs.filter((j) => j.status === 'processing').length })}
+                </Text>
+                <Text style={styles.processingBannerDetail}>
+                  {t('home.processingDetail')}
+                </Text>
+              </View>
+            </View>
+          </Card>
+        )}
+        {backgroundJobs.filter((j) => j.status === 'completed').map((job) => (
+          <Pressable
+            key={job.id}
+            style={styles.completedBanner}
+            onPress={() => {
+              dismissJob(job.id);
+              if (job.interviewId) router.push(`/interview/${job.interviewId}`);
+            }}
+          >
+            <Text style={styles.completedBannerIcon}>✅</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.completedBannerTitle}>{t('home.jobReady', { title: job.title })}</Text>
+              <Text style={styles.completedBannerDetail}>{t('home.jobReadyDetail')}</Text>
+            </View>
+          </Pressable>
+        ))}
+        {backgroundJobs.filter((j) => j.status === 'failed').map((job) => (
+          <Pressable
+            key={job.id}
+            style={styles.failedBanner}
+            onPress={() => dismissJob(job.id)}
+          >
+            <Text style={styles.completedBannerIcon}>❌</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.completedBannerTitle}>{t('home.jobFailed', { title: job.title })}</Text>
+              <Text style={styles.completedBannerDetail}>{job.error || t('home.jobFailedDetail')}</Text>
+            </View>
+          </Pressable>
+        ))}
 
         {/* First Conversation CTA — shown when no conversations exist */}
         {!hasConversations && (
           <Card variant="glow" style={styles.ctaCard}>
-            <Text style={styles.ctaTitle}>Share Your Story First</Text>
+            <Text style={styles.ctaTitle}>{t('home.shareStoryFirst')}</Text>
             <Text style={styles.ctaDescription}>
-              Start by recording your own memories and family lore. This helps the AI understand your family tree so future conversations are even richer.
+              {t('home.shareStoryFirstDesc')}
             </Text>
             {conversationsRemaining !== null && (
               <Text style={styles.ctaLimit}>
-                {conversationsRemaining} free session{conversationsRemaining !== 1 ? 's' : ''} remaining
+                {t('home.freeSessionsRemaining', { count: conversationsRemaining })}
               </Text>
             )}
             <Button
-              title="Share My Story"
+              title={t('home.shareMyStory')}
               onPress={() => {
                 if (selfPersonId) {
                   router.push({ pathname: '/(tabs)/record', params: { personId: selfPersonId } });
@@ -95,17 +146,17 @@ export default function HomeScreen() {
         {/* General Record CTA — shown when conversations exist */}
         {hasConversations && (
           <Card variant="glow" style={styles.ctaCard}>
-            <Text style={styles.ctaTitle}>Record a Conversation</Text>
+            <Text style={styles.ctaTitle}>{t('home.recordConversation')}</Text>
             <Text style={styles.ctaDescription}>
-              Sit down with a family member and let their stories become branches in your living tree.
+              {t('home.recordConversationDesc')}
             </Text>
             {conversationsRemaining !== null && (
               <Text style={styles.ctaLimit}>
-                {conversationsRemaining} free session{conversationsRemaining !== 1 ? 's' : ''} remaining
+                {t('home.freeSessionsRemaining', { count: conversationsRemaining })}
               </Text>
             )}
             <Button
-              title="Start Recording"
+              title={t('home.startRecording')}
               onPress={() => router.push('/(tabs)/record')}
               variant="primary"
               size="md"
@@ -117,9 +168,9 @@ export default function HomeScreen() {
         {/* Quick Record for Existing People */}
         {hasConversations && peopleWithoutConversation.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Capture More Stories</Text>
+            <Text style={styles.sectionTitle}>{t('home.captureMoreStories')}</Text>
             <Text style={styles.sectionSubtitle}>
-              Record a conversation with a family member to grow their branch.
+              {t('home.captureMoreStoriesDesc')}
             </Text>
             <ScrollView
               horizontal
@@ -141,7 +192,7 @@ export default function HomeScreen() {
                       </Text>
                     </View>
                     <Text style={styles.personChipName} numberOfLines={1}>{name}</Text>
-                    <Text style={styles.personChipAction}>Record 🎙</Text>
+                    <Text style={styles.personChipAction}>{t('home.recordEmoji')}</Text>
                   </Card>
                 );
               })}
@@ -152,7 +203,7 @@ export default function HomeScreen() {
         {/* Recent Conversations */}
         {interviews.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Recent Conversations</Text>
+            <Text style={styles.sectionTitle}>{t('home.recentConversations')}</Text>
             {interviews.slice(0, 3).map((interview) => (
               <Card
                 key={interview.id}
@@ -160,7 +211,7 @@ export default function HomeScreen() {
                 style={styles.interviewCard}
                 onPress={() => router.push(`/interview/${interview.id}`)}
               >
-                <Text style={styles.interviewTitle}>{interview.title || 'Untitled Conversation'}</Text>
+                <Text style={styles.interviewTitle}>{interview.title || t('common.untitledConversation')}</Text>
                 <Text style={styles.interviewDate}>
                   {new Date(interview.created_at).toLocaleDateString()}
                 </Text>
@@ -171,7 +222,7 @@ export default function HomeScreen() {
                 )}
                 <View style={styles.interviewMeta}>
                   <Text style={styles.statusBadge}>
-                    {interview.status === 'completed' ? '✓ Processed' : '⏳ Processing...'}
+                    {interview.status === 'completed' ? t('common.processed') : t('common.processing')}
                   </Text>
                 </View>
               </Card>
@@ -186,12 +237,12 @@ export default function HomeScreen() {
             style={styles.upgradeCard}
             onPress={() => router.push('/paywall')}
           >
-            <Text style={styles.upgradeTitle}>◈ Unlock Premium</Text>
+            <Text style={styles.upgradeTitle}>{t('home.unlockPremium')}</Text>
             <Text style={styles.upgradeDescription}>
-              Unlimited conversations, AI biographies, memory book exports, and more.
+              {t('home.unlockPremiumDesc')}
             </Text>
             <Button
-              title="See Plans"
+              title={t('home.seePlans')}
               onPress={() => router.push('/paywall')}
               variant="premium"
               size="sm"
@@ -383,5 +434,61 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.small,
     fontFamily: Typography.fonts.bodyMedium,
     color: Colors.accent.cyan,
+  },
+  // ── Processing Banner ──
+  processingBanner: {
+    marginBottom: Spacing.lg,
+  },
+  processingBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  processingBannerTitle: {
+    fontSize: Typography.sizes.body,
+    fontFamily: Typography.fonts.subheading,
+    color: Colors.accent.glow,
+  },
+  processingBannerDetail: {
+    fontSize: Typography.sizes.caption,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.moonlight,
+    marginTop: 2,
+  },
+  completedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    backgroundColor: Colors.background.trench,
+    borderRadius: 12,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.accent.cyan,
+    marginBottom: Spacing.sm,
+  },
+  failedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    backgroundColor: Colors.background.trench,
+    borderRadius: 12,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.accent.coral + '60',
+    marginBottom: Spacing.sm,
+  },
+  completedBannerIcon: {
+    fontSize: 20,
+  },
+  completedBannerTitle: {
+    fontSize: Typography.sizes.body,
+    fontFamily: Typography.fonts.subheading,
+    color: Colors.text.starlight,
+  },
+  completedBannerDetail: {
+    fontSize: Typography.sizes.caption,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.twilight,
+    marginTop: 2,
   },
 });

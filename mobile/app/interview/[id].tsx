@@ -6,7 +6,9 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { Ionicons } from '@expo/vector-icons';
 import { StarField, Card, Button, BioAlgae, CornerBush } from '../../src/components/ui';
+import { useTranslation } from 'react-i18next';
 import { useFamilyStore } from '../../src/stores/familyStore';
 import { supabase } from '../../src/services/supabase';
 import { Colors, Typography, Spacing, BorderRadius } from '../../src/theme/tokens';
@@ -21,6 +23,7 @@ interface Transcript {
 }
 
 export default function InterviewDetailScreen() {
+  const { t } = useTranslation();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { interviews, people } = useFamilyStore();
@@ -49,8 +52,8 @@ export default function InterviewDetailScreen() {
         <BioAlgae strandCount={30} height={0.15} />
         <CornerBush />
         <View style={styles.notFound}>
-          <Text style={styles.notFoundText}>Interview not found</Text>
-          <Button title="Go Back" onPress={() => router.back()} variant="ghost" />
+          <Text style={styles.notFoundText}>{t('interview.notFound')}</Text>
+          <Button title={t('common.goBack')} onPress={() => router.back()} variant="ghost" />
         </View>
       </StarField>
     );
@@ -71,16 +74,16 @@ export default function InterviewDetailScreen() {
       <ScrollView style={styles.container} contentContainerStyle={styles.content}>
         {/* Back Button */}
         <Pressable onPress={() => router.back()} style={styles.backButton}>
-          <Text style={styles.backIcon}>←</Text>
+          <Ionicons name="arrow-back" size={20} color={Colors.text.starlight} />
         </Pressable>
 
         {/* Interview Header */}
         <Animated.View entering={FadeInDown.delay(100)} style={styles.header}>
-          <Text style={styles.title}>{interview.title || 'Untitled Interview'}</Text>
+          <Text style={styles.title}>{interview.title || t('interview.untitled')}</Text>
           <View style={styles.meta}>
             <View style={styles.metaChip}>
               <Text style={styles.metaChipText}>
-                {interview.status === 'completed' ? '✓ Processed' : '⏳ Processing'}
+                {interview.status === 'completed' ? t('common.processed') : t('common.processing')}
               </Text>
             </View>
             <View style={styles.metaChip}>
@@ -93,7 +96,7 @@ export default function InterviewDetailScreen() {
         {interview.ai_summary && (
           <Animated.View entering={FadeInDown.delay(200)}>
             <Card variant="glow" style={styles.section}>
-              <Text style={styles.sectionTitle}>AI Summary</Text>
+              <Text style={styles.sectionTitle}>{t('interview.aiSummary')}</Text>
               <Text style={styles.summaryText}>{interview.ai_summary}</Text>
             </Card>
           </Animated.View>
@@ -102,7 +105,7 @@ export default function InterviewDetailScreen() {
         {/* Key Topics */}
         {interview.ai_key_topics && interview.ai_key_topics.length > 0 && (
           <Animated.View entering={FadeInDown.delay(300)} style={styles.topicsContainer}>
-            <Text style={styles.sectionTitle}>Key Topics</Text>
+            <Text style={styles.sectionTitle}>{t('interview.keyTopics')}</Text>
             <View style={styles.topicPills}>
               {interview.ai_key_topics.map((topic, i) => (
                 <View key={i} style={styles.topicPill}>
@@ -116,7 +119,7 @@ export default function InterviewDetailScreen() {
         {/* Transcript */}
         <Animated.View entering={FadeInDown.delay(400)}>
           <Card variant="default" style={styles.section}>
-            <Text style={styles.sectionTitle}>Transcript</Text>
+            <Text style={styles.sectionTitle}>{t('interview.transcript')}</Text>
             {loading ? (
               <ActivityIndicator color={Colors.accent.cyan} style={{ marginVertical: Spacing.xl }} />
             ) : transcript ? (
@@ -124,12 +127,12 @@ export default function InterviewDetailScreen() {
                 <Text style={styles.transcriptText}>{transcript.full_text}</Text>
                 <View style={styles.transcriptMeta}>
                   <Text style={styles.transcriptMetaText}>
-                    Provider: {transcript.provider} · Language: {transcript.language || 'en'}
+                    {t('interview.providerLanguage', { provider: transcript.provider, language: transcript.language || 'en' })}
                   </Text>
                 </View>
               </>
             ) : (
-              <Text style={styles.noTranscript}>No transcript available</Text>
+              <Text style={styles.noTranscript}>{t('interview.noTranscript')}</Text>
             )}
           </Card>
         </Animated.View>
@@ -155,13 +158,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.lg,
-  },
-  backIcon: {
-    fontSize: 20,
-    color: Colors.text.starlight,
-    textAlign: 'center',
-    lineHeight: 22,
-    marginTop: -1,
   },
   header: {
     marginBottom: Spacing.xl,

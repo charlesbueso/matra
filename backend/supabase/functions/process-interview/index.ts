@@ -108,12 +108,14 @@ serve(async (req: Request) => {
     const title = formData.get('title') as string | null;
     const subjectPersonId = formData.get('subjectPersonId') as string | null;
     const devTranscript = formData.get('transcript') as string | null;
+    const language = formData.get('language') as string | null;
     console.log('[process-interview] Form data parsed:', {
       hasAudio: !!audioFile,
       audioSize: audioFile?.size,
       audioName: audioFile?.name,
       familyGroupId,
       hasTranscript: !!devTranscript,
+      language,
     });
 
     if (!familyGroupId) {
@@ -301,7 +303,7 @@ serve(async (req: Request) => {
     let extractionResult;
 
     try {
-      extractionResult = await llmProvider.extractEntities(transcriptForAI);
+      extractionResult = await llmProvider.extractEntities(transcriptForAI, language || undefined);
     } catch (err) {
       console.error('Entity extraction failed:', err);
       // Non-fatal — continue with summarization
@@ -855,7 +857,7 @@ serve(async (req: Request) => {
 
     let summaryResult;
     try {
-      summaryResult = await llmProvider.summarizeInterview(transcriptText);
+      summaryResult = await llmProvider.summarizeInterview(transcriptText, language || undefined);
     } catch (err) {
       console.error('Summarization failed:', err);
       summaryResult = null;

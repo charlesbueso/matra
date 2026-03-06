@@ -9,51 +9,51 @@ import Animated, {
   useSharedValue, useAnimatedStyle, withSpring, interpolate,
   useAnimatedScrollHandler,
 } from 'react-native-reanimated';
+import { useTranslation } from 'react-i18next';
 import { StarField, Button, BioAlgae, CornerBush } from '../../src/components/ui';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useFamilyStore } from '../../src/stores/familyStore';
 import { Colors, Typography, Spacing } from '../../src/theme/tokens';
+import { SUPPORTED_LANGUAGES, type LanguageCode } from '../../src/i18n';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const ONBOARDING_STEPS = [
-  {
-    icon: '🎙',
-    title: 'Record a Conversation',
-    description:
-      'Sit down with a family member and hit record. Talk about their life, their memories, their stories. Just be natural.',
-  },
-  {
-    icon: '✨',
-    title: 'AI Does the Heavy Lifting',
-    description:
-      'Our AI transcribes the conversation, extracts names, dates, relationships, and key stories — all automatically.',
-  },
-  {
-    icon: '🌿',
-    title: 'Your Family Canopy',
-    description:
-      'Watch your family tree grow like a living canopy. Each person becomes a warm node, connected by organic branches of ancestry.',
-  },
-  {
-    icon: '📖',
-    title: 'Stories That Last Forever',
-    description:
-      'AI writes biographies, creates memory books, and preserves the voices and stories of your loved ones for generations.',
-  },
-];
-
 export default function OnboardingScreen() {
   const router = useRouter();
-  const { updateProfile } = useAuthStore();
+  const { t } = useTranslation();
+  const { updateProfile, setLanguage } = useAuthStore();
   const { createFamilyGroup, createPerson } = useFamilyStore();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showIdentity, setShowIdentity] = useState(false);
+  const [showLanguage, setShowLanguage] = useState(true);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const scrollX = useSharedValue(0);
+
+  const ONBOARDING_STEPS = [
+    {
+      icon: '🎙',
+      title: t('onboarding.step1Title'),
+      description: t('onboarding.step1Description'),
+    },
+    {
+      icon: '✨',
+      title: t('onboarding.step2Title'),
+      description: t('onboarding.step2Description'),
+    },
+    {
+      icon: '🌿',
+      title: t('onboarding.step3Title'),
+      description: t('onboarding.step3Description'),
+    },
+    {
+      icon: '📖',
+      title: t('onboarding.step4Title'),
+      description: t('onboarding.step4Description'),
+    },
+  ];
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
@@ -72,7 +72,7 @@ export default function OnboardingScreen() {
 
   const handleCompleteOnboarding = async () => {
     if (!firstName.trim()) {
-      Alert.alert('Enter your name', 'We need at least your first name to place you in your family tree.');
+      Alert.alert(t('onboarding.enterNameTitle'), t('onboarding.enterNameMessage'));
       return;
     }
     setIsSubmitting(true);
@@ -89,11 +89,40 @@ export default function OnboardingScreen() {
       router.replace('/(tabs)/home');
     } catch (e) {
       console.error('Onboarding error:', e);
-      Alert.alert('Error', 'Could not complete setup. Is Supabase running?');
+      Alert.alert(t('common.error'), t('onboarding.setupError'));
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (showLanguage) {
+    return (
+      <StarField particleCount={30}>
+        <BioAlgae strandCount={30} height={0.15} />
+        <CornerBush />
+        <View style={styles.identityContainer}>
+          <Text style={styles.identityIcon}>🌍</Text>
+          <Text style={styles.identityTitle}>{t('onboarding.chooseLanguage')}</Text>
+          <Text style={styles.identitySubtitle}>{t('onboarding.chooseLanguageSubtitle')}</Text>
+          <View style={styles.languageOptions}>
+            {SUPPORTED_LANGUAGES.map((lang) => (
+              <Pressable
+                key={lang.code}
+                style={styles.languageOption}
+                onPress={async () => {
+                  await setLanguage(lang.code as LanguageCode);
+                  setShowLanguage(false);
+                }}
+              >
+                <Text style={styles.languageOptionText}>{lang.nativeLabel}</Text>
+                <Text style={styles.languageOptionSubtext}>{lang.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+        </View>
+      </StarField>
+    );
+  }
 
   if (showIdentity) {
     return (
@@ -102,37 +131,37 @@ export default function OnboardingScreen() {
         <CornerBush />
         <View style={styles.identityContainer}>
           <Text style={styles.identityIcon}>🌳</Text>
-          <Text style={styles.identityTitle}>Who are you?</Text>
+          <Text style={styles.identityTitle}>{t('onboarding.whoAreYou')}</Text>
           <Text style={styles.identitySubtitle}>
-            You'll be the first node in your family tree
+            {t('onboarding.firstNode')}
           </Text>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>First name</Text>
+            <Text style={styles.inputLabel}>{t('onboarding.firstName')}</Text>
             <TextInput
               style={styles.input}
               value={firstName}
               onChangeText={setFirstName}
-              placeholder="e.g. Carlos"
+              placeholder={t('onboarding.firstNamePlaceholder')}
               placeholderTextColor={Colors.text.shadow}
               autoFocus
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Last name (optional)</Text>
+            <Text style={styles.inputLabel}>{t('onboarding.lastName')}</Text>
             <TextInput
               style={styles.input}
               value={lastName}
               onChangeText={setLastName}
-              placeholder="e.g. Bueso"
+              placeholder={t('onboarding.lastNamePlaceholder')}
               placeholderTextColor={Colors.text.shadow}
             />
           </View>
 
           <View style={{ marginTop: Spacing.xl }}>
             <Button
-              title={isSubmitting ? 'Creating...' : 'Plant Your Roots'}
+              title={isSubmitting ? t('onboarding.creating') : t('onboarding.plantRoots')}
               onPress={handleCompleteOnboarding}
               size="lg"
               disabled={isSubmitting}
@@ -185,14 +214,14 @@ export default function OnboardingScreen() {
           </View>
 
           <Button
-            title={currentIndex === ONBOARDING_STEPS.length - 1 ? 'Plant Your Roots' : 'Next'}
+            title={currentIndex === ONBOARDING_STEPS.length - 1 ? t('onboarding.plantRoots') : t('common.next')}
             onPress={handleNext}
             size="lg"
           />
 
           {currentIndex < ONBOARDING_STEPS.length - 1 && (
             <Button
-              title="Skip"
+              title={t('common.skip')}
               onPress={() => setShowIdentity(true)}
               variant="ghost"
             />
@@ -298,5 +327,28 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fonts.body,
     color: Colors.text.starlight,
     backgroundColor: '#FFFFFF',
+  },
+  languageOptions: {
+    gap: Spacing.md,
+  },
+  languageOption: {
+    borderWidth: 1,
+    borderColor: 'rgba(139, 115, 85, 0.20)',
+    borderRadius: 12,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.lg,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+  },
+  languageOptionText: {
+    fontSize: Typography.sizes.h3,
+    fontFamily: Typography.fonts.heading,
+    color: Colors.text.starlight,
+  },
+  languageOptionSubtext: {
+    fontSize: Typography.sizes.caption,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.twilight,
+    marginTop: Spacing.xxs,
   },
 });
