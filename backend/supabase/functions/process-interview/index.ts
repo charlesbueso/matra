@@ -13,8 +13,75 @@ import { serve } from 'https://deno.land/std@0.208.0/http/server.ts';
 import { handleCors, jsonResponse, errorResponse } from '../_shared/cors.ts';
 import { getUserClient, getAuthUserId, getServiceClient } from '../_shared/supabase.ts';
 import { canCreateInterview, getUserEntitlements } from '../_shared/feature-gate.ts';
-import { getSTTProvider, getLLMProvider } from '../_shared/ai/registry.ts';
+import { getSTTProviderWithFallback, getLLMProviderWithFallback } from '../_shared/ai/registry.ts';
 import { uploadToSpaces } from '../_shared/spaces.ts';
+
+// ── Audio Snippet Matching ──
+// Finds verbatim quotes from the transcript in word timings to get precise timestamps.
+// Uses fuzzy substring matching: normalizes both the quote and the word sequence,
+// then slides a window over the words to find the best match.
+function matchQuotesToTimings(
+  keyMoments: Array<{ quote: string; label: string }>,
+  words: Array<{ word: string; start_ms: number; end_ms: number; confidence: number }>,
+  fullText: string,
+): Array<{ label: string; quote: string; startMs: number; endMs: number }> {
+  const results: Array<{ label: string; quote: string; startMs: number; endMs: number }> = [];
+
+  function norm(s: string): string {
+    return s.toLowerCase().replace(/[^a-z0-9\u00C0-\u024F ]/g, '').replace(/\s+/g, ' ').trim();
+  }
+
+  for (const moment of keyMoments) {
+    const quoteNorm = norm(moment.quote);
+    if (!quoteNorm || quoteNorm.split(' ').length < 3) continue;
+
+    const quoteWords = quoteNorm.split(' ');
+    let bestScore = 0;
+    let bestStart = -1;
+    let bestEnd = -1;
+
+    // Slide a window of varying size around the quote length
+    const minLen = Math.max(3, quoteWords.length - 2);
+    const maxLen = quoteWords.length + 2;
+
+    for (let windowSize = minLen; windowSize <= maxLen && windowSize <= words.length; windowSize++) {
+      for (let i = 0; i <= words.length - windowSize; i++) {
+        const windowWords = words.slice(i, i + windowSize).map((w) => norm(w.word)).join(' ');
+        // Count matching words in order
+        let matches = 0;
+        let qi = 0;
+        for (const ww of windowWords.split(' ')) {
+          if (qi < quoteWords.length && ww === quoteWords[qi]) {
+            matches++;
+            qi++;
+          }
+        }
+        const score = matches / quoteWords.length;
+        if (score > bestScore) {
+          bestScore = score;
+          bestStart = i;
+          bestEnd = i + windowSize - 1;
+        }
+      }
+    }
+
+    // Require at least 60% word match to avoid false positives
+    if (bestScore >= 0.6 && bestStart >= 0 && bestEnd >= 0) {
+      const startMs = words[bestStart].start_ms;
+      // Add small buffer (500ms) before and after for natural playback
+      const endMs = words[bestEnd].end_ms + 500;
+      results.push({
+        label: moment.label,
+        quote: moment.quote,
+        startMs: Math.max(0, startMs - 300),
+        endMs,
+      });
+    }
+  }
+
+  // Cap at 3 snippets per story to keep it digestible
+  return results.slice(0, 3);
+}
 
 serve(async (req: Request) => {
   // Handle CORS
@@ -56,6 +123,24 @@ serve(async (req: Request) => {
       return errorResponse('Missing required field: audio or transcript', 'MISSING_FIELDS', 400);
     }
 
+    // Validate audio file type and size
+    if (audioFile) {
+      const allowedAudioTypes = [
+        'audio/mp4', 'audio/m4a', 'audio/x-m4a', 'audio/mpeg',
+        'audio/wav', 'audio/webm', 'audio/ogg', 'audio/aac',
+      ];
+      if (!allowedAudioTypes.includes(audioFile.type)) {
+        return errorResponse('Invalid audio format', 'INVALID_FILE_TYPE', 400);
+      }
+      const MAX_AUDIO_SIZE = 100 * 1024 * 1024; // 100 MB hard cap
+      if (audioFile.size > MAX_AUDIO_SIZE) {
+        return errorResponse('Audio file too large. Maximum 100MB', 'FILE_TOO_LARGE', 400);
+      }
+      if (audioFile.size === 0) {
+        return errorResponse('Audio file is empty', 'INVALID_FILE', 400);
+      }
+    }
+
     // 1. Create interview record
     const { data: interview, error: interviewError } = await supabase
       .from('interviews')
@@ -76,6 +161,7 @@ serve(async (req: Request) => {
 
     let transcriptText: string;
     let transcript: { id: string };
+    let wordTimings: Array<{ word: string; start_ms: number; end_ms: number; confidence: number }> | null = null;
 
     if (devTranscript) {
       // ── Dev mode: skip audio upload & STT, use provided transcript ──
@@ -147,7 +233,7 @@ serve(async (req: Request) => {
 
       // 3. Transcribe audio
       console.log('[process-interview] Starting transcription...');
-      const sttProvider = getSTTProvider();
+      const sttProvider = getSTTProviderWithFallback();
       let transcriptionResult;
 
       try {
@@ -162,6 +248,7 @@ serve(async (req: Request) => {
       }
 
       transcriptText = transcriptionResult.text;
+      wordTimings = transcriptionResult.words || null;
 
       // 4. Save transcript
       const { data: transcriptRecord, error: transcriptError } = await supabase
@@ -210,7 +297,7 @@ serve(async (req: Request) => {
       ? `[Narrator/subject of this interview is ${subjectName}. Any first-person references ("I", "me", "my") refer to ${subjectName}. Do NOT create a separate entry for the narrator — they are ${subjectName}. IMPORTANT: When the narrator says "my mom", "my dad", "my brother", etc., create relationships between those people and ${subjectName}. Use ${subjectName} as the personA or personB name in relationships — never use "I" or "me" as a person name.]\n\n${transcriptText}`
       : transcriptText;
 
-    const llmProvider = getLLMProvider();
+    const llmProvider = getLLMProviderWithFallback();
     let extractionResult;
 
     try {
@@ -240,7 +327,7 @@ serve(async (req: Request) => {
     const resolvedPeople = new Map<string, string>(); // normalized key → person.id
 
     // Strip diacritics / accents for consistent matching
-    // e.g. "Rentería" → "renteria", "Héctor" → "hector"
+    // e.g. "García" → "garcia", "Héctor" → "hector"
     function normalize(s: string): string {
       return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
     }
@@ -253,20 +340,20 @@ serve(async (req: Request) => {
       resolvedPeople.set(selfKey, subjectPerson.id);
       // NOTE: We intentionally do NOT seed first-name-only for the subject.
       // This prevents false dedup when a family member shares the subject's
-      // first name (e.g., "Carlos Jose Bueso" vs narrator "Carlos Bueso").
+      // first name (e.g., "John William Smith" vs narrator "John Smith").
     }
 
     // Fetch all existing people in this family group for matching
     const { data: existingPeople } = await supabase
       .from('people')
-      .select('id, first_name, last_name, nickname, birth_date, birth_place')
+      .select('id, first_name, last_name, nickname, birth_date, death_date, birth_place, current_location, metadata')
       .eq('family_group_id', familyGroupId)
       .is('deleted_at', null);
 
     const allExisting = existingPeople || [];
 
     // Also pre-seed resolvedPeople with ALL existing people so within-interview
-    // duplicates are caught (e.g. AI suggests "Marco Bueso" and "Marco" in same batch)
+    // duplicates are caught (e.g. AI suggests "Marco Smith" and "Marco" in same batch)
     for (const ep of allExisting) {
       const epKey = normalize(`${ep.first_name} ${ep.last_name || ''}`);
       if (!resolvedPeople.has(epKey)) {
@@ -331,8 +418,8 @@ serve(async (req: Request) => {
             // Exact match
             score += 3;
           } else if (sugLast.includes(exLast) || exLast.includes(sugLast)) {
-            // One last name contains the other (e.g. "Bueso" matches "Bueso Mas",
-            // "Renteria" matches "Renteria Montes de Oca")
+            // One last name contains the other (e.g. "Smith" matches "Smith Johnson",
+            // "Garcia" matches "Garcia Lopez")
             score += 2;
           } else {
             // Truly different last names — strong penalty
@@ -354,7 +441,17 @@ serve(async (req: Request) => {
         if (suggested.lastName && !match.last_name) updates.last_name = suggested.lastName;
         if (suggested.nickname && !match.nickname) updates.nickname = suggested.nickname;
         if (suggested.birthDate && !match.birth_date) updates.birth_date = suggested.birthDate;
+        if (suggested.deathDate && !match.death_date) updates.death_date = suggested.deathDate;
         if (suggested.birthPlace && !match.birth_place) updates.birth_place = suggested.birthPlace;
+        if (suggested.currentLocation && !match.current_location) updates.current_location = suggested.currentLocation;
+        // Store profession and isDeceased in metadata JSONB
+        const existingMeta = (match as any).metadata || {};
+        const metaUpdates: Record<string, unknown> = { ...existingMeta };
+        if (suggested.profession && !existingMeta.profession) metaUpdates.profession = suggested.profession;
+        if (suggested.isDeceased != null && existingMeta.is_deceased == null) metaUpdates.is_deceased = suggested.isDeceased;
+        if (Object.keys(metaUpdates).length > Object.keys(existingMeta).length) {
+          updates.metadata = metaUpdates;
+        }
 
         if (Object.keys(updates).length > 0) {
           await supabase.from('people').update(updates).eq('id', matchId);
@@ -368,6 +465,10 @@ serve(async (req: Request) => {
         if (!resolvedPeople.has(sugFirst)) resolvedPeople.set(sugFirst, matchId);
       } else {
         // No match — create new person
+        const personMeta: Record<string, unknown> = {};
+        if (suggested.profession) personMeta.profession = suggested.profession;
+        if (suggested.isDeceased != null) personMeta.is_deceased = suggested.isDeceased;
+
         const { data: newPerson } = await supabase
           .from('people')
           .insert({
@@ -376,10 +477,13 @@ serve(async (req: Request) => {
             last_name: suggested.lastName,
             nickname: suggested.nickname,
             birth_date: suggested.birthDate,
+            death_date: suggested.deathDate,
             birth_place: suggested.birthPlace,
+            current_location: suggested.currentLocation,
+            metadata: Object.keys(personMeta).length > 0 ? personMeta : undefined,
             created_by: userId,
           })
-          .select('id, first_name, last_name, nickname, birth_date, birth_place')
+          .select('id, first_name, last_name, nickname, birth_date, death_date, birth_place, current_location, metadata')
           .single();
 
         if (newPerson) {
@@ -400,24 +504,80 @@ serve(async (req: Request) => {
       }
 
       const normName = normalize(name);
-      const normFirst = normName.split(' ')[0];
+      const normParts = normName.split(/\s+/);
+      const normFirst = normParts[0];
+      const normLast = normParts.length > 1 ? normParts.slice(1).join(' ') : '';
 
       // Direct key match (normalized)
       if (resolvedPeople.has(normName)) return resolvedPeople.get(normName)!;
 
-      // Try first-name-only match against resolved map
+      // Try first-name-only match against resolved map, but only when
+      // last names are compatible (one is missing, or they share a word).
       for (const [key, id] of resolvedPeople) {
-        if (key.split(' ')[0] === normFirst) return id;
+        const keyParts = key.split(/\s+/);
+        const keyFirst = keyParts[0];
+        const keyLast = keyParts.length > 1 ? keyParts.slice(1).join(' ') : '';
+        if (keyFirst !== normFirst) continue;
+        // If both sides have last names, they must share at least one word
+        if (normLast && keyLast) {
+          const normLastWords = normLast.split(/\s+/);
+          const keyLastWords = keyLast.split(/\s+/);
+          const hasOverlap = normLastWords.some((w: string) => keyLastWords.includes(w));
+          if (!hasOverlap) continue;
+        }
+        return id;
       }
 
-      // Fall back to DB existing people (also normalized)
+      // Fall back to DB existing people (also normalized), same last-name check
       for (const p of allExisting) {
         const exFirst = normalize(p.first_name || '');
+        const exLast = normalize(p.last_name || '');
         const exNick = normalize(p.nickname || '');
-        if (exFirst === normFirst || exNick === normFirst) return p.id;
+        const firstMatch = exFirst === normFirst || exNick === normFirst;
+        if (!firstMatch) continue;
+        if (normLast && exLast) {
+          const normLastWords = normLast.split(/\s+/);
+          const exLastWords = exLast.split(/\s+/);
+          const hasOverlap = normLastWords.some((w: string) => exLastWords.includes(w));
+          if (!hasOverlap) continue;
+        }
+        return p.id;
       }
 
       return null;
+    }
+
+    // 7b. Auto-create people referenced in relationships but missing from suggestedPeople
+    for (const rel of extractionResult.relationships) {
+      for (const refName of [rel.personA, rel.personB]) {
+        const resolved = resolvePersonName(refName);
+        if (resolved) continue;
+
+        // Parse first/last name from the reference
+        const parts = refName.trim().split(/\s+/);
+        const firstName = parts[0];
+        const lastName = parts.length > 1 ? parts.slice(1).join(' ') : undefined;
+
+        console.log(`[process-interview] Auto-creating unresolved person from relationship: "${refName}"`);
+        const { data: newPerson } = await supabase
+          .from('people')
+          .insert({
+            family_group_id: familyGroupId,
+            first_name: firstName,
+            last_name: lastName,
+            created_by: userId,
+          })
+          .select('id, first_name, last_name, nickname, birth_date, death_date, birth_place, current_location, metadata')
+          .single();
+
+        if (newPerson) {
+          const normFull = normalize(refName);
+          const normFirst = normalize(firstName);
+          resolvedPeople.set(normFull, newPerson.id);
+          if (!resolvedPeople.has(normFirst)) resolvedPeople.set(normFirst, newPerson.id);
+          allExisting.push(newPerson);
+        }
+      }
     }
 
     // 8. Create relationships
@@ -428,7 +588,8 @@ serve(async (req: Request) => {
       if (personAId && personBId && personAId !== personBId) {
         // Validate that the relationship type is a known enum value
         const validTypes = [
-          'parent', 'child', 'spouse', 'sibling', 'grandparent', 'grandchild',
+          'parent', 'child', 'spouse', 'ex_spouse', 'sibling', 'grandparent', 'grandchild',
+          'great_grandparent', 'great_grandchild', 'great_great_grandparent', 'great_great_grandchild',
           'uncle_aunt', 'nephew_niece', 'cousin', 'in_law',
           'step_parent', 'step_child', 'step_sibling',
           'adopted_parent', 'adopted_child', 'godparent', 'godchild', 'other',
@@ -612,11 +773,55 @@ serve(async (req: Request) => {
         }
       }
 
+      // ── Pass 5b: Great-grandparent inference ──
+      // If A is grandparent of B and B has a parent C where C is child of A's child,
+      // i.e. A→parent→B→parent→C→parent→D ⇒ A is great_grandparent of D
+      // Simpler: walk 3 generations down from each person
+      for (const [gen1, gen1Children] of childrenOf) {
+        for (const gen2 of gen1Children) {
+          const gen2Children = childrenOf.get(gen2) || new Set();
+          for (const gen3 of gen2Children) {
+            const gen3Children = childrenOf.get(gen3) || new Set();
+            for (const gen4 of gen3Children) {
+              tryInfer(gen1, gen4, 'great_grandparent');
+            }
+          }
+        }
+      }
+
+      // ── Pass 5c: Great-great-grandparent inference ──
+      // Walk 4 generations down
+      for (const [gen1, gen1Children] of childrenOf) {
+        for (const gen2 of gen1Children) {
+          const gen2Children = childrenOf.get(gen2) || new Set();
+          for (const gen3 of gen2Children) {
+            const gen3Children = childrenOf.get(gen3) || new Set();
+            for (const gen4 of gen3Children) {
+              const gen4Children = childrenOf.get(gen4) || new Set();
+              for (const gen5 of gen4Children) {
+                tryInfer(gen1, gen5, 'great_great_grandparent');
+              }
+            }
+          }
+        }
+      }
+
       // ── Pass 6: Uncle/aunt inference ──
       // If A is sibling of B and B is parent of C → A is uncle/aunt of C
       for (const [personId, siblings] of siblingsOf) {
         for (const sibId of siblings) {
           const niblings = childrenOf.get(sibId) || new Set();
+          for (const niblingId of niblings) {
+            tryInfer(personId, niblingId, 'uncle_aunt');
+          }
+        }
+      }
+
+      // ── Pass 7: Uncle/aunt inference through step siblings ──
+      // If A is step_sibling of B and B is parent of C → A is uncle/aunt of C
+      for (const [personId, stepSibs] of stepSiblingsOf) {
+        for (const stepSibId of stepSibs) {
+          const niblings = childrenOf.get(stepSibId) || new Set();
           for (const niblingId of niblings) {
             tryInfer(personId, niblingId, 'uncle_aunt');
           }
@@ -670,10 +875,38 @@ serve(async (req: Request) => {
       // Determine how many stories to save based on subscription tier
       const entitlements = await getUserEntitlements(userId);
       const maxStories = entitlements.limits.maxStoriesPerInterview;
-      const storiesToSave = summaryResult.suggestedStories.slice(0, maxStories);
+      const suggestedStories = Array.isArray(summaryResult.suggestedStories)
+        ? summaryResult.suggestedStories
+        : [];
+      let storiesToSave = suggestedStories.slice(0, maxStories);
+
+      // Guarantee at least 1 story per conversation — synthesize from summary if AI returned none
+      if (storiesToSave.length === 0 && summaryResult.summary) {
+        storiesToSave = [{
+          title: interview.title || 'A Family Story',
+          content: summaryResult.summary,
+          involvedPeople: [],
+          approximateDate: undefined,
+          location: undefined,
+        }];
+      }
 
       if (storiesToSave.length > 0) {
+        // Resolve audio snippets if we have word timings (premium feature)
+        const canUseSnippets = entitlements.limits.audioSnippets && wordTimings && wordTimings.length > 0;
+
         for (const story of storiesToSave) {
+          // Match key moments to audio timestamps via word timings
+          let audioSnippets: Array<{ label: string; quote: string; startMs: number; endMs: number }> = [];
+          if (canUseSnippets && story.keyMoments && story.keyMoments.length > 0) {
+            audioSnippets = matchQuotesToTimings(story.keyMoments, wordTimings!, transcriptText);
+          }
+
+          const metadata: Record<string, unknown> = {};
+          if (audioSnippets.length > 0) {
+            metadata.audioSnippets = audioSnippets;
+          }
+
           const { data: storyRecord } = await supabase
             .from('stories')
             .insert({
@@ -684,6 +917,7 @@ serve(async (req: Request) => {
               ai_generated: true,
               event_date: story.approximateDate || null,
               event_location: story.location || null,
+              metadata,
               created_by: userId,
             })
             .select()
@@ -693,7 +927,7 @@ serve(async (req: Request) => {
             storiesCreatedCount++;
 
             // Link people to stories
-            if (story.involvedPeople.length > 0) {
+            if (story.involvedPeople && story.involvedPeople.length > 0) {
               for (const personName of story.involvedPeople) {
                 const personId = resolvePersonName(personName);
 
@@ -707,6 +941,30 @@ serve(async (req: Request) => {
             }
           }
         }
+      }
+    }
+
+    // 10b. Fallback — guarantee at least 1 story even if summarization completely failed
+    if (storiesCreatedCount === 0) {
+      console.log('[process-interview] No stories created from summarization — creating fallback story from transcript');
+      const fallbackContent = summaryResult?.summary
+        || transcriptText.slice(0, 2000)
+        || 'A family conversation was recorded and preserved.';
+      const { data: fallbackStory } = await supabase
+        .from('stories')
+        .insert({
+          family_group_id: familyGroupId,
+          interview_id: interview.id,
+          title: interview.title || 'A Family Story',
+          content: fallbackContent,
+          ai_generated: true,
+          created_by: userId,
+        })
+        .select()
+        .single();
+
+      if (fallbackStory) {
+        storiesCreatedCount = 1;
       }
     }
 

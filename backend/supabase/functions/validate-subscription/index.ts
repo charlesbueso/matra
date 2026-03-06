@@ -38,7 +38,6 @@ interface RCWebhookEvent {
 }
 
 function productToTier(productId: string): SubscriptionTier {
-  if (productId.includes('lifetime')) return 'lifetime';
   if (productId.includes('premium') || productId.includes('pro')) return 'premium';
   return 'free';
 }
@@ -83,7 +82,7 @@ serve(async (req: Request) => {
           started_at: new Date(event.purchased_at_ms).toISOString(),
           expires_at: event.expiration_at_ms
             ? new Date(event.expiration_at_ms).toISOString()
-            : null, // null = lifetime
+            : null,
           metadata: { store: event.store, environment: event.environment },
         });
 

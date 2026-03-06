@@ -62,9 +62,13 @@ export interface PersonBiographyInput {
   birthDate?: string;
   deathDate?: string;
   birthPlace?: string;
+  currentLocation?: string;
+  profession?: string;
+  isDeceased?: boolean;
   relationships: Array<{
     type: string;
     relatedPersonName: string;
+    description: string;
   }>;
   stories: Array<{
     title: string;

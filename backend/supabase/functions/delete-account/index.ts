@@ -82,6 +82,14 @@ serve(async (req: Request) => {
     // stories.created_by → profiles(id) — no CASCADE
     await db.from('stories').delete().eq('created_by', userId);
 
+    // interviews.conducted_by → profiles(id) — no CASCADE
+    await db.from('interviews').delete().eq('conducted_by', userId);
+
+    // people.created_by → profiles(id) — no CASCADE
+    if (groupIds.length > 0) {
+      await db.from('people').delete().in('family_group_id', groupIds);
+    }
+
     // family_group_members.invited_by → profiles(id) — nullable, no CASCADE
     await db
       .from('family_group_members')

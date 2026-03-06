@@ -5,6 +5,7 @@
 import type { LLMProvider, PersonBiographyInput, FamilyDocumentaryInput } from './provider.ts';
 import type { ExtractionResult, SummaryResult, BiographyResult } from '../types.ts';
 import { EXTRACTION_PROMPT, SUMMARY_PROMPT, BIOGRAPHY_PROMPT, DOCUMENTARY_PROMPT } from './prompts.ts';
+import { fetchWithRetry } from './fetch-retry.ts';
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1';
 
@@ -23,7 +24,7 @@ export class AnthropicLLMProvider implements LLMProvider {
     systemPrompt: string,
     userMessage: string
   ): Promise<string> {
-    const response = await fetch(`${ANTHROPIC_API_URL}/messages`, {
+    const response = await fetchWithRetry(`${ANTHROPIC_API_URL}/messages`, {
       method: 'POST',
       headers: {
         'x-api-key': getApiKey(),
