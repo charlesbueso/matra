@@ -17,6 +17,7 @@ import { useFamilyStore } from '../src/stores/familyStore';
 import { useAuthStore } from '../src/stores/authStore';
 import { useSignedUrl } from '../src/hooks';
 import { Colors, Typography, Spacing, BorderRadius } from '../src/theme/tokens';
+import { resizeImageForUpload } from '../src/utils/image';
 
 export default function ManageFamilyGroupScreen() {
   const { t } = useTranslation();
@@ -80,8 +81,8 @@ export default function ManageFamilyGroupScreen() {
 
     setIsUploadingLogo(true);
     try {
-      // Upload via Supabase storage directly
-      const uri = result.assets[0].uri;
+      // Resize then upload via Supabase storage directly
+      const uri = await resizeImageForUpload(result.assets[0].uri);
       const fileName = `family-logo-${group.id}-${Date.now()}.jpg`;
       const response = await fetch(uri);
       const blob = await response.blob();

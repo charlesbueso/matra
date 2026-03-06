@@ -17,6 +17,7 @@ import { invokeFunction } from '../../src/services/supabase';
 import { useSignedUrl } from '../../src/hooks';
 import { Colors, Typography, Spacing, BorderRadius } from '../../src/theme/tokens';
 import { SUPPORTED_LANGUAGES, getCurrentLanguage, type LanguageCode } from '../../src/i18n';
+import { resizeImageForUpload } from '../../src/utils/image';
 
 // ── Usage Row with Progress Bar ──
 function UsageRow({ label, used, max, suffix, formatLabel }: {
@@ -313,7 +314,8 @@ export default function SettingsScreen() {
 
     setIsUploadingAvatar(true);
     try {
-      const avatarKey = await uploadPersonAvatar(profile.self_person_id, result.assets[0].uri);
+      const resizedUri = await resizeImageForUpload(result.assets[0].uri);
+      const avatarKey = await uploadPersonAvatar(profile.self_person_id, resizedUri);
       await updateProfile({ avatar_url: avatarKey });
     } catch (err: any) {
       Alert.alert(t('settings.uploadFailed'), err.message);
@@ -534,83 +536,107 @@ export default function SettingsScreen() {
           </Card>
         </View>
 
-        {/* Account */}
+        {/* Sign Out */}
         <View style={styles.section}>
           <Button
             title={t('common.signOut')}
             onPress={handleSignOut}
             variant="ghost"
           />
-          <Button
-            title={isDeactivating ? t('settings.deactivating') : t('settings.deactivateAccount')}
-            onPress={() => {
-              Alert.alert(
-                t('settings.deactivateAccount'),
-                t('settings.deactivateAccountMessage'),
-                [
-                  { text: t('common.cancel'), style: 'cancel' },
-                  {
-                    text: t('settings.deactivate'),
-                    style: 'destructive',
-                    onPress: async () => {
-                      setIsDeactivating(true);
-                      try {
-                        await deactivateAccount();
-                      } catch (err: any) {
-                        Alert.alert(t('common.error'), err.message);
-                      } finally {
-                        setIsDeactivating(false);
-                      }
-                    },
-                  },
-                ]
-              );
-            }}
-            variant="ghost"
-            size="sm"
-            loading={isDeactivating}
-          />
-          <Button
-            title={isDeletingAccount ? t('settings.deletingAccount') : t('settings.deleteAccount')}
-            onPress={() => {
-              Alert.alert(
-                t('settings.deleteAccount'),
-                t('settings.deleteAccountMessage'),
-                [
-                  { text: t('common.cancel'), style: 'cancel' },
-                  {
-                    text: t('settings.deleteEverything'),
-                    style: 'destructive',
-                    onPress: () => {
-                      Alert.alert(
-                        t('settings.absolutelySure'),
-                        t('settings.absolutelySureMessage'),
-                        [
-                          { text: t('common.cancel'), style: 'cancel' },
-                          {
-                            text: t('settings.yesDeleteAccount'),
-                            style: 'destructive',
-                            onPress: async () => {
-                              setIsDeletingAccount(true);
-                              try {
-                                await deleteAccount();
-                              } catch (err: any) {
-                                Alert.alert(t('common.error'), err.message);
-                                setIsDeletingAccount(false);
-                              }
-                            },
-                          },
-                        ]
-                      );
-                    },
-                  },
-                ]
-              );
-            }}
-            variant="danger"
-            size="sm"
-            loading={isDeletingAccount}
-          />
+        </View>
+
+        {/* Danger Zone */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('settings.dangerZone')}</Text>
+          <View style={styles.dangerZoneCard}>
+            <Text style={styles.dangerZoneDesc}>{t('settings.dangerZoneDesc')}</Text>
+
+            <View style={styles.dangerZoneItem}>
+              <View style={styles.dangerZoneItemInfo}>
+                <Text style={styles.dangerZoneItemTitle}>{t('settings.deactivateAccount')}</Text>
+                <Text style={styles.dangerZoneItemDesc}>{t('settings.deactivateAccountDesc')}</Text>
+              </View>
+              <Button
+                title={isDeactivating ? t('settings.deactivating') : t('settings.deactivate')}
+                onPress={() => {
+                  Alert.alert(
+                    t('settings.deactivateAccount'),
+                    t('settings.deactivateAccountMessage'),
+                    [
+                      { text: t('common.cancel'), style: 'cancel' },
+                      {
+                        text: t('settings.deactivate'),
+                        style: 'destructive',
+                        onPress: async () => {
+                          setIsDeactivating(true);
+                          try {
+                            await deactivateAccount();
+                          } catch (err: any) {
+                            Alert.alert(t('common.error'), err.message);
+                          } finally {
+                            setIsDeactivating(false);
+                          }
+                        },
+                      },
+                    ]
+                  );
+                }}
+                variant="ghost"
+                size="sm"
+                loading={isDeactivating}
+              />
+            </View>
+
+            <View style={styles.dangerZoneDivider} />
+
+            <View style={styles.dangerZoneItem}>
+              <View style={styles.dangerZoneItemInfo}>
+                <Text style={styles.dangerZoneItemTitle}>{t('settings.deleteAccount')}</Text>
+                <Text style={styles.dangerZoneItemDesc}>{t('settings.deleteAccountDesc')}</Text>
+              </View>
+              <Button
+                title={isDeletingAccount ? t('settings.deletingAccount') : t('settings.deleteAccount')}
+                onPress={() => {
+                  Alert.alert(
+                    t('settings.deleteAccount'),
+                    t('settings.deleteAccountMessage'),
+                    [
+                      { text: t('common.cancel'), style: 'cancel' },
+                      {
+                        text: t('settings.deleteEverything'),
+                        style: 'destructive',
+                        onPress: () => {
+                          Alert.alert(
+                            t('settings.absolutelySure'),
+                            t('settings.absolutelySureMessage'),
+                            [
+                              { text: t('common.cancel'), style: 'cancel' },
+                              {
+                                text: t('settings.yesDeleteAccount'),
+                                style: 'destructive',
+                                onPress: async () => {
+                                  setIsDeletingAccount(true);
+                                  try {
+                                    await deleteAccount();
+                                  } catch (err: any) {
+                                    Alert.alert(t('common.error'), err.message);
+                                    setIsDeletingAccount(false);
+                                  }
+                                },
+                              },
+                            ]
+                          );
+                        },
+                      },
+                    ]
+                  );
+                }}
+                variant="danger"
+                size="sm"
+                loading={isDeletingAccount}
+              />
+            </View>
+          </View>
         </View>
 
         <Text style={styles.version}>MATRA v1.0.0</Text>
@@ -837,5 +863,43 @@ const styles = StyleSheet.create({
     color: Colors.text.shadow,
     textAlign: 'center',
     marginTop: Spacing.xl,
+  },
+  dangerZoneCard: {
+    borderWidth: 1,
+    borderColor: 'rgba(196, 102, 90, 0.25)',
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    backgroundColor: 'rgba(196, 102, 90, 0.05)',
+    gap: Spacing.lg,
+  },
+  dangerZoneDesc: {
+    fontSize: Typography.sizes.caption,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.twilight,
+    lineHeight: 18,
+  },
+  dangerZoneItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  dangerZoneItemInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  dangerZoneItemTitle: {
+    fontSize: Typography.sizes.body,
+    fontFamily: Typography.fonts.bodySemiBold,
+    color: Colors.text.moonlight,
+  },
+  dangerZoneItemDesc: {
+    fontSize: Typography.sizes.small,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.twilight,
+    lineHeight: 16,
+  },
+  dangerZoneDivider: {
+    height: 1,
+    backgroundColor: 'rgba(196, 102, 90, 0.15)',
   },
 });

@@ -186,7 +186,7 @@
     "roleGodchild": "Ahijado/a"
   },
   "home": {
-    "welcomeBack": "Bienvenido, {{name}}",
+    "welcomeBack": "Hola, {{name}}",
     "startConversation": "Inicia una conversación para hacer crecer tu árbol",
     "treeGrowing": "Tu árbol genealógico está creciendo",
     "people_one": "Persona",
@@ -335,7 +335,11 @@
     "deathDate": "Fecha de Fallecimiento",
     "birthPlace": "Lugar de Nacimiento",
     "currentLocation": "Ubicación Actual",
-    "profession": "Profesión"
+    "profession": "Profesión",
+    "gender": "Género",
+    "genderMale": "Masculino",
+    "genderFemale": "Femenino",
+    "addGender": "Seleccionar género"
   },
   "relationships": {
     "parent": "Padre/Madre",
@@ -375,7 +379,7 @@
     "dailyConversations": "Conversaciones diarias",
     "maxRecordingLength": "Duración máxima de grabación",
     "totalConversations": "Total de conversaciones",
-    "thisMonth": "este mes",
+    "thisMonth": "mes",
     "today": "hoy",
     "family": "Familia",
     "manageFamilyGroups": "Administrar Grupos Familiares",
@@ -407,11 +411,15 @@
     "aboutMatra": "Acerca de MATRA",
     "signOutConfirmTitle": "Cerrar sesión",
     "signOutConfirmMessage": "¿Estás seguro de que quieres cerrar sesión?",
+    "dangerZone": "Zona de Peligro",
+    "dangerZoneDesc": "Estas acciones pueden afectar tu cuenta y datos. Procede con precaución.",
     "deactivateAccount": "Desactivar Cuenta",
+    "deactivateAccountDesc": "Tus datos se conservarán pero quedarán ocultos. Reactiva en cualquier momento al iniciar sesión.",
     "deactivateAccountMessage": "Tus datos se conservarán pero quedarán ocultos. Puedes reactivar tu cuenta al volver a iniciar sesión.",
     "deactivating": "Desactivando...",
     "deactivate": "Desactivar",
     "deleteAccount": "Eliminar Cuenta",
+    "deleteAccountDesc": "Elimina permanentemente tu cuenta y todos tus datos. No se puede deshacer.",
     "deleteAccountMessage": "Esto eliminará permanentemente tu cuenta y TODOS tus datos. No se puede deshacer.",
     "deleteEverything": "Eliminar Todo",
     "deletingAccount": "Eliminando...",

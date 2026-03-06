@@ -16,6 +16,7 @@ import { useFamilyStore, Person } from '../../src/stores/familyStore';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useSignedUrl } from '../../src/hooks';
 import { Colors, Typography, Spacing, BorderRadius } from '../../src/theme/tokens';
+import { resizeImageForUpload } from '../../src/utils/image';
 
 const RELATIONSHIP_TYPES = [
   { value: 'parent', label: 'Parent' },
@@ -199,7 +200,8 @@ export default function PersonDetailScreen() {
 
     setIsUploadingAvatar(true);
     try {
-      await uploadPersonAvatar(person.id, result.assets[0].uri);
+      const resizedUri = await resizeImageForUpload(result.assets[0].uri);
+      await uploadPersonAvatar(person.id, resizedUri);
     } catch (err: any) {
       Alert.alert(t('person.uploadFailed'), err.message);
     } finally {
@@ -372,6 +374,20 @@ export default function PersonDetailScreen() {
             </Pressable>
           </View>
           <View style={styles.detailsRow}>
+            <Pressable
+              style={styles.detailChip}
+              onPress={() => {
+                const current = person.metadata?.gender;
+                const next = !current ? 'male' : current === 'male' ? 'female' : null;
+                updatePerson(person.id, { metadata: { ...person.metadata, gender: next } });
+              }}
+            >
+              <Text style={styles.detailChipText}>
+                {person.metadata?.gender === 'male' ? `👤 ${t('person.genderMale')}`
+                  : person.metadata?.gender === 'female' ? `👤 ${t('person.genderFemale')}`
+                  : `👤 ${t('person.addGender')}`}
+              </Text>
+            </Pressable>
             <Pressable
               style={[styles.detailChip, (person.death_date || person.metadata?.is_deceased) && styles.detailChipDeceased]}
               onPress={() => {

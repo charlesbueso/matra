@@ -232,7 +232,7 @@ export default function RootLayout() {
         {isReactivating && (
           <View style={reactivationStyles.overlay}>
             <View style={reactivationStyles.card}>
-              <ActivityIndicator size="large" color={Colors.primary.green} />
+              <ActivityIndicator size="large" color={Colors.accent.cyan} />
               <Text style={reactivationStyles.text}>{t('layout.reactivating')}</Text>
             </View>
           </View>

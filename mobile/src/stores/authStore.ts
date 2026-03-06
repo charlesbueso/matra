@@ -199,3 +199,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 }));
+
+// Expose store globally in dev for debugger/console access
+if (__DEV__) {
+  (global as any).useAuthStore = useAuthStore;
+}

@@ -3,6 +3,7 @@
 // ============================================================
 
 import { create } from 'zustand';
+import i18next from 'i18next';
 import { supabase, invokeFunction } from '../services/supabase';
 import { invalidateSignedUrl } from '../services/signedUrl';
 import { useAuthStore } from './authStore';
@@ -610,8 +611,8 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
           processingInterviewId: interviewId,
         }));
         useNotificationStore.getState().sendLocalNotification(
-          'Your Lineage is Ready!',
-          'Your conversation has been transcribed and analyzed. Tap to see new connections on your lineage map.',
+          i18next.t('notifications.lineageReady'),
+          i18next.t('notifications.lineageReadyBody'),
         );
       })
       .catch((err) => {
@@ -622,8 +623,8 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
           processingError: err?.message || 'Processing failed. Please try again.',
         }));
         useNotificationStore.getState().sendLocalNotification(
-          'Processing Failed',
-          'Something went wrong while analyzing your conversation. Please try again.',
+          i18next.t('notifications.processingFailed'),
+          i18next.t('notifications.processingFailedBody'),
         );
       })
       .finally(() => {

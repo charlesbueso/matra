@@ -335,7 +335,11 @@
     "deathDate": "Death Date",
     "birthPlace": "Birth Place",
     "currentLocation": "Current Location",
-    "profession": "Profession"
+    "profession": "Profession",
+    "gender": "Gender",
+    "genderMale": "Male",
+    "genderFemale": "Female",
+    "addGender": "Add gender"
   },
   "relationships": {
     "parent": "Parent",
@@ -407,11 +411,15 @@
     "aboutMatra": "About MATRA",
     "signOutConfirmTitle": "Sign out",
     "signOutConfirmMessage": "Are you sure you want to sign out?",
+    "dangerZone": "Danger Zone",
+    "dangerZoneDesc": "These actions can affect your account and data. Please proceed with caution.",
     "deactivateAccount": "Deactivate Account",
+    "deactivateAccountDesc": "Your data will be preserved but hidden. Reactivate anytime by signing back in.",
     "deactivateAccountMessage": "Your data will be preserved but hidden. You can reactivate your account by signing back in.",
     "deactivating": "Deactivating...",
     "deactivate": "Deactivate",
     "deleteAccount": "Delete Account",
+    "deleteAccountDesc": "Permanently removes your account and all data. This cannot be undone.",
     "deleteAccountMessage": "This will permanently delete your account and ALL your data. This cannot be undone.",
     "deleteEverything": "Delete Everything",
     "deletingAccount": "Deleting...",
