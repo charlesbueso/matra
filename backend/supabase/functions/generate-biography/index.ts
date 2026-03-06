@@ -181,6 +181,7 @@ serve(async (req: Request) => {
     const input: PersonBiographyInput = {
       firstName: person.first_name,
       lastName: person.last_name,
+      gender: person.metadata?.gender,
       birthDate: person.birth_date,
       deathDate: person.death_date,
       birthPlace: person.birth_place,

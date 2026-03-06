@@ -59,6 +59,7 @@ export interface LLMProvider {
 export interface PersonBiographyInput {
   firstName: string;
   lastName?: string;
+  gender?: string;
   birthDate?: string;
   deathDate?: string;
   birthPlace?: string;

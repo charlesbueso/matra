@@ -198,7 +198,7 @@ export default function SettingsScreen() {
       // Build a single combined text file with all CSV sections
       const sections: string[] = [];
       for (const [filename, content] of Object.entries(csvFiles)) {
-        sections.push(`=== ${filename} ===\n${content}`);
+        sections.push(`--- ${filename} ---\n${content}`);
       }
 
       // Append media download links at the end
@@ -206,7 +206,7 @@ export default function SettingsScreen() {
         const manifest = Object.entries(fileDownloads)
           .map(([key, url]) => `${key}\n${url}`)
           .join('\n\n');
-        sections.push(`=== media_download_links ===\n${manifest}`);
+        sections.push(`--- media_download_links ---\n${manifest}`);
       }
 
       const combinedContent = sections.join('\n\n\n');

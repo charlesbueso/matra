@@ -18,34 +18,18 @@ import { useSignedUrl } from '../../src/hooks';
 import { Colors, Typography, Spacing, BorderRadius } from '../../src/theme/tokens';
 import { resizeImageForUpload } from '../../src/utils/image';
 
-const RELATIONSHIP_TYPES = [
-  { value: 'parent', label: 'Parent' },
-  { value: 'child', label: 'Child' },
-  { value: 'spouse', label: 'Spouse' },
-  { value: 'ex_spouse', label: 'Ex-Spouse' },
-  { value: 'sibling', label: 'Sibling' },
-  { value: 'grandparent', label: 'Grandparent' },
-  { value: 'grandchild', label: 'Grandchild' },
-  { value: 'great_grandparent', label: 'Great Grandparent' },
-  { value: 'great_grandchild', label: 'Great Grandchild' },
-  { value: 'great_great_grandparent', label: 'Great Great Grandparent' },
-  { value: 'great_great_grandchild', label: 'Great Great Grandchild' },
-  { value: 'uncle_aunt', label: 'Uncle / Aunt' },
-  { value: 'nephew_niece', label: 'Nephew / Niece' },
-  { value: 'cousin', label: 'Cousin' },
-  { value: 'in_law', label: 'In-law' },
-  { value: 'step_parent', label: 'Step Parent' },
-  { value: 'step_child', label: 'Step Child' },
-  { value: 'step_sibling', label: 'Step Sibling' },
-  { value: 'adopted_parent', label: 'Adopted Parent' },
-  { value: 'adopted_child', label: 'Adopted Child' },
-  { value: 'godparent', label: 'Godparent' },
-  { value: 'godchild', label: 'Godchild' },
-  { value: 'other', label: 'Other' },
+const RELATIONSHIP_TYPE_VALUES = [
+  'parent', 'child', 'spouse', 'ex_spouse', 'sibling',
+  'grandparent', 'grandchild', 'great_grandparent', 'great_grandchild',
+  'great_great_grandparent', 'great_great_grandchild',
+  'uncle_aunt', 'nephew_niece', 'cousin', 'in_law',
+  'step_parent', 'step_child', 'step_sibling',
+  'adopted_parent', 'adopted_child',
+  'godparent', 'godchild', 'other',
 ];
 
-function getRelLabel(value: string): string {
-  return RELATIONSHIP_TYPES.find((t) => t.value === value)?.label || value.replace('_', ' ');
+function getRelLabel(value: string, t: (key: string) => string): string {
+  return t(`relationships.${value}`) || value.replace('_', ' ');
 }
 
 // When the current person is personB, we need to show the inverse label
@@ -73,7 +57,7 @@ export default function PersonDetailScreen() {
   const { people, relationships, stories, interviews,
     generateBiography, verifyRelationship, updateRelationship,
     createRelationship, deleteRelationship, uploadPersonAvatar, renamePerson,
-    updatePerson,
+    updatePerson, deletePerson, mergePeople,
   } = useFamilyStore();
   const profile = useAuthStore((s) => s.profile);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -92,8 +76,12 @@ export default function PersonDetailScreen() {
   const [isSavingName, setIsSavingName] = useState(false);
   const [editingDetail, setEditingDetail] = useState<string | null>(null);
   const [editDetailValue, setEditDetailValue] = useState('');
+  const [showMergeModal, setShowMergeModal] = useState(false);
+  const [isMerging, setIsMerging] = useState(false);
 
   const person = people.find((p) => p.id === id);
+  const avatarUrl = useSignedUrl(person?.avatar_url ?? null);
+  const fullName = person ? [person.first_name, person.last_name].filter(Boolean).join(' ') : '';
 
   if (!person) {
     return (
@@ -222,9 +210,6 @@ export default function PersonDetailScreen() {
     ]);
   };
 
-  const avatarUrl = useSignedUrl(person.avatar_url);
-  const fullName = [person.first_name, person.last_name].filter(Boolean).join(' ');
-
   return (
     <View style={{ flex: 1 }}>
     <StarField starCount={25}>
@@ -264,7 +249,7 @@ export default function PersonDetailScreen() {
                 style={styles.nameInput}
                 value={editFirstName}
                 onChangeText={setEditFirstName}
-                placeholder="First name"
+                placeholder={t('person.firstName')}
                 placeholderTextColor={Colors.text.twilight}
                 autoFocus
               />
@@ -272,7 +257,7 @@ export default function PersonDetailScreen() {
                 style={styles.nameInput}
                 value={editLastName}
                 onChangeText={setEditLastName}
-                placeholder="Last name"
+                placeholder={t('person.lastName')}
                 placeholderTextColor={Colors.text.twilight}
               />
               <View style={styles.nameEditActions}>
@@ -280,7 +265,7 @@ export default function PersonDetailScreen() {
                   style={styles.nameEditCancel}
                   onPress={() => setIsEditingName(false)}
                 >
-                  <Text style={styles.nameEditCancelText}>Cancel</Text>
+                  <Text style={styles.nameEditCancelText}>{t('common.cancel')}</Text>
                 </Pressable>
                 <Pressable
                   style={[styles.nameEditSave, (!editFirstName.trim() || isSavingName) && styles.nameEditSaveDisabled]}
@@ -298,14 +283,14 @@ export default function PersonDetailScreen() {
                       await renamePerson(person.id, newFirst, newLast);
                       setIsEditingName(false);
                     } catch (err: any) {
-                      Alert.alert('Error', err.message);
+                      Alert.alert(t('common.error'), err.message);
                     } finally {
                       setIsSavingName(false);
                     }
                   }}
                 >
                   <Text style={styles.nameEditSaveText}>
-                    {isSavingName ? 'Saving...' : 'Save'}
+                    {isSavingName ? t('person.saving') : t('common.save')}
                   </Text>
                 </Pressable>
               </View>
@@ -343,7 +328,7 @@ export default function PersonDetailScreen() {
                         if (now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) age--;
                         return age > 0 ? ` (${age})` : '';
                       })() : '')
-                  : 'Add birthday'}
+                  : t('person.addBirthday')}
               </Text>
             </Pressable>
             <Pressable
@@ -351,7 +336,7 @@ export default function PersonDetailScreen() {
               onPress={() => { setEditingDetail('birth_place'); setEditDetailValue(person.birth_place || ''); }}
             >
               <Text style={styles.detailChipText}>
-                📍 {person.birth_place || 'Add birthplace'}
+                📍 {person.birth_place || t('person.addBirthplace')}
               </Text>
             </Pressable>
           </View>
@@ -361,7 +346,7 @@ export default function PersonDetailScreen() {
               onPress={() => { setEditingDetail('current_location'); setEditDetailValue(person.current_location || ''); }}
             >
               <Text style={styles.detailChipText}>
-                🏠 {person.current_location || 'Add location'}
+                🏠 {person.current_location || t('person.addLocation')}
               </Text>
             </Pressable>
             <Pressable
@@ -369,7 +354,7 @@ export default function PersonDetailScreen() {
               onPress={() => { setEditingDetail('profession'); setEditDetailValue(person.metadata?.profession || ''); }}
             >
               <Text style={styles.detailChipText}>
-                💼 {person.metadata?.profession || 'Add profession'}
+                💼 {person.metadata?.profession || t('person.addProfession')}
               </Text>
             </Pressable>
           </View>
@@ -395,16 +380,16 @@ export default function PersonDetailScreen() {
                   setEditingDetail('death_date');
                   setEditDetailValue(person.death_date);
                 } else if (person.metadata?.is_deceased) {
-                  Alert.alert('Passing', 'Mark as alive or add a date?', [
-                    { text: 'Mark Alive', onPress: () => updatePerson(person.id, { metadata: { ...person.metadata, is_deceased: false } }) },
-                    { text: 'Add Date', onPress: () => { setEditingDetail('death_date'); setEditDetailValue(''); } },
-                    { text: 'Cancel', style: 'cancel' },
+                  Alert.alert(t('person.passing'), t('person.markAliveOrDate'), [
+                    { text: t('person.markAlive'), onPress: () => updatePerson(person.id, { metadata: { ...person.metadata, is_deceased: false } }) },
+                    { text: t('person.addDate'), onPress: () => { setEditingDetail('death_date'); setEditDetailValue(''); } },
+                    { text: t('common.cancel'), style: 'cancel' },
                   ]);
                 } else {
-                  Alert.alert('Mark as Deceased?', undefined, [
-                    { text: 'Yes, with date', onPress: () => { setEditingDetail('death_date'); setEditDetailValue(''); } },
-                    { text: 'Yes, no date', onPress: () => updatePerson(person.id, { metadata: { ...person.metadata, is_deceased: true } }) },
-                    { text: 'Cancel', style: 'cancel' },
+                  Alert.alert(t('person.markAsDeceased'), undefined, [
+                    { text: t('person.yesWithDate'), onPress: () => { setEditingDetail('death_date'); setEditDetailValue(''); } },
+                    { text: t('person.yesNoDate'), onPress: () => updatePerson(person.id, { metadata: { ...person.metadata, is_deceased: true } }) },
+                    { text: t('common.cancel'), style: 'cancel' },
                   ]);
                 }
               }}
@@ -420,8 +405,8 @@ export default function PersonDetailScreen() {
                         return age > 0 ? ` (age ${age})` : '';
                       })() : '')
                   : person.metadata?.is_deceased
-                    ? '🕊️ Deceased'
-                    : '🕊️ Alive'}}
+                    ? `🕊️ ${t('person.deceased')}`
+                    : `🕊️ ${t('person.alive')}`}
               </Text>
             </Pressable>
           </View>
@@ -446,7 +431,7 @@ export default function PersonDetailScreen() {
               <View>
                 <Text style={styles.biography}>{person.ai_biography}</Text>
                 <Button
-                  title={profile?.subscription_tier === 'free' ? '🔒 Update Biography' : '✨ Update Biography'}
+                  title={profile?.subscription_tier === 'free' ? `🔒 ${t('person.updateBiography')}` : `✨ ${t('person.updateBiography')}`}
                   onPress={handleGenerateBiography}
                   loading={isGenerating}
                   variant="secondary"
@@ -466,14 +451,14 @@ export default function PersonDetailScreen() {
                   {t('person.noBio')}
                 </Text>
                 <Button
-                  title={profile?.subscription_tier === 'free' ? '🔒 Generate Biography' : '✨ Generate Biography'}
+                  title={profile?.subscription_tier === 'free' ? `🔒 ${t('person.generateBiography')}` : `✨ ${t('person.generateBiography')}`}
                   onPress={handleGenerateBiography}
                   loading={isGenerating}
                   variant="secondary"
                   size="sm"
                 />
                 <Text style={styles.biographyHint}>
-                  The more conversations you record, the more robust and complete the biography becomes.
+                  {t('person.biographyHint')}
                 </Text>
               </View>
             ) : (
@@ -516,7 +501,7 @@ export default function PersonDetailScreen() {
                 try {
                   await verifyRelationship(rel.id);
                 } catch (err: any) {
-                  Alert.alert('Error', err.message);
+                  Alert.alert(t('common.error'), err.message);
                 } finally {
                   setConfirmingId(null);
                 }
@@ -532,7 +517,7 @@ export default function PersonDetailScreen() {
                     verified: true,
                   });
                 } catch (err: any) {
-                  Alert.alert('Error', err.message);
+                  Alert.alert(t('common.error'), err.message);
                 } finally {
                   setConfirmingId(null);
                   setEditingRelId(null);
@@ -541,15 +526,15 @@ export default function PersonDetailScreen() {
 
               const handleDelete = () => {
                 Alert.alert(
-                  'Remove Connection',
-                  `Remove ${rel.otherPerson?.first_name || 'this'} as ${getRelLabel(rel.effectiveType)}?`,
+                  t('person.removeConnection'),
+                  t('person.removeConnectionConfirm', { name: rel.otherPerson?.first_name || t('person.unknown'), type: getRelLabel(rel.effectiveType, t) }),
                   [
-                    { text: 'Cancel', style: 'cancel' },
+                    { text: t('common.cancel'), style: 'cancel' },
                     {
-                      text: 'Remove', style: 'destructive',
+                      text: t('person.remove'), style: 'destructive',
                       onPress: async () => {
                         try { await deleteRelationship(rel.id); }
-                        catch (err: any) { Alert.alert('Error', err.message); }
+                        catch (err: any) { Alert.alert(t('common.error'), err.message); }
                       },
                     },
                   ]
@@ -571,11 +556,11 @@ export default function PersonDetailScreen() {
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.relationshipName}>
-                      {rel.otherPerson ? `${rel.otherPerson.first_name} ${rel.otherPerson.last_name || ''}`.trim() : 'Unknown'}
+                      {rel.otherPerson ? `${rel.otherPerson.first_name} ${rel.otherPerson.last_name || ''}`.trim() : t('person.unknown')}
                     </Text>
                     <View style={styles.relationshipMeta}>
                       <Text style={styles.relationshipType}>
-                        {getRelLabel(rel.effectiveType)}
+                        {getRelLabel(rel.effectiveType, t)}
                       </Text>
                       {rel.verified ? (
                         <View style={styles.verifiedBadge}>
@@ -619,26 +604,26 @@ export default function PersonDetailScreen() {
                 {isEditing && (
                   <Animated.View entering={FadeIn.duration(200)} style={styles.typePicker}>
                     <Text style={styles.typePickerLabel}>
-                      {person.first_name} is {rel.otherPerson?.first_name}'s {getRelLabel(rel.effectiveType)}
+                      {t('person.isRelationship', { personA: person.first_name, personB: rel.otherPerson?.first_name, type: getRelLabel(rel.effectiveType, t) })}
                     </Text>
                     <View style={styles.typePickerGrid}>
-                      {RELATIONSHIP_TYPES.map((t) => (
+                      {RELATIONSHIP_TYPE_VALUES.map((typeValue) => (
                         <Pressable
-                          key={t.value}
+                          key={typeValue}
                           style={[
                             styles.typeOption,
-                            rel.effectiveType === t.value && styles.typeOptionSelected,
+                            rel.effectiveType === typeValue && styles.typeOptionSelected,
                           ]}
                           onPress={(e) => {
                             e.stopPropagation();
-                            if (t.value !== rel.effectiveType) handleChangeType(t.value);
+                            if (typeValue !== rel.effectiveType) handleChangeType(typeValue);
                           }}
                         >
                           <Text style={[
                             styles.typeOptionText,
-                            rel.effectiveType === t.value && styles.typeOptionTextSelected,
+                            rel.effectiveType === typeValue && styles.typeOptionTextSelected,
                           ]}>
-                            {t.label}
+                            {t(`relationships.${typeValue}`)}
                           </Text>
                         </Pressable>
                       ))}
@@ -668,6 +653,46 @@ export default function PersonDetailScreen() {
                 </Text>
               </Card>
             ))}
+          </Animated.View>
+        )}
+
+        {/* Delete / Merge Person */}
+        {profile?.self_person_id !== person.id && (
+          <Animated.View entering={FadeInDown.delay(500)}>
+            <Pressable
+              style={styles.mergePersonButton}
+              onPress={() => setShowMergeModal(true)}
+            >
+              <Ionicons name="git-merge-outline" size={16} color={Colors.accent.glow} />
+              <Text style={styles.mergePersonButtonText}>{t('person.mergeWith')}</Text>
+            </Pressable>
+            <Pressable
+              style={styles.deletePersonButton}
+              onPress={() => {
+                Alert.alert(
+                  t('person.deletePerson'),
+                  t('person.deletePersonConfirm', { name: fullName }),
+                  [
+                    { text: t('common.cancel'), style: 'cancel' },
+                    {
+                      text: t('common.delete'),
+                      style: 'destructive',
+                      onPress: async () => {
+                        try {
+                          await deletePerson(person.id);
+                          router.back();
+                        } catch (err: any) {
+                          Alert.alert(t('common.error'), err.message);
+                        }
+                      },
+                    },
+                  ],
+                );
+              }}
+            >
+              <Ionicons name="trash-outline" size={16} color={Colors.accent.coral} />
+              <Text style={styles.deletePersonButtonText}>{t('person.deletePerson')}</Text>
+            </Pressable>
           </Animated.View>
         )}
       </ScrollView>
@@ -715,7 +740,7 @@ export default function PersonDetailScreen() {
                           {p.first_name} {p.last_name || ''}
                         </Text>
                         {alreadyConnected && (
-                          <Text style={styles.modalOptionHint}>Already connected</Text>
+                          <Text style={styles.modalOptionHint}>{t('person.alreadyConnected')}</Text>
                         )}
                       </View>
                       {!alreadyConnected && (
@@ -733,23 +758,23 @@ export default function PersonDetailScreen() {
           ) : (
             <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
               <Text style={styles.typePickerLabel}>
-                {people.find((p) => p.id === selectedPersonId)?.first_name} is {person.first_name}'s {selectedType ? getRelLabel(selectedType) : '_____'}
+                {t('person.isRelationship', { personA: people.find((p) => p.id === selectedPersonId)?.first_name, personB: person.first_name, type: selectedType ? getRelLabel(selectedType, t) : '_____' })}
               </Text>
               <View style={[styles.typePickerGrid, { marginTop: Spacing.md }]}>
-                {RELATIONSHIP_TYPES.map((t) => (
+                {RELATIONSHIP_TYPE_VALUES.map((typeValue) => (
                   <Pressable
-                    key={t.value}
+                    key={typeValue}
                     style={[
                       styles.typeOption,
-                      selectedType === t.value && styles.typeOptionSelected,
+                      selectedType === typeValue && styles.typeOptionSelected,
                     ]}
-                    onPress={() => setSelectedType(t.value)}
+                    onPress={() => setSelectedType(typeValue)}
                   >
                     <Text style={[
                       styles.typeOptionText,
-                      selectedType === t.value && styles.typeOptionTextSelected,
+                      selectedType === typeValue && styles.typeOptionTextSelected,
                     ]}>
-                      {t.label}
+                      {t(`relationships.${typeValue}`)}
                     </Text>
                   </Pressable>
                 ))}
@@ -759,7 +784,7 @@ export default function PersonDetailScreen() {
                   style={styles.modalBackButton}
                   onPress={() => { setAddStep('person'); setSelectedType(null); }}
                 >
-                  <Text style={styles.modalBackButtonText}>← Back</Text>
+                  <Text style={styles.modalBackButtonText}>← {t('person.back')}</Text>
                 </Pressable>
                 <Pressable
                   style={[styles.modalSaveButton, !selectedType && styles.modalSaveButtonDisabled]}
@@ -771,7 +796,7 @@ export default function PersonDetailScreen() {
                       await createRelationship(selectedPersonId, id!, selectedType);
                       setShowAddModal(false);
                     } catch (err: any) {
-                      Alert.alert('Error', err.message);
+                      Alert.alert(t('common.error'), err.message);
                     } finally {
                       setIsSaving(false);
                     }
@@ -784,6 +809,78 @@ export default function PersonDetailScreen() {
               </View>
             </ScrollView>
           )}
+        </Animated.View>
+      </Animated.View>
+    )}
+    {/* Merge Person Modal */}
+    {showMergeModal && (
+      <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(150)} style={styles.modalOverlay}>
+        <Pressable style={styles.modalBackdrop} onPress={() => setShowMergeModal(false)} />
+        <Animated.View entering={SlideInDown.duration(300)} exiting={SlideOutDown.duration(200)} style={styles.modalContent}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>{t('person.mergePerson')}</Text>
+            <Pressable onPress={() => setShowMergeModal(false)} style={styles.modalClose}>
+              <Text style={styles.modalCloseText}>✕</Text>
+            </Pressable>
+          </View>
+          <ScrollView style={styles.modalScroll} showsVerticalScrollIndicator={false}>
+            <Text style={styles.mergeDesc}>
+              {t('person.mergePersonDesc', { name: fullName })}
+            </Text>
+            {people
+              .filter((p) => p.id !== id && p.id !== profile?.self_person_id)
+              .map((p) => (
+                <Pressable
+                  key={p.id}
+                  style={styles.modalOption}
+                  disabled={isMerging}
+                  onPress={() => {
+                    const sourceName = [p.first_name, p.last_name].filter(Boolean).join(' ');
+                    Alert.alert(
+                      t('person.mergeConfirm', { source: sourceName, target: fullName }),
+                      t('person.mergeConfirmMessage', { source: sourceName, target: fullName }),
+                      [
+                        { text: t('common.cancel'), style: 'cancel' },
+                        {
+                          text: t('person.merge'),
+                          style: 'destructive',
+                          onPress: async () => {
+                            setIsMerging(true);
+                            try {
+                              await mergePeople(person.id, p.id);
+                              setShowMergeModal(false);
+                              Alert.alert(
+                                t('person.mergeComplete'),
+                                t('person.mergeCompleteMessage', { source: sourceName, target: fullName }),
+                              );
+                            } catch (err: any) {
+                              Alert.alert(t('common.error'), err.message);
+                            } finally {
+                              setIsMerging(false);
+                            }
+                          },
+                        },
+                      ],
+                    );
+                  }}
+                >
+                  <View style={styles.modalOptionAvatar}>
+                    <Text style={styles.modalOptionAvatarText}>{p.first_name[0]}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.modalOptionName}>
+                      {p.first_name} {p.last_name || ''}
+                    </Text>
+                    {p.birth_date && (
+                      <Text style={styles.modalOptionHint}>
+                        {new Date(p.birth_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </Text>
+                    )}
+                  </View>
+                  <Text style={styles.modalChevron}>›</Text>
+                </Pressable>
+              ))}
+          </ScrollView>
         </Animated.View>
       </Animated.View>
     )}
@@ -821,9 +918,9 @@ export default function PersonDetailScreen() {
                   value={editDetailValue}
                   onChangeText={setEditDetailValue}
                   placeholder={
-                    editingDetail === 'birth_place' ? 'City, Country'
-                    : editingDetail === 'current_location' ? 'City, Country'
-                    : editingDetail === 'profession' ? 'e.g. Teacher'
+                    editingDetail === 'birth_place' ? t('person.cityCountry')
+                    : editingDetail === 'current_location' ? t('person.cityCountry')
+                    : editingDetail === 'profession' ? t('person.professionPlaceholder')
                     : ''
                   }
                   placeholderTextColor={Colors.text.starlight + '60'}
@@ -1201,12 +1298,12 @@ const styles = StyleSheet.create({
   },
   unverifiedBadge: {
     backgroundColor: 'rgba(196, 154, 60, 0.12)',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
     borderRadius: BorderRadius.full,
   },
   unverifiedBadgeText: {
-    fontSize: 10,
+    fontSize: 9,
     fontFamily: Typography.fonts.bodySemiBold,
     color: Colors.accent.amber,
   },
@@ -1457,5 +1554,39 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.h3,
     fontFamily: Typography.fonts.heading,
     color: Colors.text.starlight,
+  },
+  deletePersonButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    paddingVertical: Spacing.md,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.lg,
+  },
+  deletePersonButtonText: {
+    fontSize: Typography.sizes.body,
+    fontFamily: Typography.fonts.bodySemiBold,
+    color: Colors.accent.coral,
+  },
+  mergePersonButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.sm,
+    paddingVertical: Spacing.md,
+    marginTop: Spacing.xxl,
+  },
+  mergePersonButtonText: {
+    fontSize: Typography.sizes.body,
+    fontFamily: Typography.fonts.bodySemiBold,
+    color: Colors.accent.glow,
+  },
+  mergeDesc: {
+    fontSize: Typography.sizes.caption,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.twilight,
+    marginBottom: Spacing.md,
+    lineHeight: Typography.sizes.caption * Typography.lineHeights.relaxed,
   },
 });

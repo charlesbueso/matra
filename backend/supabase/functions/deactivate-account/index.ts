@@ -130,11 +130,12 @@ async function buildSnapshot(db: any, userId: string, groupIds: string[]) {
     'snapshot family_group_members',
   );
 
-  // Invitations
-  snapshot.family_invitations = await assertOk(
-    db.from('family_invitations').select('*').in('family_group_id', groupIds),
-    'snapshot family_invitations',
-  );
+  // Invitations (table may not exist if migration 00007 hasn't run yet)
+  const { data: invitations } = await db
+    .from('family_invitations')
+    .select('*')
+    .in('family_group_id', groupIds);
+  if (invitations) snapshot.family_invitations = invitations;
 
   return snapshot;
 }
@@ -198,14 +199,12 @@ async function deactivate(db: any, userId: string) {
       'soft-delete people',
     );
 
-    // Revoke pending invitations
-    await assertOk(
-      db.from('family_invitations')
-        .update({ status: 'revoked', updated_at: now })
-        .in('family_group_id', groupIds)
-        .eq('status', 'pending'),
-      'revoke invitations',
-    );
+    // Revoke pending invitations (skip if table doesn't exist yet)
+    await db
+      .from('family_invitations')
+      .update({ status: 'revoked', updated_at: now })
+      .in('family_group_id', groupIds)
+      .eq('status', 'pending');
 
     // Soft-delete family groups last (parent records)
     await assertOk(

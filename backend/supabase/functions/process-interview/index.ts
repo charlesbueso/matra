@@ -281,11 +281,11 @@ serve(async (req: Request) => {
 
     // 5. Extract entities & relationships
     // Look up subject person so the AI knows who the narrator is
-    let subjectPerson: { id: string; first_name: string; last_name: string | null } | null = null;
+    let subjectPerson: { id: string; first_name: string; last_name: string | null; metadata: any } | null = null;
     if (subjectPersonId) {
       const { data } = await supabase
         .from('people')
-        .select('id, first_name, last_name')
+        .select('id, first_name, last_name, metadata')
         .eq('id', subjectPersonId)
         .single();
       subjectPerson = data;
@@ -295,8 +295,12 @@ serve(async (req: Request) => {
     const subjectName = subjectPerson
       ? `${subjectPerson.first_name}${subjectPerson.last_name ? ' ' + subjectPerson.last_name : ''}`
       : null;
+    const subjectGender = subjectPerson?.metadata?.gender || null;
+    const genderHint = subjectGender
+      ? ` Their gender is ${subjectGender}. Use correct gendered language (pronouns, adjectives, relationship labels) when referring to ${subjectName}.`
+      : '';
     const transcriptForAI = subjectName
-      ? `[Narrator/subject of this interview is ${subjectName}. Any first-person references ("I", "me", "my") refer to ${subjectName}. Do NOT create a separate entry for the narrator — they are ${subjectName}. IMPORTANT: When the narrator says "my mom", "my dad", "my brother", etc., create relationships between those people and ${subjectName}. Use ${subjectName} as the personA or personB name in relationships — never use "I" or "me" as a person name.]\n\n${transcriptText}`
+      ? `[Narrator/subject of this interview is ${subjectName}.${genderHint} Any first-person references ("I", "me", "my") refer to ${subjectName}. Do NOT create a separate entry for the narrator — they are ${subjectName}. IMPORTANT: When the narrator says "my mom", "my dad", "my brother", etc., create relationships between those people and ${subjectName}. Use ${subjectName} as the personA or personB name in relationships — never use "I" or "me" as a person name.]\n\n${transcriptText}`
       : transcriptText;
 
     const llmProvider = getLLMProviderWithFallback();
@@ -451,6 +455,7 @@ serve(async (req: Request) => {
         const metaUpdates: Record<string, unknown> = { ...existingMeta };
         if (suggested.profession && !existingMeta.profession) metaUpdates.profession = suggested.profession;
         if (suggested.isDeceased != null && existingMeta.is_deceased == null) metaUpdates.is_deceased = suggested.isDeceased;
+        if (suggested.gender && !existingMeta.gender) metaUpdates.gender = suggested.gender;
         if (Object.keys(metaUpdates).length > Object.keys(existingMeta).length) {
           updates.metadata = metaUpdates;
         }
@@ -470,6 +475,7 @@ serve(async (req: Request) => {
         const personMeta: Record<string, unknown> = {};
         if (suggested.profession) personMeta.profession = suggested.profession;
         if (suggested.isDeceased != null) personMeta.is_deceased = suggested.isDeceased;
+        if (suggested.gender) personMeta.gender = suggested.gender;
 
         const { data: newPerson } = await supabase
           .from('people')

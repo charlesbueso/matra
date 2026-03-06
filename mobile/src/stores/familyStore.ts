@@ -126,6 +126,8 @@ interface FamilyState {
   // Person actions
   createPerson: (person: Partial<Person>) => Promise<Person>;
   updatePerson: (id: string, updates: Partial<Person>) => Promise<void>;
+  deletePerson: (id: string) => Promise<void>;
+  mergePeople: (keepId: string, mergeId: string) => Promise<void>;
   renamePerson: (id: string, newFirstName: string, newLastName: string | null) => Promise<void>;
 
   // Relationship actions
@@ -349,6 +351,135 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
     set((state) => ({
       people: state.people.map((p) => (p.id === id ? { ...p, ...updates } : p)),
     }));
+  },
+
+  deletePerson: async (id) => {
+    const { error } = await supabase
+      .from('people')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (error) throw error;
+
+    set((state) => ({
+      people: state.people.filter((p) => p.id !== id),
+      relationships: state.relationships.filter(
+        (r) => r.person_a_id !== id && r.person_b_id !== id
+      ),
+    }));
+  },
+
+  mergePeople: async (keepId, mergeId) => {
+    const keep = get().people.find((p) => p.id === keepId);
+    const merge = get().people.find((p) => p.id === mergeId);
+    if (!keep || !merge) throw new Error('Person not found');
+
+    // 1. Merge person fields: fill in blanks on keep from merge
+    const updates: Partial<Person> = {};
+    if (!keep.last_name && merge.last_name) updates.last_name = merge.last_name;
+    if (!keep.nickname && merge.nickname) updates.nickname = merge.nickname;
+    if (!keep.birth_date && merge.birth_date) updates.birth_date = merge.birth_date;
+    if (!keep.death_date && merge.death_date) updates.death_date = merge.death_date;
+    if (!keep.birth_place && merge.birth_place) updates.birth_place = merge.birth_place;
+    if (!keep.current_location && merge.current_location) updates.current_location = merge.current_location;
+    if (!keep.avatar_url && merge.avatar_url) updates.avatar_url = merge.avatar_url;
+    if (!keep.ai_biography && merge.ai_biography) updates.ai_biography = merge.ai_biography;
+    if (!keep.ai_summary && merge.ai_summary) updates.ai_summary = merge.ai_summary;
+
+    // Merge metadata (keep takes priority)
+    const mergedMeta = { ...(merge.metadata || {}), ...(keep.metadata || {}) };
+    if (Object.keys(mergedMeta).length > 0) updates.metadata = mergedMeta;
+
+    if (Object.keys(updates).length > 0) {
+      const { error } = await supabase.from('people').update(updates).eq('id', keepId);
+      if (error) throw error;
+    }
+
+    // 2. Re-point relationships from merge → keep (skip duplicates / self-refs)
+    const allRels = get().relationships;
+    const mergeRels = allRels.filter(
+      (r) => r.person_a_id === mergeId || r.person_b_id === mergeId
+    );
+
+    for (const rel of mergeRels) {
+      const newA = rel.person_a_id === mergeId ? keepId : rel.person_a_id;
+      const newB = rel.person_b_id === mergeId ? keepId : rel.person_b_id;
+
+      // Skip self-references (keep ↔ merge were connected)
+      if (newA === newB) {
+        await supabase.from('relationships').delete().eq('id', rel.id);
+        continue;
+      }
+
+      // Check if keep already has a relationship with the same person & type
+      const duplicate = allRels.some(
+        (r) => r.id !== rel.id &&
+          ((r.person_a_id === newA && r.person_b_id === newB) ||
+           (r.person_a_id === newB && r.person_b_id === newA)) &&
+          r.relationship_type === rel.relationship_type
+      );
+
+      if (duplicate) {
+        await supabase.from('relationships').delete().eq('id', rel.id);
+      } else {
+        await supabase.from('relationships')
+          .update({ person_a_id: newA, person_b_id: newB })
+          .eq('id', rel.id);
+      }
+    }
+
+    // 3. Re-point interviews subject_person_id
+    await supabase
+      .from('interviews')
+      .update({ subject_person_id: keepId })
+      .eq('subject_person_id', mergeId);
+
+    // 4. Re-point story_people (delete if duplicate pair exists)
+    const { data: mergeStoryPeople } = await supabase
+      .from('story_people')
+      .select('story_id, person_id')
+      .eq('person_id', mergeId);
+
+    if (mergeStoryPeople && mergeStoryPeople.length > 0) {
+      const { data: keepStoryPeople } = await supabase
+        .from('story_people')
+        .select('story_id')
+        .eq('person_id', keepId);
+
+      const keepStoryIds = new Set((keepStoryPeople || []).map((sp: any) => sp.story_id));
+
+      for (const sp of mergeStoryPeople) {
+        if (keepStoryIds.has(sp.story_id)) {
+          // Keep already linked to this story – remove duplicate
+          await supabase
+            .from('story_people')
+            .delete()
+            .eq('story_id', sp.story_id)
+            .eq('person_id', mergeId);
+        } else {
+          await supabase
+            .from('story_people')
+            .update({ person_id: keepId })
+            .eq('story_id', sp.story_id)
+            .eq('person_id', mergeId);
+        }
+      }
+    }
+
+    // 5. Re-point media_assets
+    await supabase
+      .from('media_assets')
+      .update({ person_id: keepId })
+      .eq('person_id', mergeId);
+
+    // 6. Soft-delete the merged person
+    await supabase
+      .from('people')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', mergeId);
+
+    // 7. Refresh all data
+    await get().fetchAllFamilyData();
   },
 
   renamePerson: async (id, newFirstName, newLastName) => {

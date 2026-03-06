@@ -346,6 +346,32 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
   const contentWidth = pageWidth - margin * 2;
   const borderInset = 30;
 
+  // ── Pre-fetch person avatars ──
+  const AVATAR_MAX_BYTES = 500_000;
+  const avatarImages: Record<string, any> = {};
+  const avatarPeople = data.people.filter((p: any) => p.avatar_url);
+  if (avatarPeople.length > 0) {
+    const avatarEntries = await Promise.all(
+      avatarPeople.map(async (p: any) => {
+        try {
+          const url = await getPresignedUrl(p.avatar_url);
+          const resp = await fetch(url);
+          if (!resp.ok) return null;
+          const buf = await resp.arrayBuffer();
+          if (buf.byteLength > AVATAR_MAX_BYTES) return null;
+          const bytes = new Uint8Array(buf);
+          const img = p.avatar_url.endsWith('.png')
+            ? await pdf.embedPng(bytes)
+            : await pdf.embedJpg(bytes);
+          return [p.id, img] as const;
+        } catch { return null; }
+      })
+    );
+    for (const entry of avatarEntries) {
+      if (entry) avatarImages[entry[0]] = entry[1];
+    }
+  }
+
   // Strip characters that WinAnsi (standard PDF fonts) cannot encode
   function sanitize(text: string): string {
     return text
@@ -576,18 +602,36 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
     page = newPage();
     y = drawSectionHeader(page, t('familyMembers', lang), pageHeight - margin);
 
+    const AVATAR_SIZE = 60;
+    const AVATAR_GAP = 12;
+
     for (const person of data.people) {
       const fullName = [person.first_name, person.last_name].filter(Boolean).join(' ');
+      const avatar = avatarImages[person.id] || null;
+      const textX = avatar ? margin + AVATAR_SIZE + AVATAR_GAP : margin;
+      const textWidth = avatar ? contentWidth - AVATAR_SIZE - AVATAR_GAP : contentWidth;
 
-      if (y < margin + 120) {
+      if (y < margin + 140) {
         drawFooter(page, pageNum);
         pageNum++;
         page = newPage();
         y = pageHeight - margin;
       }
 
+      const blockTopY = y;
+
+      // Avatar
+      if (avatar) {
+        page.drawImage(avatar, {
+          x: margin,
+          y: blockTopY - AVATAR_SIZE,
+          width: AVATAR_SIZE,
+          height: AVATAR_SIZE,
+        });
+      }
+
       // Name
-      page.drawText(sanitize(fullName), { x: margin, y, size: 15, font: fonts.bold, color: BRAND.darkText });
+      page.drawText(sanitize(fullName), { x: textX, y, size: 15, font: fonts.bold, color: BRAND.darkText });
       y -= 18;
 
       // Details
@@ -598,7 +642,7 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
       if (person.birth_place) details.push(person.birth_place);
       if (person.current_location) details.push(`${t('livesIn', lang)} ${person.current_location}`);
       if (details.length > 0) {
-        page.drawText(sanitize(details.join('  ·  ')), { x: margin, y, size: 9, font: fonts.sans, color: BRAND.mutedText });
+        page.drawText(sanitize(details.join('  ·  ')), { x: textX, y, size: 9, font: fonts.sans, color: BRAND.mutedText });
         y -= 15;
       }
 
@@ -613,8 +657,13 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
           const otherName = other ? [other.first_name, other.last_name].filter(Boolean).join(' ') : t('unknown', lang);
           return `${getRelLabel(r.relationship_type, lang)}: ${otherName}`;
         });
-        page.drawText(sanitize(relTexts.join('  ·  ')), { x: margin, y, size: 8, font: fonts.sans, color: BRAND.mutedText });
+        page.drawText(sanitize(relTexts.join('  ·  ')), { x: textX, y, size: 8, font: fonts.sans, color: BRAND.mutedText });
         y -= 15;
+      }
+
+      // Ensure text below the avatar block flows at full width
+      if (avatar && y > blockTopY - AVATAR_SIZE) {
+        y = blockTopY - AVATAR_SIZE - 5;
       }
 
       // Biography or summary

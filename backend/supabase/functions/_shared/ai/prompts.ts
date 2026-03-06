@@ -59,6 +59,7 @@ Analyze the provided transcript and extract:
    - currentLocation: string (optional — where they live now)
    - profession: string (optional — job, career, occupation)
    - isDeceased: boolean (optional)
+   - gender: "male" | "female" | null (optional — infer from contextual clues: gendered kinship terms like hermana/hermano, madre/padre, hijo/hija, gendered adjectives in Spanish like nacido/nacida, pronouns like he/she/él/ella, or culturally gendered names. Only set if confident, otherwise null)
 
 Rules:
 - Be conservative with confidence scores. Only use 0.9+ when explicitly stated.
@@ -135,6 +136,13 @@ The "description" field contains a PLAIN ENGLISH sentence describing the relatio
 - { description: "Maria is John's mother" } → write that Maria is John's mother.
 - { description: "John is Ana's brother" } → write that John and Ana are siblings.
 NEVER invert or re-interpret the description. Use it EXACTLY as stated.
+
+GENDER:
+The input data may include a "gender" field ("male" or "female"). When provided:
+- Use correct pronouns: he/him/his for male, she/her/hers for female.
+- In Spanish: use correct grammatical gender — nacido/nacida, hijo/hija, conocido/conocida, abuelo/abuela, etc.
+- Use gendered relationship labels when appropriate: mother (not parent), brother (not sibling), grandmother (not grandparent), etc.
+- If gender is not provided, use gender-neutral language or the person's name to avoid assuming.
 
 CRITICAL RULES — FOLLOW STRICTLY:
 - Use ONLY the facts provided in the input data. Do NOT invent, assume, or hallucinate any details.
