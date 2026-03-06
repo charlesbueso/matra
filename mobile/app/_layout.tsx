@@ -20,9 +20,12 @@ import {
   Inter_600SemiBold,
 } from '@expo-google-fonts/inter';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import Purchases from 'react-native-purchases';
 import { ThemeProvider } from '../src/theme';
 import { useAuthStore } from '../src/stores/authStore';
+import { useSubscriptionStore } from '../src/stores/subscriptionStore';
 import { useNotificationStore } from '../src/stores/notificationStore';
+import { configurePurchases, isPremiumActive } from '../src/services/purchases';
 import { Colors } from '../src/theme/tokens';
 import '../src/i18n'; // Initialize i18n
 
@@ -52,6 +55,31 @@ export default function RootLayout() {
   useEffect(() => {
     initialize();
     useNotificationStore.getState().requestPermissions();
+    configurePurchases();
+  }, []);
+
+  // Sync RevenueCat user when auth session changes
+  useEffect(() => {
+    const syncPurchaseUser = useSubscriptionStore.getState().syncPurchaseUser;
+    const clearPurchaseUser = useSubscriptionStore.getState().clearPurchaseUser;
+
+    if (session?.user?.id) {
+      syncPurchaseUser(session.user.id);
+    } else {
+      clearPurchaseUser();
+    }
+  }, [session?.user?.id]);
+
+  // Listen for real-time purchase/subscription changes from RevenueCat
+  useEffect(() => {
+    const listener = (info: any) => {
+      const premium = isPremiumActive(info);
+      useSubscriptionStore.getState().applyCustomerInfo(premium);
+      // Also re-fetch server entitlements to sync usage counters
+      useSubscriptionStore.getState().fetchEntitlements();
+    };
+    Purchases.addCustomerInfoUpdateListener(listener);
+    return () => Purchases.removeCustomerInfoUpdateListener(listener);
   }, []);
 
   useEffect(() => {

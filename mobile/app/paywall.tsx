@@ -2,31 +2,136 @@
 // MATRA — Paywall Screen
 // ============================================================
 
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { StarField, Button, Card, BioAlgae, CornerBush } from '../src/components/ui';
+import { StarField, Button, BioAlgae, CornerBush } from '../src/components/ui';
 import { useTranslation } from 'react-i18next';
 import { Colors, Typography, Spacing, BorderRadius } from '../src/theme/tokens';
+import { useSubscriptionStore } from '../src/stores/subscriptionStore';
+import {
+  getOfferings,
+  purchasePackage,
+  restorePurchases,
+  isPremiumActive,
+  isUserCancellation,
+} from '../src/services/purchases';
+import type { PurchasesPackage } from 'react-native-purchases';
 
 type PlanType = 'monthly' | 'annual';
 
 export default function PaywallScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const tier = useSubscriptionStore((s) => s.tier);
+  const fetchEntitlements = useSubscriptionStore((s) => s.fetchEntitlements);
   const [selectedPlan, setSelectedPlan] = useState<PlanType>('annual');
+  const [isLoadingOfferings, setIsLoadingOfferings] = useState(true);
+  const [isPurchasing, setIsPurchasing] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [packages, setPackages] = useState<Record<PlanType, PurchasesPackage | null>>({
+    monthly: null,
+    annual: null,
+  });
 
-  const plans: Record<PlanType, { price: string; period: string; savings?: string }> = {
-    monthly: { price: '$6.99', period: '/month', savings: undefined },
-    annual: { price: '$49.99', period: '/year', savings: 'Save 40%' },
+  // Load offerings from RevenueCat (prices from App Store / Play Store)
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const offering = await getOfferings();
+        if (!mounted || !offering) {
+          setIsLoadingOfferings(false);
+          return;
+        }
+        const monthly = offering.monthly ?? offering.availablePackages.find(
+          (p) => p.packageType === 'MONTHLY'
+        ) ?? null;
+        const annual = offering.annual ?? offering.availablePackages.find(
+          (p) => p.packageType === 'ANNUAL'
+        ) ?? null;
+        setPackages({ monthly, annual });
+      } catch (err) {
+        console.warn('[Paywall] Failed to load offerings:', err);
+      } finally {
+        if (mounted) setIsLoadingOfferings(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  // If already premium, show confirmation and go back
+  useEffect(() => {
+    if (tier === 'premium') {
+      Alert.alert(
+        t('paywall.alreadyPremiumTitle'),
+        t('paywall.alreadyPremiumMessage'),
+        [{ text: 'OK', onPress: () => router.back() }],
+      );
+    }
+  }, [tier]);
+
+  const selectedPackage = packages[selectedPlan];
+
+  const getDisplayPrice = (plan: PlanType): string => {
+    const pkg = packages[plan];
+    if (pkg) return pkg.product.priceString;
+    return plan === 'monthly' ? '$6.99' : '$49.99';
+  };
+
+  const getDisplayPeriod = (plan: PlanType): string => {
+    return plan === 'monthly' ? t('paywall.perMonth') : t('paywall.perYear');
   };
 
   const handlePurchase = async () => {
-    // TODO: Integrate with RevenueCat
-    // Purchases.purchasePackage(package)
-    Alert.alert(t('common.comingSoon'), t('paywall.comingSoon'));
+    if (!selectedPackage) {
+      Alert.alert(t('common.error'), t('paywall.noPackageAvailable'));
+      return;
+    }
+
+    setIsPurchasing(true);
+    try {
+      const customerInfo = await purchasePackage(selectedPackage);
+      if (isPremiumActive(customerInfo)) {
+        // Sync with backend
+        await fetchEntitlements();
+        Alert.alert(
+          t('paywall.purchaseSuccessTitle'),
+          t('paywall.purchaseSuccessMessage'),
+          [{ text: 'OK', onPress: () => router.back() }],
+        );
+      }
+    } catch (error: any) {
+      if (!isUserCancellation(error)) {
+        Alert.alert(t('common.error'), t('paywall.purchaseError'));
+        console.error('[Paywall] Purchase error:', error);
+      }
+    } finally {
+      setIsPurchasing(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    setIsRestoring(true);
+    try {
+      const customerInfo = await restorePurchases();
+      if (isPremiumActive(customerInfo)) {
+        await fetchEntitlements();
+        Alert.alert(
+          t('paywall.restoreSuccessTitle'),
+          t('paywall.restoreSuccessMessage'),
+          [{ text: 'OK', onPress: () => router.back() }],
+        );
+      } else {
+        Alert.alert(t('paywall.noSubscriptionFound'), t('paywall.noSubscriptionFoundMessage'));
+      }
+    } catch (error) {
+      Alert.alert(t('common.error'), t('paywall.restoreError'));
+      console.error('[Paywall] Restore error:', error);
+    } finally {
+      setIsRestoring(false);
+    }
   };
 
   const features = [
@@ -65,21 +170,19 @@ export default function PaywallScreen() {
             onPress={() => setSelectedPlan('monthly')}
             style={[styles.planOption, selectedPlan === 'monthly' && styles.planOptionSelected]}
           >
-            <Text style={styles.planPrice}>{plans.monthly.price}</Text>
-            <Text style={styles.planPeriod}>{plans.monthly.period}</Text>
+            <Text style={styles.planPrice}>{getDisplayPrice('monthly')}</Text>
+            <Text style={styles.planPeriod}>{getDisplayPeriod('monthly')}</Text>
           </Pressable>
 
           <Pressable
             onPress={() => setSelectedPlan('annual')}
             style={[styles.planOption, selectedPlan === 'annual' && styles.planOptionSelected]}
           >
-            {plans.annual.savings && (
-              <View style={styles.savingsBadge}>
-                <Text style={styles.savingsText}>{t('paywall.save40')}</Text>
-              </View>
-            )}
-            <Text style={styles.planPrice}>{plans.annual.price}</Text>
-            <Text style={styles.planPeriod}>{plans.annual.period}</Text>
+            <View style={styles.savingsBadge}>
+              <Text style={styles.savingsText}>{t('paywall.save40')}</Text>
+            </View>
+            <Text style={styles.planPrice}>{getDisplayPrice('annual')}</Text>
+            <Text style={styles.planPeriod}>{getDisplayPeriod('annual')}</Text>
           </Pressable>
         </Animated.View>
 
@@ -98,12 +201,23 @@ export default function PaywallScreen() {
 
         {/* CTA */}
         <Animated.View entering={FadeInDown.delay(700)}>
-          <Button
-            title={t('paywall.subscribeFor', { price: plans[selectedPlan].price, period: selectedPlan === 'annual' ? '/yr' : '/mo' })}
-            onPress={handlePurchase}
-            variant="premium"
-            size="lg"
-          />
+          {isLoadingOfferings ? (
+            <ActivityIndicator size="large" color={Colors.accent.amber} style={{ marginVertical: Spacing.lg }} />
+          ) : (
+            <Button
+              title={isPurchasing
+                ? t('paywall.purchasing')
+                : t('paywall.subscribeFor', {
+                    price: getDisplayPrice(selectedPlan),
+                    period: selectedPlan === 'annual' ? '/yr' : '/mo',
+                  })
+              }
+              onPress={handlePurchase}
+              variant="premium"
+              size="lg"
+              disabled={isPurchasing || !selectedPackage}
+            />
+          )}
           <Text style={styles.legalText}>
             {t('paywall.cancelAnytime', { frequency: selectedPlan === 'annual' ? t('paywall.annually') : t('paywall.monthly') })}
           </Text>
@@ -111,10 +225,11 @@ export default function PaywallScreen() {
 
         {/* Restore */}
         <Button
-          title={t('paywall.restorePurchases')}
-          onPress={() => Alert.alert(t('common.restore'), t('paywall.restoreMessage'))}
+          title={isRestoring ? t('paywall.restoring') : t('paywall.restorePurchases')}
+          onPress={handleRestore}
           variant="ghost"
           size="sm"
+          disabled={isRestoring || isPurchasing}
         />
       </ScrollView>
     </StarField>

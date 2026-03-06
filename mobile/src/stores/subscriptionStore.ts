@@ -3,7 +3,13 @@
 // ============================================================
 
 import { create } from 'zustand';
-import { supabase, invokeFunction } from '../services/supabase';
+import { invokeFunction } from '../services/supabase';
+import {
+  identifyUser,
+  logOutPurchases,
+  getCustomerInfo,
+  isPremiumActive,
+} from '../services/purchases';
 import type { SubscriptionTier, FeatureLimits } from '../types';
 
 // Feature limits by tier (client-side mirror of server TIER_LIMITS)
@@ -40,6 +46,12 @@ interface SubscriptionState {
   familySharingActive: boolean;
 
   fetchEntitlements: () => Promise<void>;
+  /** Identify the user with RevenueCat and sync tier. */
+  syncPurchaseUser: (userId: string) => Promise<void>;
+  /** Log out from RevenueCat. */
+  clearPurchaseUser: () => Promise<void>;
+  /** Update local tier from CustomerInfo (called by listener). */
+  applyCustomerInfo: (isPremium: boolean) => void;
   canPerform: (feature: keyof FeatureLimits) => boolean;
   isAtInterviewLimit: () => boolean;
 }
@@ -75,6 +87,30 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
     } finally {
       set({ isLoading: false });
     }
+  },
+
+  syncPurchaseUser: async (userId: string) => {
+    try {
+      const info = await identifyUser(userId);
+      const premium = isPremiumActive(info);
+      get().applyCustomerInfo(premium);
+    } catch (err) {
+      console.warn('[Purchases] Failed to identify user:', err);
+    }
+  },
+
+  clearPurchaseUser: async () => {
+    try {
+      await logOutPurchases();
+    } catch {
+      // Ignore — user may already be anonymous
+    }
+    set({ tier: 'free', limits: TIER_LIMITS.free });
+  },
+
+  applyCustomerInfo: (isPremium: boolean) => {
+    const tier: SubscriptionTier = isPremium ? 'premium' : 'free';
+    set({ tier, limits: TIER_LIMITS[tier] });
   },
 
   canPerform: (feature) => {

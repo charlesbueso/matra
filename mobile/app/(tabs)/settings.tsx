@@ -400,16 +400,16 @@ export default function SettingsScreen() {
             {isPremium && (
               <>
                 <UsageRow
-                  label="Monthly conversations"
+                  label={t('settings.monthlyConversations')}
                   used={interviewsThisMonth}
                   max={tierLimits.maxPerMonth}
-                  suffix="this month"
+                  suffix={t('settings.thisMonth')}
                 />
                 <UsageRow
-                  label="Daily conversations"
+                  label={t('settings.dailyConversations')}
                   used={interviewsToday}
                   max={tierLimits.maxPerDay}
-                  suffix="today"
+                  suffix={t('settings.today')}
                 />
               </>
             )}
