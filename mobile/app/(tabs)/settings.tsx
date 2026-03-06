@@ -97,6 +97,7 @@ export default function SettingsScreen() {
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [isDeactivating, setIsDeactivating] = useState(false);
   const [isExportingData, setIsExportingData] = useState(false);
+  const [isExportingMemoryBook, setIsExportingMemoryBook] = useState(false);
   const avatarUrl = useSignedUrl(profile?.avatar_url);
 
   const handleDeleteInterview = (interview: Interview) => {
@@ -233,6 +234,59 @@ export default function SettingsScreen() {
       Alert.alert(t('settings.downloadFailed'), t('settings.downloadFailedMessage'));
     } finally {
       setIsExportingData(false);
+    }
+  };
+
+  const handleExportMemoryBook = async () => {
+    if (profile?.subscription_tier === 'free') {
+      router.push('/paywall');
+      return;
+    }
+
+    setIsExportingMemoryBook(true);
+    try {
+      const result = await invokeFunction<{
+        pdf: string;
+        filename: string;
+        size: number;
+      }>('export-memory-book', {});
+
+      // Decode base64 and write PDF to cache
+      const binaryString = atob(result.pdf);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      const exportDir = new Directory(Paths.cache, 'matra-memory-book');
+      if (exportDir.exists) {
+        exportDir.delete();
+      }
+      exportDir.create({ intermediates: true });
+
+      const pdfFile = new FSFile(exportDir, result.filename);
+      pdfFile.create();
+      pdfFile.write(bytes);
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(pdfFile.uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: t('settings.memoryBookShare'),
+        });
+      }
+
+      Alert.alert(t('settings.memoryBookReady'), t('settings.memoryBookReadyMessage'));
+    } catch (err: any) {
+      const msg = err?.message || '';
+      if (msg.includes('once per week') || msg.includes('can generate a new memory book on')) {
+        Alert.alert(t('settings.memoryBookRateLimited'), msg);
+      } else if (msg.includes('No new data')) {
+        Alert.alert(t('settings.memoryBookNoNewData'), msg);
+      } else {
+        Alert.alert(t('common.error'), t('settings.memoryBookError'));
+      }
+    } finally {
+      setIsExportingMemoryBook(false);
     }
   };
 
@@ -379,7 +433,7 @@ export default function SettingsScreen() {
           <Card variant="default">
             <SettingItem label={t('settings.manageFamilyGroups')} onPress={() => router.push('/family-group')} />
             <SettingItem label={t('settings.inviteFamilyMembers')} onPress={() => profile?.subscription_tier === 'free' ? router.push('/paywall') : router.push('/invite-family')} locked={profile?.subscription_tier === 'free'} />
-            <SettingItem label={t('settings.exportMemoryBook')} onPress={() => profile?.subscription_tier === 'free' ? router.push('/paywall') : Alert.alert(t('common.comingSoon'), t('settings.exportComingSoon'))} locked={profile?.subscription_tier === 'free'} />
+            <SettingItem label={isExportingMemoryBook ? t('settings.memoryBookGenerating') : t('settings.exportMemoryBook')} onPress={handleExportMemoryBook} locked={profile?.subscription_tier === 'free'} disabled={isExportingMemoryBook} />
           </Card>
         </View>
 
@@ -571,9 +625,9 @@ export default function SettingsScreen() {
   );
 }
 
-function SettingItem({ label, onPress, locked }: { label: string; onPress: () => void; locked?: boolean }) {
+function SettingItem({ label, onPress, locked, disabled }: { label: string; onPress: () => void; locked?: boolean; disabled?: boolean }) {
   return (
-    <Pressable onPress={onPress} style={styles.settingItem}>
+    <Pressable onPress={onPress} disabled={disabled} style={[styles.settingItem, disabled && { opacity: 0.5 }]}>
       <Text style={styles.settingItemLabel}>{label}</Text>
       {locked && <Text style={styles.lockIcon}>🔒</Text>}
     </Pressable>
