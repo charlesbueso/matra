@@ -11,7 +11,7 @@ export type RelationshipType =
   | 'great_grandparent' | 'great_grandchild'
   | 'great_great_grandparent' | 'great_great_grandchild'
   | 'uncle_aunt' | 'nephew_niece' | 'cousin'
-  | 'step_parent' | 'step_child' | 'step_sibling' | 'in_law'
+  | 'step_parent' | 'step_child' | 'step_sibling' | 'half_sibling' | 'in_law' | 'parent_in_law' | 'child_in_law'
   | 'adopted_parent' | 'adopted_child'
   | 'godparent' | 'godchild'
   | 'other';

@@ -299,9 +299,63 @@ serve(async (req: Request) => {
     const genderHint = subjectGender
       ? ` Their gender is ${subjectGender}. Use correct gendered language (pronouns, adjectives, relationship labels) when referring to ${subjectName}.`
       : '';
+
+    // Build existing family context so the AI can match against known people
+    // and avoid creating duplicates or conflicting relationships.
+    let existingFamilyContext = '';
+    {
+      // Fetch existing people and relationships for context
+      const { data: ctxPeople } = await supabase
+        .from('people')
+        .select('id, first_name, last_name, nickname, birth_date, birth_place, metadata')
+        .eq('family_group_id', familyGroupId)
+        .is('deleted_at', null);
+
+      const { data: ctxRels } = await supabase
+        .from('relationships')
+        .select('person_a_id, person_b_id, relationship_type')
+        .eq('family_group_id', familyGroupId);
+
+      const { data: ctxStories } = await supabase
+        .from('stories')
+        .select('title, content')
+        .eq('family_group_id', familyGroupId)
+        .limit(10);
+
+      if (ctxPeople && ctxPeople.length > 0) {
+        const peopleList = ctxPeople.map((p: any) => {
+          const parts = [`${p.first_name}${p.last_name ? ' ' + p.last_name : ''}`];
+          if (p.nickname) parts.push(`aka "${p.nickname}"`);
+          if (p.birth_date) parts.push(`b. ${p.birth_date}`);
+          if (p.birth_place) parts.push(`from ${p.birth_place}`);
+          if (p.metadata?.gender) parts.push(p.metadata.gender);
+          return `  - ${parts.join(', ')} [id:${p.id}]`;
+        }).join('\n');
+
+        const relList = (ctxRels || []).map((r: any) => {
+          const a = ctxPeople.find((p: any) => p.id === r.person_a_id);
+          const b = ctxPeople.find((p: any) => p.id === r.person_b_id);
+          if (!a || !b) return null;
+          const aName = `${a.first_name}${a.last_name ? ' ' + a.last_name : ''}`;
+          const bName = `${b.first_name}${b.last_name ? ' ' + b.last_name : ''}`;
+          return `  - ${aName} is ${r.relationship_type} of ${bName}`;
+        }).filter(Boolean).join('\n');
+
+        existingFamilyContext = `\n[EXISTING FAMILY TREE — These people already exist in the database. When extracting, use the EXACT same names for people who match. Do NOT create duplicates. If the transcript mentions someone who matches an existing person, use their name as listed here.\nKnown people:\n${peopleList}`;
+        if (relList) {
+          existingFamilyContext += `\nKnown relationships:\n${relList}`;
+        }
+        if (ctxStories && ctxStories.length > 0) {
+          const storyTitles = ctxStories.map((s: any) => `  - "${s.title}"`).join('\n');
+          existingFamilyContext += `\nExisting stories (avoid duplicating these themes):\n${storyTitles}`;
+        }
+        existingFamilyContext += ']\n';
+      }
+    }
+
     const transcriptForAI = subjectName
-      ? `[Narrator/subject of this interview is ${subjectName}.${genderHint} Any first-person references ("I", "me", "my") refer to ${subjectName}. Do NOT create a separate entry for the narrator — they are ${subjectName}. IMPORTANT: When the narrator says "my mom", "my dad", "my brother", etc., create relationships between those people and ${subjectName}. Use ${subjectName} as the personA or personB name in relationships — never use "I" or "me" as a person name.]\n\n${transcriptText}`
-      : transcriptText;
+      ? `[Narrator/subject of this interview is ${subjectName}.${genderHint} Any first-person references ("I", "me", "my") refer to ${subjectName}. Do NOT create a separate entry for the narrator — they are ${subjectName}. IMPORTANT: When the narrator says "my mom", "my dad", "my brother", etc., create relationships between those people and ${subjectName}. Use ${subjectName} as the personA or personB name in relationships — never use "I" or "me" as a person name.]${existingFamilyContext}\n\n${transcriptText}`
+      : `${existingFamilyContext}\n\n${transcriptText}`;
 
     const llmProvider = getLLMProviderWithFallback();
     let extractionResult;
@@ -467,7 +521,12 @@ serve(async (req: Request) => {
           Object.assign(localMatch, updates);
         }
 
-        resolvedPeople.set(sugFullKey, matchId);
+        // Don't overwrite the narrator's key — a family member sharing
+        // the narrator's name must not steal their resolution entry.
+        const existingFullMapping = resolvedPeople.get(sugFullKey);
+        if (!existingFullMapping || !(subjectPerson && existingFullMapping === subjectPerson.id)) {
+          resolvedPeople.set(sugFullKey, matchId);
+        }
         // Also seed first-name-only so "Marco" resolves later if AI uses short form
         if (!resolvedPeople.has(sugFirst)) resolvedPeople.set(sugFirst, matchId);
       } else {
@@ -495,7 +554,12 @@ serve(async (req: Request) => {
           .single();
 
         if (newPerson) {
-          resolvedPeople.set(sugFullKey, newPerson.id);
+          // Don't overwrite the narrator's key — a family member sharing
+          // the narrator's name must not steal their resolution entry.
+          const existingFullMapping = resolvedPeople.get(sugFullKey);
+          if (!existingFullMapping || !(subjectPerson && existingFullMapping === subjectPerson.id)) {
+            resolvedPeople.set(sugFullKey, newPerson.id);
+          }
           // Also seed first-name-only and normalized first name
           if (!resolvedPeople.has(sugFirst)) resolvedPeople.set(sugFirst, newPerson.id);
           allExisting.push(newPerson);
@@ -521,6 +585,10 @@ serve(async (req: Request) => {
 
       // Try first-name-only match against resolved map, but only when
       // last names are compatible (one is missing, or they share a word).
+      // Use scoring to prefer exact/best matches (e.g., "Carlos José Bueso"
+      // should match key "carlos jose bueso" over key "carlos bueso").
+      let bestResolvedId: string | null = null;
+      let bestResolvedScore = 0;
       for (const [key, id] of resolvedPeople) {
         const keyParts = key.split(/\s+/);
         const keyFirst = keyParts[0];
@@ -533,10 +601,25 @@ serve(async (req: Request) => {
           const hasOverlap = normLastWords.some((w: string) => keyLastWords.includes(w));
           if (!hasOverlap) continue;
         }
-        return id;
+        // Score: prefer keys that match more parts of the input name
+        // Exact full key match scores highest
+        let score = 1;
+        if (key === normName) score = 100;
+        else {
+          // Count how many words in the key also appear in normName
+          const normWords = normName.split(/\s+/);
+          score = keyParts.filter((w: string) => normWords.includes(w)).length;
+        }
+        if (score > bestResolvedScore) {
+          bestResolvedScore = score;
+          bestResolvedId = id;
+        }
       }
+      if (bestResolvedId) return bestResolvedId;
 
-      // Fall back to DB existing people (also normalized), same last-name check
+      // Fall back to DB existing people (also normalized), same scoring approach
+      let bestExistingId: string | null = null;
+      let bestExistingScore = 0;
       for (const p of allExisting) {
         const exFirst = normalize(p.first_name || '');
         const exLast = normalize(p.last_name || '');
@@ -549,8 +632,21 @@ serve(async (req: Request) => {
           const hasOverlap = normLastWords.some((w: string) => exLastWords.includes(w));
           if (!hasOverlap) continue;
         }
-        return p.id;
+        // Prefer exact full-name matches
+        const exFull = normalize(`${p.first_name} ${p.last_name || ''}`);
+        let score = 1;
+        if (exFull === normName) score = 100;
+        else {
+          const normWords = normName.split(/\s+/);
+          const exWords = exFull.split(/\s+/);
+          score = exWords.filter((w: string) => normWords.includes(w)).length;
+        }
+        if (score > bestExistingScore) {
+          bestExistingScore = score;
+          bestExistingId = p.id;
+        }
       }
+      if (bestExistingId) return bestExistingId;
 
       return null;
     }
@@ -610,9 +706,9 @@ serve(async (req: Request) => {
       if (personAId && personBId && personAId !== personBId) {
         // Validate that the relationship type is a known enum value
         const validTypes = [
-          'parent', 'child', 'spouse', 'ex_spouse', 'sibling', 'grandparent', 'grandchild',
+          'parent', 'child', 'spouse', 'ex_spouse', 'sibling', 'half_sibling', 'grandparent', 'grandchild',
           'great_grandparent', 'great_grandchild', 'great_great_grandparent', 'great_great_grandchild',
-          'uncle_aunt', 'nephew_niece', 'cousin', 'in_law',
+          'uncle_aunt', 'nephew_niece', 'cousin', 'in_law', 'parent_in_law', 'child_in_law',
           'step_parent', 'step_child', 'step_sibling',
           'adopted_parent', 'adopted_child', 'godparent', 'godchild', 'other',
         ];
@@ -661,7 +757,7 @@ serve(async (req: Request) => {
       const parentsOf = new Map<string, Set<string>>();   // childId → parentIds
       const childrenOf = new Map<string, Set<string>>();   // parentId → childIds
       const siblingsOf = new Map<string, Set<string>>();   // personId → full-sibling Ids
-      const stepSiblingsOf = new Map<string, Set<string>>();
+      const stepSiblingsOf = new Map<string, Set<string>>();  // half-siblings
       const spousesOf = new Map<string, Set<string>>();
       const existingRelSet = new Set<string>();
 
@@ -683,7 +779,7 @@ serve(async (req: Request) => {
         } else if (r.relationship_type === 'sibling') {
           addToSetMap(siblingsOf, r.person_a_id, r.person_b_id);
           addToSetMap(siblingsOf, r.person_b_id, r.person_a_id);
-        } else if (r.relationship_type === 'step_sibling') {
+        } else if (r.relationship_type === 'half_sibling') {
           addToSetMap(stepSiblingsOf, r.person_a_id, r.person_b_id);
           addToSetMap(stepSiblingsOf, r.person_b_id, r.person_a_id);
         } else if (r.relationship_type === 'spouse') {
@@ -693,6 +789,8 @@ serve(async (req: Request) => {
       }
 
       const inferredRels: { person_a_id: string; person_b_id: string; relationship_type: string }[] = [];
+      // Track sibling→half_sibling upgrades so we can clean up old DB entries
+      const upgradedPairs: { person_a_id: string; person_b_id: string }[] = [];
 
       function tryInfer(a: string, b: string, type: string): boolean {
         if (a === b) return false;
@@ -714,17 +812,25 @@ serve(async (req: Request) => {
         for (const [personId, siblings] of siblingsOf) {
           const myParents = parentsOf.get(personId) || new Set();
           for (const sibId of siblings) {
+            const sibCurrentParents = parentsOf.get(sibId) || new Set();
             for (const parentId of myParents) {
+              // Guard: no one can have more than 2 biological parents
+              if (sibCurrentParents.size >= 2) break;
               if (tryInfer(parentId, sibId, 'parent')) {
                 addToSetMap(parentsOf, sibId, parentId);
+                sibCurrentParents.add(parentId);
                 addToSetMap(childrenOf, parentId, sibId);
                 changed = true;
               }
             }
             const sibParents = parentsOf.get(sibId) || new Set();
+            const myCurrentParents = parentsOf.get(personId) || new Set();
             for (const parentId of sibParents) {
+              // Guard: no one can have more than 2 biological parents
+              if (myCurrentParents.size >= 2) break;
               if (tryInfer(parentId, personId, 'parent')) {
                 addToSetMap(parentsOf, personId, parentId);
+                myCurrentParents.add(parentId);
                 addToSetMap(childrenOf, parentId, personId);
                 changed = true;
               }
@@ -734,43 +840,98 @@ serve(async (req: Request) => {
       }
 
       // ── Pass 2: Children of the same parent → siblings ──
-      // (unless they are already step_siblings)
+      // (unless they are already step_siblings, or one is a step_sibling of the other's sibling)
       for (const [_parentId, children] of childrenOf) {
         const childArr = [...children];
         for (let i = 0; i < childArr.length; i++) {
           for (let j = i + 1; j < childArr.length; j++) {
             const a = childArr[i];
             const b = childArr[j];
-            // Don't overwrite an existing step_sibling with sibling
-            const stepFwd = `${a}|${b}|step_sibling`;
-            const stepRev = `${b}|${a}|step_sibling`;
+            // Don't overwrite an existing half_sibling with sibling
+            const stepFwd = `${a}|${b}|half_sibling`;
+            const stepRev = `${b}|${a}|half_sibling`;
             if (existingRelSet.has(stepFwd) || existingRelSet.has(stepRev)) continue;
-            if (tryInfer(a, b, 'sibling')) {
-              addToSetMap(siblingsOf, a, b);
-              addToSetMap(siblingsOf, b, a);
+            // If either person is already a step_sibling of the other's full sibling,
+            // they should be step_siblings (half-siblings via one shared parent) not full siblings.
+            let isHalf = false;
+            const aSibs = siblingsOf.get(a) || new Set();
+            const bSibs = siblingsOf.get(b) || new Set();
+            const aStepSibs = stepSiblingsOf.get(a) || new Set();
+            const bStepSibs = stepSiblingsOf.get(b) || new Set();
+            // If A is step_sibling of any of B's full siblings (or B itself is reachable via step_sibling)
+            for (const bSib of bSibs) {
+              if (aStepSibs.has(bSib)) { isHalf = true; break; }
+            }
+            if (!isHalf) {
+              for (const aSib of aSibs) {
+                if (bStepSibs.has(aSib)) { isHalf = true; break; }
+              }
+            }
+            // Also check if they have different numbers of parents (one shared parent ≠ full sibling)
+            if (!isHalf) {
+              const aParents = parentsOf.get(a) || new Set();
+              const bParents = parentsOf.get(b) || new Set();
+              if (aParents.size > 0 && bParents.size > 0) {
+                const shared = [...aParents].filter(p => bParents.has(p)).length;
+                // If one child has a parent the other doesn't → half-sibling
+                // (conservative: use Math.max to catch asymmetric parent knowledge)
+                if (shared > 0 && shared < Math.max(aParents.size, bParents.size)) isHalf = true;
+                const totalUnique = new Set([...aParents, ...bParents]).size;
+                // If they share only 1 parent but have different other parents, they're half-siblings
+                if (shared > 0 && totalUnique > shared + 1) isHalf = true;
+              }
+            }
+            if (isHalf) {
+              // If a full sibling relationship exists, upgrade it to half_sibling
+              const sibFwd = `${a}|${b}|sibling`;
+              const sibRev = `${b}|${a}|sibling`;
+              if (existingRelSet.has(sibFwd) || existingRelSet.has(sibRev)) {
+                existingRelSet.delete(sibFwd);
+                existingRelSet.delete(sibRev);
+                const aSiblings = siblingsOf.get(a);
+                if (aSiblings) aSiblings.delete(b);
+                const bSiblings = siblingsOf.get(b);
+                if (bSiblings) bSiblings.delete(a);
+                // Track for DB cleanup
+                upgradedPairs.push({ person_a_id: a, person_b_id: b });
+              }
+              if (tryInfer(a, b, 'half_sibling')) {
+                addToSetMap(stepSiblingsOf, a, b);
+                addToSetMap(stepSiblingsOf, b, a);
+              }
+            } else {
+              // Don't re-infer sibling if already exists
+              const sibFwd = `${a}|${b}|sibling`;
+              const sibRev = `${b}|${a}|sibling`;
+              if (!existingRelSet.has(sibFwd) && !existingRelSet.has(sibRev)) {
+                if (tryInfer(a, b, 'sibling')) {
+                  addToSetMap(siblingsOf, a, b);
+                  addToSetMap(siblingsOf, b, a);
+                }
+              }
             }
           }
         }
       }
 
-      // ── Pass 3: Step siblings propagate to full siblings ──
-      // If A is step_sibling of B, and B has full siblings C, D...
-      // then A is also step_sibling of C, D (and vice versa)
+      // ── Pass 3: Half siblings propagate to full siblings ──
+      // If A is half_sibling of B, and B has full siblings C, D...
+      // then A is also half_sibling of C, D (and vice versa)
       for (const [personId, stepSibs] of stepSiblingsOf) {
         const fullSibs = siblingsOf.get(personId) || new Set();
         for (const stepSibId of stepSibs) {
-          // stepSibId is step_sibling of personId
-          // → stepSibId should be step_sibling of all of personId's full siblings
+          // stepSibId is half_sibling of personId
+          // → stepSibId should be half_sibling of all of personId's full siblings
           for (const fullSibId of fullSibs) {
-            if (tryInfer(stepSibId, fullSibId, 'step_sibling')) {
+            if (tryInfer(stepSibId, fullSibId, 'half_sibling')) {
               addToSetMap(stepSiblingsOf, stepSibId, fullSibId);
               addToSetMap(stepSiblingsOf, fullSibId, stepSibId);
             }
           }
-          // Also the reverse: personId should be step_sibling of stepSibId's full siblings
+          // Also the reverse: personId should be half_sibling of stepSibId's full siblings
           const stepSibFullSibs = siblingsOf.get(stepSibId) || new Set();
           for (const otherStepSibId of stepSibFullSibs) {
-            if (tryInfer(personId, otherStepSibId, 'step_sibling')) {
+            if (tryInfer(personId, otherStepSibId, 'half_sibling')) {
               addToSetMap(stepSiblingsOf, personId, otherStepSibId);
               addToSetMap(stepSiblingsOf, otherStepSibId, personId);
             }
@@ -874,6 +1035,16 @@ serve(async (req: Request) => {
             { onConflict: 'person_a_id,person_b_id,relationship_type' }
           );
         }
+      }
+
+      // Clean up sibling→half_sibling upgrades: delete the old 'sibling' entries from DB
+      for (const pair of upgradedPairs) {
+        // Delete both directions since we don't know which was stored
+        await supabase.from('relationships')
+          .delete()
+          .eq('family_group_id', familyGroupId)
+          .eq('relationship_type', 'sibling')
+          .or(`and(person_a_id.eq.${pair.person_a_id},person_b_id.eq.${pair.person_b_id}),and(person_a_id.eq.${pair.person_b_id},person_b_id.eq.${pair.person_a_id})`);
       }
     }
 

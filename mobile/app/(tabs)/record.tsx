@@ -58,7 +58,22 @@ export default function RecordScreen() {
   const [recordedUri, setRecordedUri] = useState<string | null>(null);
   const recordingRef = useRef<Audio.Recording | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
-  const [processingStage, setProcessingStage] = useState(0);
+  // Map real processing stage from backend to UI step index
+  const activeJobs = backgroundJobs.filter((j) => j.status === 'processing');
+  const completedJobs = backgroundJobs.filter((j) => j.status === 'completed');
+  const failedJobs = backgroundJobs.filter((j) => j.status === 'failed');
+
+  const stageToIndex: Record<string, number> = {
+    uploading: 0,
+    transcribing: 1,
+    extracting: 2,
+    summarizing: 3,
+    completed: 4,
+  };
+  const activeJob = activeJobs[0];
+  const processingStage = activeJob?.processingStage
+    ? stageToIndex[activeJob.processingStage] ?? 0
+    : 0;
 
   // Ensure data is loaded (the tab may mount before home finishes fetching)
   React.useEffect(() => {
@@ -66,24 +81,6 @@ export default function RecordScreen() {
       fetchFamilyGroups().then(() => fetchAllFamilyData());
     }
   }, []);
-
-  // Animate processing stages for visual feedback
-  const activeJobs = backgroundJobs.filter((j) => j.status === 'processing');
-  const completedJobs = backgroundJobs.filter((j) => j.status === 'completed');
-  const failedJobs = backgroundJobs.filter((j) => j.status === 'failed');
-
-  React.useEffect(() => {
-    if (activeJobs.length === 0) {
-      setProcessingStage(0);
-      return;
-    }
-    let current = 0;
-    const interval = setInterval(() => {
-      current = Math.min(current + 1, 3);
-      setProcessingStage(current);
-    }, 8000);
-    return () => clearInterval(interval);
-  }, [activeJobs.length]);
 
   // Auto-select person if passed via route params
   React.useEffect(() => {

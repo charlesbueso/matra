@@ -5,9 +5,9 @@
 // Each person is a warm organic node on branches.
 // ============================================================
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, Dimensions, Pressable, ScrollView, RefreshControl } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Image } from 'expo-image';
 import Animated, {
   FadeIn,
@@ -124,7 +124,7 @@ function layoutNodes(
     const a = rel.person_a_id;
     const b = rel.person_b_id;
     if (!peopleById.has(a) || !peopleById.has(b)) continue;
-    if (rel.relationship_type === 'sibling' || rel.relationship_type === 'step_sibling') {
+    if (rel.relationship_type === 'sibling' || rel.relationship_type === 'half_sibling' || rel.relationship_type === 'step_sibling') {
       if (!siblingOf.has(a)) siblingOf.set(a, new Set());
       if (!siblingOf.has(b)) siblingOf.set(b, new Set());
       siblingOf.get(a)!.add(b);
@@ -423,6 +423,7 @@ function layoutNodes(
       ex_spouse: 'Ex-Spouse',
       sibling: 'Sibling',
       step_sibling: 'Step Sibling',
+      half_sibling: 'Half Sibling',
       grandparent: 'Grandchild',
       grandchild: 'Grandparent',
       great_grandparent: 'Great Grandchild',
@@ -433,6 +434,8 @@ function layoutNodes(
       nephew_niece: 'Uncle/Aunt',
       cousin: 'Cousin',
       in_law: 'In-law',
+      parent_in_law: 'Child-in-law',
+      child_in_law: 'Parent-in-law',
       step_parent: 'Step Child',
       step_child: 'Step Parent',
       adopted_parent: 'Adopted Child',
@@ -448,6 +451,7 @@ function layoutNodes(
       ex_spouse: 'Ex-Spouse',
       sibling: 'Sibling',
       step_sibling: 'Step Sibling',
+      half_sibling: 'Half Sibling',
       grandparent: 'Grandparent',
       grandchild: 'Grandchild',
       great_grandparent: 'Great Grandparent',
@@ -458,6 +462,8 @@ function layoutNodes(
       nephew_niece: 'Nephew/Niece',
       cousin: 'Cousin',
       in_law: 'In-law',
+      parent_in_law: 'Parent-in-law',
+      child_in_law: 'Child-in-law',
       step_parent: 'Step Parent',
       step_child: 'Step Child',
       adopted_parent: 'Adopted Parent',
@@ -494,14 +500,14 @@ function layoutNodes(
 
       const hasFullSiblings = fullSiblingOf.has(p.id) && fullSiblingOf.get(p.id)!.size > 0;
       const hasStepSiblings = relationships.some(
-        (r) => r.relationship_type === 'step_sibling' &&
+        (r) => (r.relationship_type === 'step_sibling' || r.relationship_type === 'half_sibling') &&
           (r.person_a_id === p.id || r.person_b_id === p.id)
       );
 
       if (hasChildren && hasParents) roleLabels.set(p.id, 'Parent');
       else if (hasChildren) roleLabels.set(p.id, 'Parent');
       else if (hasFullSiblings) roleLabels.set(p.id, 'Sibling');
-      else if (hasStepSiblings) roleLabels.set(p.id, 'Step Sibling');
+      else if (hasStepSiblings) roleLabels.set(p.id, 'Half Sibling');
       else if (hasParents && hasSiblings) roleLabels.set(p.id, 'Sibling');
       else if (hasParents) roleLabels.set(p.id, 'Child');
       else if (hasSpouse) roleLabels.set(p.id, 'Spouse');
@@ -555,9 +561,11 @@ export default function TreeScreen() {
   );
 
   // Mark lineage as read when this tab is viewed
-  useEffect(() => {
-    useNotificationStore.getState().markLineageRead();
-  }, [people.length]);
+  useFocusEffect(
+    useCallback(() => {
+      useNotificationStore.getState().markLineageRead();
+    }, [])
+  );
 
   // ── Pan & Zoom state (must be declared before any early return) ──
   const scale = useSharedValue(0.8);
@@ -747,7 +755,7 @@ export default function TreeScreen() {
               );
             }
 
-            if (type === 'sibling' || type === 'step_sibling') {
+            if (type === 'sibling' || type === 'half_sibling' || type === 'step_sibling') {
               // Siblings at same level — skip individual lines,
               // we draw a group bar below instead.
               return null;
@@ -777,7 +785,7 @@ export default function TreeScreen() {
 
           {/* Sibling connector lines (per relationship pair) */}
           {relationships.map((rel) => {
-            if (rel.relationship_type !== 'sibling' && rel.relationship_type !== 'step_sibling') return null;
+            if (rel.relationship_type !== 'sibling' && rel.relationship_type !== 'half_sibling' && rel.relationship_type !== 'step_sibling') return null;
             const posA = positions.get(rel.person_a_id);
             const posB = positions.get(rel.person_b_id);
             if (!posA || !posB) return null;
@@ -793,7 +801,7 @@ export default function TreeScreen() {
                 y2={posB.y}
                 stroke={Colors.accent.cyan}
                 strokeWidth={1.5}
-                strokeDasharray={rel.relationship_type === 'step_sibling' ? '6 3' : undefined}
+                strokeDasharray={(rel.relationship_type === 'half_sibling' || rel.relationship_type === 'step_sibling') ? '6 3' : undefined}
                 strokeOpacity={0.7}
               />
             );

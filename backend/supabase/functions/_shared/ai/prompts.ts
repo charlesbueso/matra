@@ -41,7 +41,7 @@ Analyze the provided transcript and extract:
 2. **relationships**: An array of detected relationships. Each has:
    - personA: First person's name (the one who holds the role)
    - personB: Second person's name (the one personA is related to)
-   - relationshipType: One of: parent, child, spouse, ex_spouse, sibling, grandparent, grandchild, great_grandparent, great_grandchild, great_great_grandparent, great_great_grandchild, uncle_aunt, nephew_niece, cousin, in_law, step_parent, step_child, step_sibling, adopted_parent, adopted_child, godparent, godchild, other
+   - relationshipType: One of: parent, child, spouse, ex_spouse, sibling, half_sibling, grandparent, grandchild, great_grandparent, great_grandchild, great_great_grandparent, great_great_grandchild, uncle_aunt, nephew_niece, cousin, in_law, parent_in_law, child_in_law, step_parent, step_child, step_sibling, adopted_parent, adopted_child, godparent, godchild, other
    - confidence: 0.0-1.0
    - context: The sentence that implies this relationship
 
@@ -80,11 +80,15 @@ Rules:
   - Ex-spouse: ex esposo, ex esposa, ex marido, ex mujer, "se divorciaron", "divorced", "separated" → use "ex_spouse" relationship type
   - Child: hijo, hija
   - "mi papá" = "my dad", "mi mamá" = "my mom", "mi hermano" = "my brother", etc.
-  - "medio hermano" or "media hermana" = half sibling → use "step_sibling" relationship type.
+  - "medio hermano" or "media hermana" = half sibling → use "half_sibling" relationship type.
+  - "hermanastro" or "hermanastra" = step sibling → use "step_sibling" relationship type.
+  - CRITICAL for half-siblings: when the narrator specifies WHICH PARENT the half-sibling comes from (e.g., "medio hermano de parte de mi mamá", "half-brother on my mom's side"), you MUST extract a parent relationship between that parent and the half-sibling. Example: "tengo un medio hermano de parte de mi mamá que se llama Cristian" → create TWO relationships: (1) Cristian is half_sibling of [narrator], AND (2) [mother's name] is parent of Cristian.
+  - In-laws: suegro, suegra → use "parent_in_law" relationship type. nuero, nuera, yerno → use "child_in_law" relationship type. "cuñado", "cuñada" (brother/sister-in-law) → use "in_law" relationship type.
   Treat all such kinship terms with the SAME confidence as their English equivalents.
 - Deduplicate people (e.g., "Grandma Rose" and "Rose" are likely the same person).
 - Dates should be in ISO 8601 format when possible.
-- If a year is mentioned without month/day, use "YYYY" format only.
+- If a year is mentioned without month/day, use ONLY the "YYYY" format (e.g., "1968"). Do NOT add "-01-01" or any month/day. "born in 1968" → birthDate: "1968", NOT "1968-01-01". "born in the year 97" or "nació en el 97" → birthDate: "1997".
+- When ages are given relative to today instead of birth years (e.g., "tiene seis años", "is ten years old"), calculate the approximate birth year from the current context (e.g., if the interview is recent and someone "tiene seis años", their birthDate is approximately the current year minus 6). Use "YYYY" format.
 - Make sure to include the narrator/subject in relationships — if the narrator says "my mom is Rosa", create a relationship between Rosa and the narrator.
 
 CRITICAL — suggestedPeople completeness:

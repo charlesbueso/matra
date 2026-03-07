@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MATRA — Pipeline Test Results</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0a1628; color: #e8e0d4; }
+  .header { text-align: center; padding: 24px; background: linear-gradient(135deg, #0d1f3c, #1a3a5c); border-bottom: 2px solid #2a5a8a; }
+  .header h1 { font-size: 28px; color: #7ec8e3; }
+  .header p { color: #8b9baa; margin-top: 4px; }
+  .container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px; max-width: 1600px; margin: 0 auto; }
+  .full-width { grid-column: 1 / -1; }
+  .card { background: #111d2e; border: 1px solid #1e3a5f; border-radius: 12px; padding: 20px; }
+  .card h2 { color: #7ec8e3; margin-bottom: 12px; font-size: 18px; }
+  .person { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 8px; margin-bottom: 6px; background: #0d1a2d; }
+  .person.narrator { border-left: 3px solid #7ec8e3; }
+  .person .avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .person .avatar.male { background: #1e3a5f; }
+  .person .avatar.female { background: #5f1e3a; }
+  .person .avatar.unknown { background: #3a3a1e; }
+  .person .info { flex: 1; }
+  .person .name { font-weight: 600; color: #e8e0d4; }
+  .person .meta { font-size: 12px; color: #8b9baa; }
+  .rel { padding: 6px 10px; margin-bottom: 4px; border-radius: 6px; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+  .rel.direct { background: #0d2a1a; border-left: 2px solid #4ade80; }
+  .rel.inferred { background: #2a1a0d; border-left: 2px solid #f59e0b; }
+  .rel .type { font-weight: 600; color: #7ec8e3; min-width: 100px; }
+  .rel .arrow { color: #4a5568; }
+  .rel .conf { font-size: 11px; color: #8b9baa; margin-left: auto; }
+  .story { margin-bottom: 16px; padding: 14px; background: #0d1a2d; border-radius: 8px; }
+  .story h3 { color: #d4a574; margin-bottom: 8px; }
+  .story p { line-height: 1.6; color: #c4b8a8; font-size: 14px; }
+  .story .moment { margin-top: 8px; padding: 6px 10px; background: #1a2a3d; border-radius: 6px; font-style: italic; font-size: 13px; color: #8baabb; }
+  .summary-box { line-height: 1.7; color: #c4b8a8; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; background: #1e3a5f; color: #7ec8e3; margin: 2px; }
+  #graph { width: 100%; height: 500px; border: 1px solid #1e3a5f; border-radius: 8px; background: #080f1a; }
+  .legend { display: flex; gap: 16px; margin-top: 10px; font-size: 12px; color: #8b9baa; }
+  .legend span { display: flex; align-items: center; gap: 4px; }
+  .legend .dot { width: 10px; height: 10px; border-radius: 50%; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>🌳 MATRA — Pipeline Test Results</h1>
+  <p>Extraction + Summarization + Relationship Inference</p>
+</div>
+<div class="container">
+  <div class="card">
+    <h2>👥 People (8)</h2>
+    
+      <div class="person narrator">
+        <div class="avatar male">♂</div>
+        <div class="info">
+          <div class="name">Carlos Bueso 🎙️</div>
+          <div class="meta">No details</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar unknown">?</div>
+        <div class="info">
+          <div class="name">Carlos José Bueso</div>
+          <div class="meta">1968 · San Juan, Puerto Rico</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar unknown">?</div>
+        <div class="info">
+          <div class="name">Alicia Rentería</div>
+          <div class="meta">1964 · Ciudad de México</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar unknown">?</div>
+        <div class="info">
+          <div class="name">Marco</div>
+          <div class="meta">1997</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar unknown">?</div>
+        <div class="info">
+          <div class="name">Brisel</div>
+          <div class="meta">2001</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar unknown">?</div>
+        <div class="info">
+          <div class="name">Cristian Rentería</div>
+          <div class="meta">1989</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar unknown">?</div>
+        <div class="info">
+          <div class="name">Mateo</div>
+          <div class="meta">2017</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar unknown">?</div>
+        <div class="info">
+          <div class="name">Andrés</div>
+          <div class="meta">2013</div>
+        </div>
+      </div>
+    
+  </div>
+
+  <div class="card">
+    <h2>🔗 Relationships (25)</h2>
+    
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Carlos José Bueso</span>
+        <span class="arrow">→</span>
+        <span>Carlos Bueso</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Alicia Rentería</span>
+        <span class="arrow">→</span>
+        <span>Carlos Bueso</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">sibling</span>
+        <span>Marco</span>
+        <span class="arrow">→</span>
+        <span>Carlos Bueso</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">sibling</span>
+        <span>Brisel</span>
+        <span class="arrow">→</span>
+        <span>Carlos Bueso</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">child</span>
+        <span>Cristian Rentería</span>
+        <span class="arrow">→</span>
+        <span>Alicia Rentería</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">half_sibling</span>
+        <span>Cristian Rentería</span>
+        <span class="arrow">→</span>
+        <span>Carlos Bueso</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">child</span>
+        <span>Mateo</span>
+        <span class="arrow">→</span>
+        <span>Cristian Rentería</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">child</span>
+        <span>Andrés</span>
+        <span class="arrow">→</span>
+        <span>Cristian Rentería</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">parent</span>
+        <span>Carlos José Bueso</span>
+        <span class="arrow">→</span>
+        <span>Marco</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">parent</span>
+        <span>Alicia Rentería</span>
+        <span class="arrow">→</span>
+        <span>Marco</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">parent</span>
+        <span>Carlos José Bueso</span>
+        <span class="arrow">→</span>
+        <span>Brisel</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">parent</span>
+        <span>Alicia Rentería</span>
+        <span class="arrow">→</span>
+        <span>Brisel</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">sibling</span>
+        <span>Marco</span>
+        <span class="arrow">→</span>
+        <span>Brisel</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">half_sibling</span>
+        <span>Cristian Rentería</span>
+        <span class="arrow">→</span>
+        <span>Marco</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">half_sibling</span>
+        <span>Cristian Rentería</span>
+        <span class="arrow">→</span>
+        <span>Brisel</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">sibling</span>
+        <span>Mateo</span>
+        <span class="arrow">→</span>
+        <span>Andrés</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">spouse</span>
+        <span>Carlos José Bueso</span>
+        <span class="arrow">→</span>
+        <span>Alicia Rentería</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Alicia Rentería</span>
+        <span class="arrow">→</span>
+        <span>Mateo</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Alicia Rentería</span>
+        <span class="arrow">→</span>
+        <span>Andrés</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Carlos Bueso</span>
+        <span class="arrow">→</span>
+        <span>Mateo</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Carlos Bueso</span>
+        <span class="arrow">→</span>
+        <span>Andrés</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Marco</span>
+        <span class="arrow">→</span>
+        <span>Mateo</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Marco</span>
+        <span class="arrow">→</span>
+        <span>Andrés</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Brisel</span>
+        <span class="arrow">→</span>
+        <span>Mateo</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Brisel</span>
+        <span class="arrow">→</span>
+        <span>Andrés</span>
+        <span class="conf">85% inferred</span>
+      </div>
+    <div class="legend">
+      <span><div class="dot" style="background:#4ade80"></div> Direct (from AI)</span>
+      <span><div class="dot" style="background:#f59e0b"></div> Inferred (transitive)</span>
+    </div>
+  </div>
+
+  
+  <div class="card">
+    <h2>📝 Summary</h2>
+    <div class="summary-box">Carlos Bueso comparte con cariño la historia de su familia, comenzando con sus padres, Carlos José Bueso y Alicia Rentería, quienes se originan de lugares diferentes, Puerto Rico y la Ciudad de México, respectivamente. Su padre nació en 1968 en San Juan, mientras que su madre nació en 1964 en la capital mexicana. La familia de Carlos se completa con sus hermanos, Marco y Brisel, y un medio hermano, Cristian Rentería, quien tiene dos hijos propios, Mateo y Andrés.</div>
+    <div style="margin-top:12px">
+      <strong style="color:#7ec8e3">Tone:</strong> Cariño familiar<br>
+      <strong style="color:#7ec8e3">Topics:</strong> <span class="tag">Familia Bueso</span> <span class="tag">Orígenes puertorriqueños y mexicanos</span> <span class="tag">Hermanos y medio hermano</span> <span class="tag">Primos</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📚 Stories (2)</h2>
+    
+      <div class="story">
+        <h3>"Raíces familiares"</h3>
+        <p>La historia de la familia Bueso comienza con la unión de Carlos José Bueso y Alicia Rentería, quienes, a pesar de sus orígenes diferentes, formaron una familia unida y llena de amor. Carlos José, nacido en San Juan, Puerto Rico, en 1968, y Alicia, originaria de la Ciudad de México, nacida en 1964, se convirtieron en los pilares de esta familia.</p>
+        <div style="margin-top:6px;font-size:12px;color:#8b9baa">👥 Carlos José Bueso, Alicia Rentería, Carlos Bueso</div>
+        <div class="moment">"Mi papá se llama Carlos José Bueso y es de Puerto Rico"</div>
+      </div>
+    
+      <div class="story">
+        <h3>"Hermanos y medio hermano"</h3>
+        <p>Carlos Bueso creció rodeado de hermanos, cada uno con su propia personalidad y contribución a la dinámica familiar. Marco, su hermano, nacido en 1997, y Brisel, su hermana, nacida en 2001, completan el cuadro de los hijos de Carlos José y Alicia. Además, Carlos tiene un medio hermano, Cristian Rentería, quien es significativamente mayor y tiene sus propios hijos, Mateo y Andrés.</p>
+        <div style="margin-top:6px;font-size:12px;color:#8b9baa">👥 Carlos Bueso, Marco, Brisel, Cristian Rentería</div>
+        <div class="moment">"Mi hermano se llama Marco y él nació en el 97"</div><div class="moment">"También tengo un medio hermano de parte de mi mamá que se llama Cristian Rentería"</div>
+      </div>
+    
+  </div>
+  
+</div>
+</body>
+</html>

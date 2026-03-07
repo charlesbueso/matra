@@ -2,9 +2,9 @@
 // MATRA — Stories Tab
 // ============================================================
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, Pressable } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { StarField, Card, BioAlgae, CornerBush } from '../../src/components/ui';
 import { useFamilyStore } from '../../src/stores/familyStore';
@@ -25,9 +25,11 @@ export default function StoriesScreen() {
   }, []);
 
   // Mark stories as read when this tab is viewed
-  useEffect(() => {
-    useNotificationStore.getState().markStoriesRead();
-  }, [stories.length]);
+  useFocusEffect(
+    useCallback(() => {
+      useNotificationStore.getState().markStoriesRead();
+    }, [])
+  );
 
   if (stories.length === 0) {
     return (

@@ -53,7 +53,7 @@ interface NotificationState {
   markLineageRead: () => void;
 
   /** Call after fetchAllFamilyData to compute new unread counts */
-  updateUnreadCounts: (storyCount: number, peopleCount: number) => void;
+  updateUnreadCounts: (storyCount: number, peopleCount: number, relationshipCount?: number) => void;
 
   /** Send a local push notification */
   sendLocalNotification: (title: string, body: string) => Promise<void>;
@@ -73,21 +73,28 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   },
 
   markLineageRead: () => {
-    const currentTotal = getNumber('lastPeopleTotal');
-    setNumber('seenPeopleCount', currentTotal);
+    const currentPeopleTotal = getNumber('lastPeopleTotal');
+    const currentRelTotal = getNumber('lastRelTotal');
+    setNumber('seenPeopleCount', currentPeopleTotal);
+    setNumber('seenRelCount', currentRelTotal);
     set({ unreadLineageCount: 0 });
   },
 
-  updateUnreadCounts: (storyCount: number, peopleCount: number) => {
+  updateUnreadCounts: (storyCount: number, peopleCount: number, relationshipCount: number = 0) => {
     const seenStories = getNumber('seenStoryCount');
     const seenPeople = getNumber('seenPeopleCount');
+    const seenRels = getNumber('seenRelCount');
 
     setNumber('lastStoryTotal', storyCount);
     setNumber('lastPeopleTotal', peopleCount);
+    setNumber('lastRelTotal', relationshipCount);
+
+    const newPeople = Math.max(0, peopleCount - seenPeople);
+    const newRels = Math.max(0, relationshipCount - seenRels);
 
     set({
       unreadStoryCount: Math.max(0, storyCount - seenStories),
-      unreadLineageCount: Math.max(0, peopleCount - seenPeople),
+      unreadLineageCount: newPeople + newRels,
     });
   },
 

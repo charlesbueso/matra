@@ -19,10 +19,10 @@ import { Colors, Typography, Spacing, BorderRadius } from '../../src/theme/token
 import { resizeImageForUpload } from '../../src/utils/image';
 
 const RELATIONSHIP_TYPE_VALUES = [
-  'parent', 'child', 'spouse', 'ex_spouse', 'sibling',
+  'parent', 'child', 'spouse', 'ex_spouse', 'sibling', 'half_sibling',
   'grandparent', 'grandchild', 'great_grandparent', 'great_grandchild',
   'great_great_grandparent', 'great_great_grandchild',
-  'uncle_aunt', 'nephew_niece', 'cousin', 'in_law',
+  'uncle_aunt', 'nephew_niece', 'cousin', 'in_law', 'parent_in_law', 'child_in_law',
   'step_parent', 'step_child', 'step_sibling',
   'adopted_parent', 'adopted_child',
   'godparent', 'godchild', 'other',
@@ -40,10 +40,11 @@ const INVERSE_TYPE: Record<string, string> = {
   great_great_grandparent: 'great_great_grandchild', great_great_grandchild: 'great_great_grandparent',
   uncle_aunt: 'nephew_niece', nephew_niece: 'uncle_aunt',
   step_parent: 'step_child', step_child: 'step_parent',
+  parent_in_law: 'child_in_law', child_in_law: 'parent_in_law',
   adopted_parent: 'adopted_child', adopted_child: 'adopted_parent',
   godparent: 'godchild', godchild: 'godparent',
 };
-const SYMMETRIC_TYPES = ['spouse', 'ex_spouse', 'sibling', 'step_sibling', 'cousin', 'in_law', 'other'];
+const SYMMETRIC_TYPES = ['spouse', 'ex_spouse', 'sibling', 'half_sibling', 'step_sibling', 'cousin', 'in_law', 'other'];
 
 function getEffectiveType(type: string, isPersonA: boolean): string {
   if (isPersonA || SYMMETRIC_TYPES.includes(type)) return type;

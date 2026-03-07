@@ -93,6 +93,7 @@ export interface BackgroundJob {
   status: 'processing' | 'completed' | 'failed';
   interviewId: string | null;
   error: string | null;
+  processingStage: 'uploading' | 'transcribing' | 'extracting' | 'summarizing' | 'completed' | null;
 }
 
 interface FamilyState {
@@ -312,8 +313,8 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
         get().fetchMediaStorage(),
       ]);
       // Update unread badge counts
-      const { people, stories } = get();
-      useNotificationStore.getState().updateUnreadCounts(stories.length, people.length);
+      const { people, stories, relationships } = get();
+      useNotificationStore.getState().updateUnreadCounts(stories.length, people.length, relationships.length);
     } finally {
       set({ isLoading: false });
     }
@@ -694,10 +695,11 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
         great_great_grandparent: 'great_great_grandchild', great_great_grandchild: 'great_great_grandparent',
         uncle_aunt: 'nephew_niece', nephew_niece: 'uncle_aunt',
         step_parent: 'step_child', step_child: 'step_parent',
+        parent_in_law: 'child_in_law', child_in_law: 'parent_in_law',
         adopted_parent: 'adopted_child', adopted_child: 'adopted_parent',
         godparent: 'godchild', godchild: 'godparent',
       };
-      const symmetricTypes = ['spouse', 'ex_spouse', 'sibling', 'step_sibling', 'cousin', 'in_law', 'other'];
+      const symmetricTypes = ['spouse', 'ex_spouse', 'sibling', 'half_sibling', 'step_sibling', 'cousin', 'in_law', 'other'];
       const counterType = inverseType[rel.relationship_type] ||
         (symmetricTypes.includes(rel.relationship_type) ? rel.relationship_type : null);
 
@@ -771,7 +773,7 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
   processInterviewInBackground: (audioUri, familyGroupId, title, devTranscript, subjectPersonId) => {
     const jobId = Date.now().toString();
     const jobTitle = title || 'Conversation';
-    const newJob: BackgroundJob = { id: jobId, title: jobTitle, status: 'processing', interviewId: null, error: null };
+    const newJob: BackgroundJob = { id: jobId, title: jobTitle, status: 'processing', interviewId: null, error: null, processingStage: 'uploading' };
     set((state) => ({
       backgroundJobs: [...state.backgroundJobs, newJob],
       isProcessingInterview: true,
@@ -779,6 +781,34 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
       processingError: null,
     }));
     trackEvent(AnalyticsEvents.INTERVIEW_PROCESSING_STARTED, { title: jobTitle });
+
+    // Poll the DB for real-time processing stage updates
+    const userId = useAuthStore.getState().session?.user?.id;
+    let pollInterval: ReturnType<typeof setInterval> | null = null;
+    if (userId) {
+      pollInterval = setInterval(async () => {
+        try {
+          const { data } = await supabase
+            .from('interviews')
+            .select('id, status, processing_stage')
+            .eq('conducted_by', userId)
+            .in('status', ['uploading', 'transcribing', 'processing'])
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+          if (data) {
+            // Map DB state to UI stage: processing_stage may be null during upload
+            const stage = data.processing_stage || (data.status === 'uploading' ? 'uploading' : 'transcribing');
+            set((state) => ({
+              backgroundJobs: state.backgroundJobs.map((j) =>
+                j.id === jobId ? { ...j, processingStage: stage, interviewId: data.id } : j
+              ),
+            }));
+          }
+        } catch (_) { /* ignore poll errors */ }
+      }, 2000);
+    }
+
     get()
       .processInterview(audioUri, familyGroupId, title, devTranscript, subjectPersonId)
       .then((result) => {
@@ -809,6 +839,7 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
         );
       })
       .finally(() => {
+        if (pollInterval) clearInterval(pollInterval);
         // isProcessingInterview is true if any job is still processing
         const stillProcessing = get().backgroundJobs.some((j) => j.id !== jobId && j.status === 'processing');
         set({ isProcessingInterview: stillProcessing });
