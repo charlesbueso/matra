@@ -21,7 +21,9 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // ── Load env from .env.local ──
-const envPath = path.join(__dirname, '.env.local');
+const envPath = fs.existsSync(path.join(__dirname, '.env.local'))
+  ? path.join(__dirname, '.env.local')
+  : path.join(__dirname, '..', '.env.local');
 if (fs.existsSync(envPath)) {
   for (const line of fs.readFileSync(envPath, 'utf-8').split('\n')) {
     const trimmed = line.trim();
@@ -45,7 +47,7 @@ if (!GROQ_API_KEY && !OPENAI_API_KEY) {
 // ── Test Transcript ──
 const NARRATOR = { firstName: 'Carlos', lastName: 'Bueso', gender: 'male' };
 
-const TRANSCRIPT = `Mi papá se llama Carlos José Bueso y es de Puerto Rico, él nació en 1968 en San Juan, Puerto Rico y mi mamá se llama Alicia Rentería, ella es mexicana de la Ciudad de México y nació en 1964. Mi hermano se llama Marco y él nació en el 97 y mi hermana se llama Brisel con Z y ella es más chiquita que yo, ella nació en el 2001. También tengo un medio hermano de parte de mi mamá que se llama Cristian Rentería y Cristian es mucho más grande que yo, él nació en el año 1989. Él tiene dos hijos, uno se llama Mateo que tiene seis años y uno se llama Andrés que tiene diez años.`;
+const TRANSCRIPT = `Hola, mi nombre es Carlos Adrián Bueso. Nací el octubre 22 de 1999 en la Ciudad de México. Mis papás se llaman Carlos José Bueso y mi mamá se llama Alicia Rentería Montes de Oca. Mi papá nació en Puerto Rico y se fue a estudiar la universidad a Boston, en Massachusetts. Y después de eso consiguió un trabajo que lo expatrió a la Ciudad de México, donde conoció a mi mamá. Una vez que mi mamá y él se conocieron, se casaron y tuvieron tres hijos, que soy yo, mi hermano grande Marco Andrés Bueso y mi hermana pequeña Brisela Alessandra Bueso. También tengo un medio hermano de parte de mi mamá que se llama Cristian Rentería. Él nació en 1985 y él ya tiene dos hijos. Uno de sus hijos se llama Mateo Renter y su otro hijo se llama Andr Renter Mi familia es bastante grande y la verdad es que somos muy unidos Yo soy desarrollador de software y me dedico a programar. Tengo una empresa con mis amigos, un estudio creativo que se llama Alquimia Studio y yo soy programador ahí. principalmente hago páginas web, aplicaciones como esta misma en la que estamos trabajando el cual construye una gráfica de tu árbol familiar con inteligencia artificial y bueno, entre muchas otras cosas mi abuela materna se llama igual que mi mamá, Alicia Rentería y ella ya falleció, pero la queremos mucho. De hecho, el apodo que le tenemos a ella es Abuelita Mimi y también tengo una tía de parte de mi mamá. Ella se llama Claudia y ella es hermana de mi mamá mamá y Claudia tiene dos hijos que son Omar Gutiérrez y Valeria Gutiérrez que son mis primos`;
 
 // ── Simulated existing tree (empty for first run, or populate to test dedup) ──
 const EXISTING_PEOPLE = [
@@ -215,9 +217,56 @@ function normalize(s) {
   return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
 }
 
-function resolvePeople(suggestedPeople, narrator, existingPeople) {
+function resolvePeople(suggestedPeople, narrator, existingPeople, relationships) {
   const resolved = new Map(); // normKey → personRecord
   let nextId = 1;
+
+  // Helper: check if a name looks like a variant of the narrator's name
+  const narFirst = normalize(narrator.firstName || '');
+  const narLast = normalize(narrator.lastName || '');
+  const narLastWords = narLast ? narLast.split(/\s+/) : [];
+  const normNarratorName = normalize(`${narrator.firstName} ${narrator.lastName || ''}`);
+
+  function looksLikeNarratorVariant(normName) {
+    const parts = normName.split(/\s+/);
+    const firstWord = parts[0];
+    const lastWords = parts.length > 1 ? parts.slice(1) : [];
+    return firstWord === narFirst &&
+      narLastWords.length > 0 && lastWords.length > 0 &&
+      narLastWords.some(w => lastWords.includes(w));
+  }
+
+  // Check if a name-variant candidate is a distinct family member (e.g., a
+  // parent of the narrator who shares the same name pattern).
+  function isDistinctFromNarrator(sugNormFull) {
+    const narratorName = normalize(`${narrator.firstName} ${narrator.lastName || ''}`);
+    const parentTypes = ['parent', 'grandparent', 'great_grandparent', 'great_great_grandparent'];
+    for (const rel of (relationships || [])) {
+      const normA = normalize(rel.personA);
+      const normB = normalize(rel.personB);
+      // Case 1: candidate is a parent/ancestor of narrator (or variant)
+      if (normA === sugNormFull && parentTypes.includes(rel.relationshipType) &&
+          (normB === narratorName || looksLikeNarratorVariant(normB))) {
+        return true;
+      }
+      // Case 1b: reverse — narrator is child of candidate
+      if (normB === sugNormFull && rel.relationshipType === 'child' &&
+          (normA === narratorName || looksLikeNarratorVariant(normA))) {
+        return true;
+      }
+      // Case 2: candidate has a spouse/ex_spouse relationship
+      if ((normA === sugNormFull || normB === sugNormFull) &&
+          (rel.relationshipType === 'spouse' || rel.relationshipType === 'ex_spouse')) {
+        return true;
+      }
+      // Case 3: candidate has any direct relationship with narrator's stored name
+      if ((normA === sugNormFull && normB === narratorName) ||
+          (normB === sugNormFull && normA === narratorName)) {
+        return true;
+      }
+    }
+    return false;
+  }
 
   // Pre-seed narrator
   const narratorId = `person-narrator`;
@@ -250,6 +299,28 @@ function resolvePeople(suggestedPeople, narrator, existingPeople) {
     const sugFirst = normalize(suggested.firstName || '');
     const sugLast = normalize(suggested.lastName || '');
     const sugFullKey = normalize(`${suggested.firstName} ${suggested.lastName || ''}`);
+
+    // ── Narrator variant check ──
+    const sugLastWords = sugLast ? sugLast.split(/\s+/) : [];
+    const sugFirstWords = sugFirst.split(/\s+/);
+    const firstNameMatches = sugFirst === narFirst || sugFirstWords[0] === narFirst;
+    const sharesLastName = narLastWords.length > 0 && sugLastWords.length > 0 &&
+      narLastWords.some(w => sugLastWords.includes(w));
+    if (firstNameMatches && sharesLastName) {
+      const sugNormFull = normalize(`${suggested.firstName} ${suggested.lastName || ''}`);
+      if (isDistinctFromNarrator(sugNormFull)) {
+        console.log(`  ⚠️  Suggested person "${suggested.firstName} ${suggested.lastName || ''}" shares name pattern with narrator but is a parent/ancestor — treating as distinct person`);
+      } else {
+        console.log(`  ⚠️  Suggested person "${suggested.firstName} ${suggested.lastName || ''}" is a name variant of narrator — resolving to narrator`);
+        resolved.set(sugFullKey, resolved.get(normNarratorName));
+        const narRecord = resolved.get(normNarratorName);
+        if (suggested.birthDate && !narRecord.birthDate) narRecord.birthDate = suggested.birthDate;
+        if (suggested.birthPlace && !narRecord.birthPlace) narRecord.birthPlace = suggested.birthPlace;
+        if (suggested.profession && !narRecord.profession) narRecord.profession = suggested.profession;
+        if (suggested.gender && !narRecord.gender) narRecord.gender = suggested.gender;
+        continue;
+      }
+    }
 
     // If already resolved, skip — UNLESS the match is to the narrator.
     // The AI should NOT include the narrator in suggestedPeople, so a match
@@ -768,7 +839,7 @@ async function main() {
   const genderHint = NARRATOR.gender
     ? ` Their gender is ${NARRATOR.gender}. Use correct gendered language when referring to ${subjectName}.`
     : '';
-  const transcriptForAI = `[Narrator/subject of this interview is ${subjectName}.${genderHint} Any first-person references ("I", "me", "my") refer to ${subjectName}. Do NOT create a separate entry for the narrator — they are ${subjectName}. IMPORTANT: When the narrator says "my mom", "my dad", "my brother", etc., create relationships between those people and ${subjectName}. Use ${subjectName} as the personA or personB name in relationships — never use "I" or "me" as a person name.]\n\n${TRANSCRIPT}`;
+  const transcriptForAI = `[Narrator/subject of this interview is ${subjectName}.${genderHint} Any first-person references ("I", "me", "my") refer to ${subjectName}. Do NOT create a separate entry for the narrator — they are ${subjectName}. IMPORTANT: If the narrator introduces themselves by a different or fuller version of their name (e.g., including middle names, maiden names, or additional names), that is STILL the narrator — do NOT create a new suggestedPeople entry for them. The narrator is ALWAYS ${subjectName}, regardless of how they refer to themselves. When the narrator says "my mom", "my dad", "my brother", etc., create relationships between those people and ${subjectName}. Use ${subjectName} as the personA or personB name in relationships — never use "I" or "me" as a person name.]\n\n${TRANSCRIPT}`;
 
   // Step 1: Extraction
   console.log('  ⏳ Step 1/2: Extracting entities & relationships...');
@@ -798,7 +869,8 @@ async function main() {
   const resolvedPeople = resolvePeople(
     extractionResult.suggestedPeople || [],
     NARRATOR,
-    EXISTING_PEOPLE
+    EXISTING_PEOPLE,
+    extractionResult.relationships || []
   );
 
   // Step 4: Map relationships

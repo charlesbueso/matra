@@ -354,7 +354,7 @@ serve(async (req: Request) => {
     }
 
     const transcriptForAI = subjectName
-      ? `[Narrator/subject of this interview is ${subjectName}.${genderHint} Any first-person references ("I", "me", "my") refer to ${subjectName}. Do NOT create a separate entry for the narrator — they are ${subjectName}. IMPORTANT: When the narrator says "my mom", "my dad", "my brother", etc., create relationships between those people and ${subjectName}. Use ${subjectName} as the personA or personB name in relationships — never use "I" or "me" as a person name.]${existingFamilyContext}\n\n${transcriptText}`
+      ? `[Narrator/subject of this interview is ${subjectName}.${genderHint} Any first-person references ("I", "me", "my") refer to ${subjectName}. Do NOT create a separate entry for the narrator — they are ${subjectName}. IMPORTANT: If the narrator introduces themselves by a different or fuller version of their name (e.g., including middle names, maiden names, or additional names), that is STILL the narrator — do NOT create a new suggestedPeople entry for them. The narrator is ALWAYS ${subjectName}, regardless of how they refer to themselves. When the narrator says "my mom", "my dad", "my brother", etc., create relationships between those people and ${subjectName}. Use ${subjectName} as the personA or personB name in relationships — never use "I" or "me" as a person name.]${existingFamilyContext}\n\n${transcriptText}`
       : `${existingFamilyContext}\n\n${transcriptText}`;
 
     const llmProvider = getLLMProviderWithFallback();
@@ -367,6 +367,12 @@ serve(async (req: Request) => {
       // Non-fatal — continue with summarization
       extractionResult = { entities: [], relationships: [], suggestedPeople: [] };
     }
+
+    // Log extraction result for debugging narrator variant handling
+    console.log(`[process-interview] AI extracted ${extractionResult.suggestedPeople.length} suggestedPeople:`,
+      extractionResult.suggestedPeople.map((p: any) => `${p.firstName} ${p.lastName || ''} (birth: ${p.birthDate || '?'}, place: ${p.birthPlace || '?'})`).join(', '));
+    console.log(`[process-interview] AI extracted ${extractionResult.relationships.length} relationships:`,
+      extractionResult.relationships.map((r: any) => `${r.personA} -[${r.relationshipType}]-> ${r.personB}`).join(', '));
 
     // 6. Save extracted entities
     if (extractionResult.entities.length > 0) {
@@ -421,22 +427,193 @@ serve(async (req: Request) => {
       }
     }
 
+    // Helper: check if a name looks like a variant of the narrator's name
+    // (shares first-name word + at least one last-name word).
+    function looksLikeNarratorVariant(normName: string): boolean {
+      if (!subjectPerson) return false;
+      const subFirst = normalize(subjectPerson.first_name || '');
+      const subLast = normalize(subjectPerson.last_name || '');
+      const subLastWords = subLast ? subLast.split(/\s+/) : [];
+      const parts = normName.split(/\s+/);
+      const firstWord = parts[0];
+      const lastWords = parts.length > 1 ? parts.slice(1) : [];
+      const firstMatch = firstWord === subFirst;
+      const lastMatch = subLastWords.length > 0 && lastWords.length > 0 &&
+        subLastWords.some((w: string) => lastWords.includes(w));
+      return firstMatch && lastMatch;
+    }
+
+    // Check if a name-variant candidate is actually a distinct family member
+    // (e.g., "Carlos José Bueso" is the narrator's father, not the narrator).
+    // A variant is DISTINCT if:
+    //  1. It appears as a parent/grandparent OF the narrator (or narrator variant), OR
+    //  2. It has a spouse/ex_spouse relationship (narrator variants don't have spouse rels), OR
+    //  3. It has any direct relationship with the narrator's exact stored name.
+    function isDistinctFromNarrator(sugNormFull: string): boolean {
+      const narratorName = normalize(`${subjectPerson!.first_name} ${subjectPerson!.last_name || ''}`);
+      const parentTypes = ['parent', 'grandparent', 'great_grandparent', 'great_great_grandparent'];
+      for (const rel of extractionResult.relationships) {
+        const normA = normalize(rel.personA);
+        const normB = normalize(rel.personB);
+
+        // Case 1: candidate is a parent/ancestor OF a narrator variant
+        if (normA === sugNormFull && parentTypes.includes(rel.relationshipType) &&
+            (normB === narratorName || looksLikeNarratorVariant(normB))) {
+          console.log(`[process-interview] isDistinctFromNarrator: "${sugNormFull}" is ${rel.relationshipType} of "${normB}" → distinct (parent/ancestor)`);
+          return true;
+        }
+        // Case 1b: reverse — narrator variant is child of candidate
+        if (normB === sugNormFull && rel.relationshipType === 'child' &&
+            (normA === narratorName || looksLikeNarratorVariant(normA))) {
+          console.log(`[process-interview] isDistinctFromNarrator: "${normA}" is child of "${sugNormFull}" → distinct (reverse parent)`);
+          return true;
+        }
+
+        // Case 2: candidate has a spouse/ex_spouse relationship with anyone.
+        // Narrator variants don't have their own spouse rels (AI uses stored name).
+        if ((normA === sugNormFull || normB === sugNormFull) &&
+            (rel.relationshipType === 'spouse' || rel.relationshipType === 'ex_spouse')) {
+          console.log(`[process-interview] isDistinctFromNarrator: "${sugNormFull}" has spouse rel → distinct`);
+          return true;
+        }
+
+        // Case 3: candidate has ANY direct relationship with narrator's stored name
+        if ((normA === sugNormFull && normB === narratorName) ||
+            (normB === sugNormFull && normA === narratorName)) {
+          console.log(`[process-interview] isDistinctFromNarrator: "${sugNormFull}" has direct rel with narrator "${narratorName}" → distinct`);
+          return true;
+        }
+      }
+      return false;
+    }
+
+    // Check if the AI extracted a direct relationship between two names.
+    // If so, they CANNOT be the same person and must not be merged.
+    function aiHasRelationshipBetween(nameA: string, nameB: string): boolean {
+      const normA = normalize(nameA);
+      const normB = normalize(nameB);
+      if (normA === normB) return false;
+      for (const rel of extractionResult.relationships) {
+        const relA = normalize(rel.personA);
+        const relB = normalize(rel.personB);
+        if ((relA === normA && relB === normB) || (relA === normB && relB === normA)) {
+          return true;
+        }
+      }
+      // Also check by partial match: "Alicia Rentería" could match the relationship
+      // entry "Alicia Rentería Montes de Oca" if one name contains the other.
+      for (const rel of extractionResult.relationships) {
+        const relA = normalize(rel.personA);
+        const relB = normalize(rel.personB);
+        const matchesA = (relA === normA || relA === normB);
+        const matchesB = (relB === normA || relB === normB);
+        if (matchesA && matchesB) return true;
+      }
+      return false;
+    }
+
+    // Track which name keys have been merged as narrator variants, so we don't
+    // merge TWO entries with the same name (one might be a parent named after the child).
+    const narratorVariantMergedKeys = new Set<string>();
+
     for (const suggested of extractionResult.suggestedPeople) {
       const sugFirst = normalize(suggested.firstName || '');
       const sugLast = normalize(suggested.lastName || '');
       const sugNick = normalize(suggested.nickname || '');
       const sugFullKey = normalize(`${suggested.firstName} ${suggested.lastName || ''}`);
 
+      // ── Narrator variant check ──
+      // If the suggested person is actually the narrator with a fuller/different
+      // version of their name (e.g., narrator is "Carlos Bueso" but transcript says
+      // "Carlos Adrián Bueso"), resolve to the subject and skip creation.
+      if (subjectPerson) {
+        const subFirst = normalize(subjectPerson.first_name || '');
+        const subLast = normalize(subjectPerson.last_name || '');
+        const subLastWords = subLast ? subLast.split(/\s+/) : [];
+        const sugLastWords = sugLast ? sugLast.split(/\s+/) : [];
+        // Match if first name matches (exact or compound: "Carlos Adrián" starts with "Carlos")
+        const sugFirstWords = sugFirst.split(/\s+/);
+        const firstNameMatches = sugFirst === subFirst || sugFirstWords[0] === subFirst;
+        // Match if they share at least one last-name word
+        const sharesLastName = subLastWords.length > 0 && sugLastWords.length > 0 &&
+          subLastWords.some((w: string) => sugLastWords.includes(w));
+        if (firstNameMatches && sharesLastName) {
+          // Before resolving to narrator, check if this person is a distinct
+          // family member (e.g., a parent of the narrator who shares the name).
+          const sugNormFull = normalize(`${suggested.firstName} ${suggested.lastName || ''}`);
+
+          // Also check: if this person has birth data that CONTRADICTS the narrator's,
+          // they're clearly a different person (e.g., father born in Puerto Rico vs
+          // narrator born in Mexico City).
+          let hasDifferentBirthData = false;
+          if (suggested.birthPlace && subjectPerson.birth_place &&
+              normalize(suggested.birthPlace) !== normalize(subjectPerson.birth_place)) {
+            hasDifferentBirthData = true;
+          }
+          if (suggested.birthDate && subjectPerson.birth_date) {
+            const sugYear = String(suggested.birthDate).slice(0, 4);
+            const subYear = String(subjectPerson.birth_date).slice(0, 4);
+            if (sugYear !== subYear) hasDifferentBirthData = true;
+          }
+
+          // If we already merged an entry with this same normalized name as the narrator,
+          // a second entry is very likely a DIFFERENT person (e.g., parent named after child).
+          const alreadyMergedThisName = narratorVariantMergedKeys.has(sugNormFull);
+
+          if (isDistinctFromNarrator(sugNormFull) || hasDifferentBirthData || alreadyMergedThisName) {
+            console.log(`[process-interview] Suggested person "${suggested.firstName} ${suggested.lastName || ''}" shares name pattern with narrator but is distinct (relationship=${isDistinctFromNarrator(sugNormFull)}, differentBirth=${hasDifferentBirthData}, alreadyMerged=${alreadyMergedThisName}) — treating as separate person`);
+          } else {
+          console.log(`[process-interview] Suggested person "${suggested.firstName} ${suggested.lastName || ''}" is a name variant of narrator "${subjectPerson.first_name} ${subjectPerson.last_name || ''}" — resolving to narrator`);
+          resolvedPeople.set(sugFullKey, subjectPerson.id);
+          narratorVariantMergedKeys.add(sugNormFull);
+          // Update narrator's record with any new info (e.g., birth date, profession)
+          const updates: Record<string, unknown> = {};
+          if (suggested.birthDate && !subjectPerson.metadata?.birth_date) {
+            // Only update birth_date via the main column if not already set
+            const { data: currentPerson } = await supabase.from('people').select('birth_date').eq('id', subjectPerson.id).single();
+            if (currentPerson && !currentPerson.birth_date) {
+              updates.birth_date = suggested.birthDate;
+              (subjectPerson as any).birth_date = suggested.birthDate; // keep in-memory in sync
+            }
+          }
+          if (suggested.birthPlace) {
+            const { data: currentPerson } = await supabase.from('people').select('birth_place').eq('id', subjectPerson.id).single();
+            if (currentPerson && !currentPerson.birth_place) {
+              updates.birth_place = suggested.birthPlace;
+              (subjectPerson as any).birth_place = suggested.birthPlace; // keep in-memory in sync
+            }
+          }
+          if (suggested.profession || suggested.gender) {
+            const meta = { ...(subjectPerson.metadata || {}) };
+            if (suggested.profession && !meta.profession) meta.profession = suggested.profession;
+            if (suggested.gender && !meta.gender) meta.gender = suggested.gender;
+            updates.metadata = meta;
+          }
+          if (Object.keys(updates).length > 0) {
+            await supabase.from('people').update(updates).eq('id', subjectPerson.id);
+          }
+          continue;
+          }
+        }
+      }
+
       // If this person was already resolved (e.g. the subject/self, or existing person), skip.
-      // EXCEPTION: if the match is to the subject/narrator, fall through instead.
-      // The AI prompt says NOT to include the narrator in suggestedPeople, so a
-      // match here likely means a different person with a similar name (e.g.,
-      // a parent the narrator is named after).
+      // EXCEPTIONS:
+      //   1. If the match is to the subject/narrator, fall through for disambiguation.
+      //   2. If the AI has a direct relationship between this person and the matched
+      //      person, they are clearly different people (e.g., grandmother "Alicia Rentería"
+      //      is parent of mother "Alicia Rentería Montes de Oca") — fall through.
       if (resolvedPeople.has(sugFullKey) || resolvedPeople.has(sugFirst)) {
         const matchedId = resolvedPeople.get(sugFullKey) || resolvedPeople.get(sugFirst);
+        // Find the name of the person this matched to
+        const matchedName = [...resolvedPeople.entries()].find(([, id]) => id === matchedId)?.[0] || '';
+        const sugName = `${suggested.firstName} ${suggested.lastName || ''}`;
         if (subjectPerson && matchedId === subjectPerson.id) {
-          console.log(`[process-interview] Suggested person "${suggested.firstName} ${suggested.lastName || ''}" matches narrator name — checking if different person`);
+          console.log(`[process-interview] Suggested person "${sugName}" matches narrator name — checking if different person`);
           // Fall through to matching loop for careful disambiguation
+        } else if (aiHasRelationshipBetween(sugName, matchedName)) {
+          console.log(`[process-interview] Suggested person "${sugName}" matched to "${matchedName}" but AI has a relationship between them — treating as separate person`);
+          // Fall through — these are different people
         } else {
           continue;
         }
@@ -491,6 +668,20 @@ serve(async (req: Request) => {
         if (score > bestScore) {
           bestScore = score;
           matchId = existing.id;
+        }
+      }
+
+      // Before accepting a match, verify the AI doesn't have a direct relationship
+      // between the suggested person and the matched person. If it does, they're
+      // clearly different people (e.g., grandmother and granddaughter with same name).
+      if (matchId && bestScore >= 3) {
+        const matchPerson = allExisting.find((p: any) => p.id === matchId)!;
+        const sugName = `${suggested.firstName} ${suggested.lastName || ''}`;
+        const matchName = `${matchPerson.first_name} ${matchPerson.last_name || ''}`;
+        if (aiHasRelationshipBetween(sugName, matchName)) {
+          console.log(`[process-interview] "${sugName}" scored ${bestScore} against existing "${matchName}" but AI has a relationship between them — creating as separate person`);
+          matchId = null;
+          bestScore = 0;
         }
       }
 

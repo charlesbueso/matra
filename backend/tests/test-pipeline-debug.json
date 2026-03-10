@@ -3,244 +3,291 @@
     "entities": [
       {
         "type": "person",
-        "value": "Carlos José Bueso",
+        "value": "Carlos Adrián Bueso",
         "confidence": 0.9,
-        "context": "Mi papá se llama Carlos José Bueso y es de Puerto Rico, él nació en 1968 en San Juan, Puerto Rico"
-      },
-      {
-        "type": "location",
-        "value": "Puerto Rico",
-        "confidence": 0.9,
-        "context": "Mi papá se llama Carlos José Bueso y es de Puerto Rico, él nació en 1968 en San Juan, Puerto Rico"
-      },
-      {
-        "type": "location",
-        "value": "San Juan, Puerto Rico",
-        "confidence": 0.9,
-        "context": "Mi papá se llama Carlos José Bueso y es de Puerto Rico, él nació en 1968 en San Juan, Puerto Rico"
+        "context": "mi nombre es Carlos Adrián Bueso"
       },
       {
         "type": "date",
-        "value": "1968",
+        "value": "1999-10-22",
         "confidence": 0.9,
-        "context": "Mi papá se llama Carlos José Bueso y es de Puerto Rico, él nació en 1968 en San Juan, Puerto Rico"
-      },
-      {
-        "type": "person",
-        "value": "Alicia Rentería",
-        "confidence": 0.9,
-        "context": "mi mamá se llama Alicia Rentería, ella es mexicana de la Ciudad de México y nació en 1964"
+        "context": "Nací el octubre 22 de 1999"
       },
       {
         "type": "location",
         "value": "Ciudad de México",
         "confidence": 0.9,
-        "context": "mi mamá se llama Alicia Rentería, ella es mexicana de la Ciudad de México y nació en 1964"
-      },
-      {
-        "type": "date",
-        "value": "1964",
-        "confidence": 0.9,
-        "context": "mi mamá se llama Alicia Rentería, ella es mexicana de la Ciudad de México y nació en 1964"
+        "context": "en la Ciudad de México"
       },
       {
         "type": "person",
-        "value": "Marco",
+        "value": "Carlos José Bueso",
         "confidence": 0.9,
-        "context": "Mi hermano se llama Marco y él nació en el 97"
-      },
-      {
-        "type": "date",
-        "value": "1997",
-        "confidence": 0.9,
-        "context": "Mi hermano se llama Marco y él nació en el 97"
+        "context": "Mis papás se llaman Carlos José Bueso"
       },
       {
         "type": "person",
-        "value": "Brisel",
+        "value": "Alicia Rentería Montes de Oca",
         "confidence": 0.9,
-        "context": "mi hermana se llama Brisel con Z y ella es más chiquita que yo, ella nació en el 2001"
+        "context": "mi mamá se llama Alicia Rentería Montes de Oca"
       },
       {
-        "type": "date",
-        "value": "2001",
+        "type": "location",
+        "value": "Puerto Rico",
         "confidence": 0.9,
-        "context": "mi hermana se llama Brisel con Z y ella es más chiquita que yo, ella nació en el 2001"
+        "context": "Mi papá nació en Puerto Rico"
+      },
+      {
+        "type": "location",
+        "value": "Boston, Massachusetts",
+        "confidence": 0.9,
+        "context": "se fue a estudiar la universidad a Boston, en Massachusetts"
+      },
+      {
+        "type": "person",
+        "value": "Marco Andrés Bueso",
+        "confidence": 0.9,
+        "context": "mi hermano grande Marco Andrés Bueso"
+      },
+      {
+        "type": "person",
+        "value": "Brisela Alessandra Bueso",
+        "confidence": 0.9,
+        "context": "mi hermana pequeña Brisela Alessandra Bueso"
       },
       {
         "type": "person",
         "value": "Cristian Rentería",
         "confidence": 0.9,
-        "context": "También tengo un medio hermano de parte de mi mamá que se llama Cristian Rentería y Cristian es mucho más grande que yo, él nació en el año 1989"
+        "context": "tengo un medio hermano de parte de mi mamá que se llama Cristian Rentería"
       },
       {
         "type": "date",
-        "value": "1989",
+        "value": "1985",
         "confidence": 0.9,
-        "context": "También tengo un medio hermano de parte de mi mamá que se llama Cristian Rentería y Cristian es mucho más grande que yo, él nació en el año 1989"
+        "context": "Él nació en 1985"
       },
       {
         "type": "person",
-        "value": "Mateo",
+        "value": "Mateo Renter",
         "confidence": 0.9,
-        "context": "Él tiene dos hijos, uno se llama Mateo que tiene seis años"
-      },
-      {
-        "type": "date",
-        "value": "2017",
-        "confidence": 0.8,
-        "context": "Él tiene dos hijos, uno se llama Mateo que tiene seis años"
+        "context": "Uno de sus hijos se llama Mateo Renter"
       },
       {
         "type": "person",
-        "value": "Andrés",
+        "value": "Andr Renter",
         "confidence": 0.9,
-        "context": "uno se llama Andrés que tiene diez años"
+        "context": "su otro hijo se llama Andr Renter"
       },
       {
-        "type": "date",
-        "value": "2013",
-        "confidence": 0.8,
-        "context": "uno se llama Andrés que tiene diez años"
+        "type": "person",
+        "value": "Alicia Rentería",
+        "confidence": 0.9,
+        "context": "mi abuela materna se llama igual que mi mamá, Alicia Rentería"
+      },
+      {
+        "type": "person",
+        "value": "Claudia",
+        "confidence": 0.9,
+        "context": "tengo una tía de parte de mi mamá. Ella se llama Claudia"
+      },
+      {
+        "type": "person",
+        "value": "Omar Gutiérrez",
+        "confidence": 0.9,
+        "context": "Ella es hermana de mi mamá mamá y Claudia tiene dos hijos que son Omar Gutiérrez"
+      },
+      {
+        "type": "person",
+        "value": "Valeria Gutiérrez",
+        "confidence": 0.9,
+        "context": "y Valeria Gutiérrez que son mis primos"
       }
     ],
     "relationships": [
       {
         "personA": "Carlos José Bueso",
-        "personB": "Carlos Bueso",
+        "personB": "Carlos Adrián Bueso",
         "relationshipType": "parent",
         "confidence": 0.9,
-        "context": "Mi papá se llama Carlos José Bueso y es de Puerto Rico, él nació en 1968 en San Juan, Puerto Rico"
+        "context": "Mis papás se llaman Carlos José Bueso"
+      },
+      {
+        "personA": "Alicia Rentería Montes de Oca",
+        "personB": "Carlos Adrián Bueso",
+        "relationshipType": "parent",
+        "confidence": 0.9,
+        "context": "mi mamá se llama Alicia Rentería Montes de Oca"
+      },
+      {
+        "personA": "Alicia Rentería Montes de Oca",
+        "personB": "Cristian Rentería",
+        "relationshipType": "parent",
+        "confidence": 0.9,
+        "context": "tengo un medio hermano de parte de mi mamá que se llama Cristian Rentería"
+      },
+      {
+        "personA": "Cristian Rentería",
+        "personB": "Carlos Adrián Bueso",
+        "relationshipType": "half_sibling",
+        "confidence": 0.9,
+        "context": "tengo un medio hermano de parte de mi mamá que se llama Cristian Rentería"
+      },
+      {
+        "personA": "Carlos Adrián Bueso",
+        "personB": "Marco Andrés Bueso",
+        "relationshipType": "sibling",
+        "confidence": 0.9,
+        "context": "mi hermano grande Marco Andrés Bueso"
+      },
+      {
+        "personA": "Carlos Adrián Bueso",
+        "personB": "Brisela Alessandra Bueso",
+        "relationshipType": "sibling",
+        "confidence": 0.9,
+        "context": "mi hermana pequeña Brisela Alessandra Bueso"
       },
       {
         "personA": "Alicia Rentería",
-        "personB": "Carlos Bueso",
+        "personB": "Alicia Rentería Montes de Oca",
         "relationshipType": "parent",
         "confidence": 0.9,
-        "context": "mi mamá se llama Alicia Rentería, ella es mexicana de la Ciudad de México y nació en 1964"
+        "context": "mi abuela materna se llama igual que mi mamá, Alicia Rentería"
       },
       {
-        "personA": "Marco",
-        "personB": "Carlos Bueso",
+        "personA": "Claudia",
+        "personB": "Alicia Rentería Montes de Oca",
         "relationshipType": "sibling",
         "confidence": 0.9,
-        "context": "Mi hermano se llama Marco y él nació en el 97"
+        "context": "tengo una tía de parte de mi mamá. Ella se llama Claudia"
       },
       {
-        "personA": "Brisel",
-        "personB": "Carlos Bueso",
-        "relationshipType": "sibling",
+        "personA": "Omar Gutiérrez",
+        "personB": "Carlos Adrián Bueso",
+        "relationshipType": "cousin",
         "confidence": 0.9,
-        "context": "mi hermana se llama Brisel con Z y ella es más chiquita que yo, ella nació en el 2001"
+        "context": "Ella es hermana de mi mamá mamá y Claudia tiene dos hijos que son Omar Gutiérrez"
       },
       {
-        "personA": "Cristian Rentería",
-        "personB": "Alicia Rentería",
-        "relationshipType": "child",
+        "personA": "Valeria Gutiérrez",
+        "personB": "Carlos Adrián Bueso",
+        "relationshipType": "cousin",
         "confidence": 0.9,
-        "context": "También tengo un medio hermano de parte de mi mamá que se llama Cristian Rentería y Cristian es mucho más grande que yo, él nació en el año 1989"
-      },
-      {
-        "personA": "Cristian Rentería",
-        "personB": "Carlos Bueso",
-        "relationshipType": "half_sibling",
-        "confidence": 0.9,
-        "context": "También tengo un medio hermano de parte de mi mamá que se llama Cristian Rentería y Cristian es mucho más grande que yo, él nació en el año 1989"
-      },
-      {
-        "personA": "Mateo",
-        "personB": "Cristian Rentería",
-        "relationshipType": "child",
-        "confidence": 0.9,
-        "context": "Él tiene dos hijos, uno se llama Mateo que tiene seis años"
-      },
-      {
-        "personA": "Andrés",
-        "personB": "Cristian Rentería",
-        "relationshipType": "child",
-        "confidence": 0.9,
-        "context": "uno se llama Andrés que tiene diez años"
+        "context": "y Valeria Gutiérrez que son mis primos"
       }
     ],
     "suggestedPeople": [
       {
+        "firstName": "Carlos Adrián",
+        "lastName": "Bueso",
+        "birthDate": "1999-10-22",
+        "birthPlace": "Ciudad de México",
+        "gender": "male"
+      },
+      {
         "firstName": "Carlos José",
         "lastName": "Bueso",
-        "birthDate": "1968",
-        "birthPlace": "San Juan, Puerto Rico"
+        "birthPlace": "Puerto Rico",
+        "gender": "male"
       },
       {
         "firstName": "Alicia",
-        "lastName": "Rentería",
-        "birthDate": "1964",
-        "birthPlace": "Ciudad de México"
+        "lastName": "Rentería Montes de Oca",
+        "gender": "female"
       },
       {
-        "firstName": "Marco",
-        "lastName": null,
-        "birthDate": "1997"
+        "firstName": "Marco Andrés",
+        "lastName": "Bueso",
+        "gender": "male"
       },
       {
-        "firstName": "Brisel",
-        "lastName": null,
-        "birthDate": "2001"
+        "firstName": "Brisela Alessandra",
+        "lastName": "Bueso",
+        "gender": "female"
       },
       {
         "firstName": "Cristian",
         "lastName": "Rentería",
-        "birthDate": "1989"
+        "birthDate": "1985",
+        "gender": "male"
       },
       {
         "firstName": "Mateo",
-        "lastName": null,
-        "birthDate": "2017"
-      },
-      {
-        "firstName": "Andrés",
-        "lastName": null,
-        "birthDate": "2013"
-      },
-      {
-        "firstName": "Carlos",
-        "lastName": "Bueso",
+        "lastName": "Renter",
         "gender": "male"
+      },
+      {
+        "firstName": "Andr",
+        "lastName": "Renter",
+        "gender": "male"
+      },
+      {
+        "firstName": "Alicia",
+        "lastName": "Rentería",
+        "gender": "female"
+      },
+      {
+        "firstName": "Claudia",
+        "gender": "female"
+      },
+      {
+        "firstName": "Omar",
+        "lastName": "Gutiérrez",
+        "gender": "male"
+      },
+      {
+        "firstName": "Valeria",
+        "lastName": "Gutiérrez",
+        "gender": "female"
       }
     ]
   },
   "summary": {
-    "summary": "Carlos Bueso comparte con cariño la historia de su familia, comenzando con sus padres, Carlos José Bueso y Alicia Rentería, quienes se originan de lugares diferentes, Puerto Rico y la Ciudad de México, respectivamente. Su padre nació en 1968 en San Juan, mientras que su madre nació en 1964 en la capital mexicana. La familia de Carlos se completa con sus hermanos, Marco y Brisel, y un medio hermano, Cristian Rentería, quien tiene dos hijos propios, Mateo y Andrés.",
+    "summary": "Carlos Adrián Bueso nació el 22 de octubre de 1999 en la Ciudad de México, hijo de Carlos José Bueso y Alicia Rentería Montes de Oca. Su familia es muy unida y tiene una historia interesante, ya que su papá nació en Puerto Rico y se mudó a Boston para estudiar, y luego se estableció en la Ciudad de México, donde conoció a su mamá. Carlos tiene dos hermanos, Marco Andrés y Brisela Alessandra, y un medio hermano, Cristian Rentería, que tiene dos hijos, Mateo y Andr. La familia de Carlos es muy grande y están muy unidos.",
+    "summary2": "Carlos es desarrollador de software y trabaja en una empresa llamada Alquimia Studio, donde se dedica a programar y crear páginas web y aplicaciones. También tiene un gran cariño por su familia y recuerda con cariño a su abuela materna, Alicia Rentería, a quien llamaban Abuelita Mimi. La familia de Carlos es muy importante para él y siempre busca mantenerse en contacto con sus seres queridos.",
+    "summary3": "La familia de Carlos es muy extensa y tiene muchas ramas. Tiene una tía llamada Claudia, que es hermana de su mamá, y dos primos, Omar y Valeria Gutiérrez. La familia de Carlos es muy unida y siempre busca pasar tiempo juntos y compartir historias y recuerdos.",
     "keyTopics": [
-      "Familia Bueso",
-      "Orígenes puertorriqueños y mexicanos",
-      "Hermanos y medio hermano",
-      "Primos"
+      "Familia",
+      "Infancia",
+      "Trabajo",
+      "Tecnología",
+      "Relaciones familiares"
     ],
-    "emotionalTone": "Cariño familiar",
+    "emotionalTone": "Cálido y familiar",
     "suggestedStories": [
       {
-        "title": "Raíces familiares",
-        "content": "La historia de la familia Bueso comienza con la unión de Carlos José Bueso y Alicia Rentería, quienes, a pesar de sus orígenes diferentes, formaron una familia unida y llena de amor. Carlos José, nacido en San Juan, Puerto Rico, en 1968, y Alicia, originaria de la Ciudad de México, nacida en 1964, se convirtieron en los pilares de esta familia.",
+        "title": "La historia de mi familia",
+        "content": "Mi familia es muy grande y siempre hemos estado muy unidos. Recuerdo que cuando era niño, mis padres me contaban historias sobre su infancia y cómo se conocieron. Mi papá nació en Puerto Rico y se mudó a Boston para estudiar, y luego se estableció en la Ciudad de México, donde conoció a mi mamá.",
         "involvedPeople": [
+          "Carlos Adrián Bueso",
           "Carlos José Bueso",
-          "Alicia Rentería",
-          "Carlos Bueso"
+          "Alicia Rentería Montes de Oca"
         ],
+        "approximateDate": "1999",
+        "location": "Ciudad de México",
         "keyMoments": [
-          "Mi papá se llama Carlos José Bueso y es de Puerto Rico"
+          "Mi papá nació en Puerto Rico y se mudó a Boston para estudiar"
         ]
       },
       {
-        "title": "Hermanos y medio hermano",
-        "content": "Carlos Bueso creció rodeado de hermanos, cada uno con su propia personalidad y contribución a la dinámica familiar. Marco, su hermano, nacido en 1997, y Brisel, su hermana, nacida en 2001, completan el cuadro de los hijos de Carlos José y Alicia. Además, Carlos tiene un medio hermano, Cristian Rentería, quien es significativamente mayor y tiene sus propios hijos, Mateo y Andrés.",
+        "title": "Mi trabajo en Alquimia Studio",
+        "content": "Me dedico a programar y crear páginas web y aplicaciones. Me encanta mi trabajo y siempre busco mejorar mis habilidades y aprender nuevas cosas. Mi empresa, Alquimia Studio, es un estudio creativo donde trabajamos en proyectos innovadores y emocionantes.",
         "involvedPeople": [
-          "Carlos Bueso",
-          "Marco",
-          "Brisel",
-          "Cristian Rentería"
+          "Carlos Adrián Bueso"
         ],
         "keyMoments": [
-          "Mi hermano se llama Marco y él nació en el 97",
-          "También tengo un medio hermano de parte de mi mamá que se llama Cristian Rentería"
+          "Me encanta mi trabajo y siempre busco mejorar mis habilidades"
+        ]
+      },
+      {
+        "title": "Recuerdos de mi abuela",
+        "content": "Mi abuela materna, Alicia Rentería, fue una persona muy especial en mi vida. La llamábamos Abuelita Mimi y siempre nos contaba historias y nos hacía reír. Aunque ya falleció, siempre la recordamos con cariño y la incluimos en nuestras conversaciones familiares.",
+        "involvedPeople": [
+          "Carlos Adrián Bueso",
+          "Alicia Rentería"
+        ],
+        "keyMoments": [
+          "La llamábamos Abuelita Mimi y siempre nos contaba historias"
         ]
       }
     ]
@@ -251,51 +298,70 @@
       "firstName": "Carlos",
       "lastName": "Bueso",
       "gender": "male",
-      "isNarrator": true
+      "isNarrator": true,
+      "birthDate": "1999-10-22",
+      "birthPlace": "Ciudad de México"
     },
     {
       "id": "person-1",
       "firstName": "Carlos José",
       "lastName": "Bueso",
-      "birthDate": "1968",
-      "birthPlace": "San Juan, Puerto Rico"
+      "birthPlace": "Puerto Rico",
+      "gender": "male"
     },
     {
       "id": "person-2",
       "firstName": "Alicia",
-      "lastName": "Rentería",
-      "birthDate": "1964",
-      "birthPlace": "Ciudad de México"
+      "lastName": "Rentería Montes de Oca",
+      "gender": "female"
     },
     {
       "id": "person-3",
-      "firstName": "Marco",
-      "lastName": null,
-      "birthDate": "1997"
+      "firstName": "Marco Andrés",
+      "lastName": "Bueso",
+      "gender": "male"
     },
     {
       "id": "person-4",
-      "firstName": "Brisel",
-      "lastName": null,
-      "birthDate": "2001"
+      "firstName": "Brisela Alessandra",
+      "lastName": "Bueso",
+      "gender": "female"
     },
     {
       "id": "person-5",
       "firstName": "Cristian",
       "lastName": "Rentería",
-      "birthDate": "1989"
+      "birthDate": "1985",
+      "gender": "male"
     },
     {
       "id": "person-6",
       "firstName": "Mateo",
-      "lastName": null,
-      "birthDate": "2017"
+      "lastName": "Renter",
+      "gender": "male"
     },
     {
       "id": "person-7",
-      "firstName": "Andrés",
-      "lastName": null,
-      "birthDate": "2013"
+      "firstName": "Andr",
+      "lastName": "Renter",
+      "gender": "male"
+    },
+    {
+      "id": "person-8",
+      "firstName": "Claudia",
+      "gender": "female"
+    },
+    {
+      "id": "person-9",
+      "firstName": "Omar",
+      "lastName": "Gutiérrez",
+      "gender": "male"
+    },
+    {
+      "id": "person-10",
+      "firstName": "Valeria",
+      "lastName": "Gutiérrez",
+      "gender": "female"
     }
   ],
   "relationships": [
@@ -311,63 +377,72 @@
     {
       "personAId": "person-2",
       "personBId": "person-narrator",
-      "personAName": "Alicia Rentería",
+      "personAName": "Alicia Rentería Montes de Oca",
       "personBName": "Carlos Bueso",
       "type": "parent",
       "confidence": 0.9,
       "inferred": false
     },
     {
-      "personAId": "person-3",
-      "personBId": "person-narrator",
-      "personAName": "Marco",
-      "personBName": "Carlos Bueso",
-      "type": "sibling",
-      "confidence": 0.9,
-      "inferred": false
-    },
-    {
-      "personAId": "person-4",
-      "personBId": "person-narrator",
-      "personAName": "Brisel",
-      "personBName": "Carlos Bueso",
-      "type": "sibling",
+      "personAId": "person-2",
+      "personBId": "person-5",
+      "personAName": "Alicia Rentería Montes de Oca",
+      "personBName": "Cristian Rentería",
+      "type": "parent",
       "confidence": 0.9,
       "inferred": false
     },
     {
       "personAId": "person-5",
+      "personBId": "person-narrator",
+      "personAName": "Cristian Rentería",
+      "personBName": "Carlos Bueso",
+      "type": "half_sibling",
+      "confidence": 0.9,
+      "inferred": false
+    },
+    {
+      "personAId": "person-narrator",
+      "personBId": "person-3",
+      "personAName": "Carlos Bueso",
+      "personBName": "Marco Andrés Bueso",
+      "type": "sibling",
+      "confidence": 0.9,
+      "inferred": false
+    },
+    {
+      "personAId": "person-narrator",
+      "personBId": "person-4",
+      "personAName": "Carlos Bueso",
+      "personBName": "Brisela Alessandra Bueso",
+      "type": "sibling",
+      "confidence": 0.9,
+      "inferred": false
+    },
+    {
+      "personAId": "person-8",
       "personBId": "person-2",
-      "personAName": "Cristian Rentería",
-      "personBName": "Alicia Rentería",
-      "type": "child",
+      "personAName": "Claudia",
+      "personBName": "Alicia Rentería Montes de Oca",
+      "type": "sibling",
       "confidence": 0.9,
       "inferred": false
     },
     {
-      "personAId": "person-5",
+      "personAId": "person-9",
       "personBId": "person-narrator",
-      "personAName": "Cristian Rentería",
+      "personAName": "Omar Gutiérrez",
       "personBName": "Carlos Bueso",
-      "type": "half_sibling",
+      "type": "cousin",
       "confidence": 0.9,
       "inferred": false
     },
     {
-      "personAId": "person-6",
-      "personBId": "person-5",
-      "personAName": "Mateo",
-      "personBName": "Cristian Rentería",
-      "type": "child",
-      "confidence": 0.9,
-      "inferred": false
-    },
-    {
-      "personAId": "person-7",
-      "personBId": "person-5",
-      "personAName": "Andrés",
-      "personBName": "Cristian Rentería",
-      "type": "child",
+      "personAId": "person-10",
+      "personBId": "person-narrator",
+      "personAName": "Valeria Gutiérrez",
+      "personBName": "Carlos Bueso",
+      "type": "cousin",
       "confidence": 0.9,
       "inferred": false
     },
@@ -377,7 +452,7 @@
       "type": "parent",
       "confidence": 0.85,
       "personAName": "Carlos José Bueso",
-      "personBName": "Marco",
+      "personBName": "Marco Andrés Bueso",
       "inferred": true
     },
     {
@@ -385,8 +460,8 @@
       "personBId": "person-3",
       "type": "parent",
       "confidence": 0.85,
-      "personAName": "Alicia Rentería",
-      "personBName": "Marco",
+      "personAName": "Alicia Rentería Montes de Oca",
+      "personBName": "Marco Andrés Bueso",
       "inferred": true
     },
     {
@@ -395,7 +470,7 @@
       "type": "parent",
       "confidence": 0.85,
       "personAName": "Carlos José Bueso",
-      "personBName": "Brisel",
+      "personBName": "Brisela Alessandra Bueso",
       "inferred": true
     },
     {
@@ -403,8 +478,8 @@
       "personBId": "person-4",
       "type": "parent",
       "confidence": 0.85,
-      "personAName": "Alicia Rentería",
-      "personBName": "Brisel",
+      "personAName": "Alicia Rentería Montes de Oca",
+      "personBName": "Brisela Alessandra Bueso",
       "inferred": true
     },
     {
@@ -412,8 +487,8 @@
       "personBId": "person-4",
       "type": "sibling",
       "confidence": 0.85,
-      "personAName": "Marco",
-      "personBName": "Brisel",
+      "personAName": "Marco Andrés Bueso",
+      "personBName": "Brisela Alessandra Bueso",
       "inferred": true
     },
     {
@@ -422,7 +497,7 @@
       "type": "half_sibling",
       "confidence": 0.85,
       "personAName": "Cristian Rentería",
-      "personBName": "Marco",
+      "personBName": "Marco Andrés Bueso",
       "inferred": true
     },
     {
@@ -431,16 +506,7 @@
       "type": "half_sibling",
       "confidence": 0.85,
       "personAName": "Cristian Rentería",
-      "personBName": "Brisel",
-      "inferred": true
-    },
-    {
-      "personAId": "person-6",
-      "personBId": "person-7",
-      "type": "sibling",
-      "confidence": 0.85,
-      "personAName": "Mateo",
-      "personBName": "Andrés",
+      "personBName": "Brisela Alessandra Bueso",
       "inferred": true
     },
     {
@@ -449,79 +515,43 @@
       "type": "spouse",
       "confidence": 0.85,
       "personAName": "Carlos José Bueso",
-      "personBName": "Alicia Rentería",
+      "personBName": "Alicia Rentería Montes de Oca",
       "inferred": true
     },
     {
-      "personAId": "person-2",
-      "personBId": "person-6",
-      "type": "grandparent",
-      "confidence": 0.85,
-      "personAName": "Alicia Rentería",
-      "personBName": "Mateo",
-      "inferred": true
-    },
-    {
-      "personAId": "person-2",
-      "personBId": "person-7",
-      "type": "grandparent",
-      "confidence": 0.85,
-      "personAName": "Alicia Rentería",
-      "personBName": "Andrés",
-      "inferred": true
-    },
-    {
-      "personAId": "person-narrator",
-      "personBId": "person-6",
+      "personAId": "person-8",
+      "personBId": "person-narrator",
       "type": "uncle_aunt",
       "confidence": 0.85,
-      "personAName": "Carlos Bueso",
-      "personBName": "Mateo",
+      "personAName": "Claudia",
+      "personBName": "Carlos Bueso",
       "inferred": true
     },
     {
-      "personAId": "person-narrator",
-      "personBId": "person-7",
+      "personAId": "person-8",
+      "personBId": "person-5",
       "type": "uncle_aunt",
       "confidence": 0.85,
-      "personAName": "Carlos Bueso",
-      "personBName": "Andrés",
+      "personAName": "Claudia",
+      "personBName": "Cristian Rentería",
       "inferred": true
     },
     {
-      "personAId": "person-3",
-      "personBId": "person-6",
+      "personAId": "person-8",
+      "personBId": "person-3",
       "type": "uncle_aunt",
       "confidence": 0.85,
-      "personAName": "Marco",
-      "personBName": "Mateo",
+      "personAName": "Claudia",
+      "personBName": "Marco Andrés Bueso",
       "inferred": true
     },
     {
-      "personAId": "person-3",
-      "personBId": "person-7",
+      "personAId": "person-8",
+      "personBId": "person-4",
       "type": "uncle_aunt",
       "confidence": 0.85,
-      "personAName": "Marco",
-      "personBName": "Andrés",
-      "inferred": true
-    },
-    {
-      "personAId": "person-4",
-      "personBId": "person-6",
-      "type": "uncle_aunt",
-      "confidence": 0.85,
-      "personAName": "Brisel",
-      "personBName": "Mateo",
-      "inferred": true
-    },
-    {
-      "personAId": "person-4",
-      "personBId": "person-7",
-      "type": "uncle_aunt",
-      "confidence": 0.85,
-      "personAName": "Brisel",
-      "personBName": "Andrés",
+      "personAName": "Claudia",
+      "personBName": "Brisela Alessandra Bueso",
       "inferred": true
     }
   ]

@@ -119,6 +119,8 @@ Rules:
   - "is twenty-two" or "tiene veintidós años" → birthDate: "2004"
   Formula: birthDate = 2026 - age. ALWAYS set birthDate when an age is mentioned. Use "YYYY" format.
 - Make sure to include the narrator/subject in relationships — if the narrator says "my mom is Rosa", create a relationship between Rosa and the narrator.
+- CRITICAL — NARRATOR IDENTITY: The narrator is ALWAYS the person identified in the [Narrator/subject] header. If the narrator introduces themselves by a fuller name (with middle names), a nickname, or any variation of their name, that is STILL the narrator. Do NOT add them to suggestedPeople under any name variation. The narrator's identity is fixed — only extract OTHER people as suggestedPeople.
+  HOWEVER: If a DIFFERENT family member shares the narrator's name (e.g., a father named after the child, or vice versa), that person IS a separate individual and MUST be added to suggestedPeople with their distinguishing middle name or additional name. Use the FULL name from the transcript — do NOT shorten it to match the narrator's name.
 
 CRITICAL — suggestedPeople completeness:
 - EVERY person referenced in "relationships" (personA or personB) MUST also appear in "suggestedPeople". Do NOT reference a person in a relationship without adding them to suggestedPeople first.
@@ -131,7 +133,11 @@ CRITICAL — suggestedPeople completeness:
   ALWAYS create the parent→child link for the person whose children/kids/hijos are being described.
 - Pay careful attention to possessive chains: "his/her/their children", "sus hijos", "tienen dos hijos" refers to the LAST mentioned person's children, not the narrator's.
 - Do NOT confuse the narrator with other people who share the same first name. If the narrator is "John Test" and his father is "John William Smith", these are two DIFFERENT people. Always use full names to disambiguate.
-- SAME-NAME DISAMBIGUATION: When multiple people share the same first name (e.g., grandfather and grandson named after him), create SEPARATE entries in suggestedPeople with different full names, birth dates, or suffixes (Jr., Sr., III, etc.). Never merge two distinct people just because they share a first name.
+- SAME-NAME DISAMBIGUATION (CRITICAL): When a family member shares the narrator's first AND last name (e.g., father and son both called "Carlos Bueso"), you MUST include the FULL name with middle names as stated in the transcript to distinguish them. NEVER shorten someone's name to match the narrator's. Examples:
+  * Narrator is "Carlos Bueso", father is mentioned as "Carlos José Bueso" → suggestedPeople entry: firstName: "Carlos José", lastName: "Bueso". NEVER firstName: "Carlos", lastName: "Bueso" (that's the narrator!).
+  * Narrator is "John Smith", grandfather is "John William Smith" → use firstName: "John William", lastName: "Smith".
+  If the transcript gives someone a middle name, you MUST preserve it in firstName. Dropping it would make them indistinguishable from the narrator.
+- When multiple people share the same first name (e.g., grandfather and grandson named after him), create SEPARATE entries in suggestedPeople with different full names, birth dates, or suffixes (Jr., Sr., III, etc.). Never merge two distinct people just because they share a first name.
 - ADOPTION: When someone is described as adopted ("was adopted", "adoptive father/mother", "padre/madre adoptivo/a", "fue adoptado"), use "adopted_parent" for the adoptive parents and "adopted_child" for the adopted person. For adopted siblings, use "sibling" (there is NO "adopted_sibling" type). Also create the parent→child link: if "my parents adopted my sister Hope", create both (1) Hope sibling of narrator AND (2) adopted_parent relationships between each parent and Hope.
 - FIGURATIVE LANGUAGE: Phrases like "is like a brother", "como un hermano", "is like family" are NOT actual relationships. Do NOT create sibling/family relationships from figurative comparisons. Only extract ACTUAL family relationships.
 
