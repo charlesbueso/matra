@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Paywall Screen
+// Matra — Paywall Screen
 // ============================================================
 
 import React, { useState, useEffect } from 'react';

@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Anthropic Provider (Claude)
+// Matra — Anthropic Provider (Claude)
 // ============================================================
 
 import type { LLMProvider, PersonBiographyInput, FamilyDocumentaryInput } from './provider.ts';
@@ -22,7 +22,8 @@ export class AnthropicLLMProvider implements LLMProvider {
 
   private async message(
     systemPrompt: string,
-    userMessage: string
+    userMessage: string,
+    temperature = 0.3
   ): Promise<string> {
     const response = await fetchWithRetry(`${ANTHROPIC_API_URL}/messages`, {
       method: 'POST',
@@ -34,7 +35,7 @@ export class AnthropicLLMProvider implements LLMProvider {
       body: JSON.stringify({
         model: this.model,
         max_tokens: 4096,
-        temperature: 0.3,
+        temperature,
         system: systemPrompt,
         messages: [
           { role: 'user', content: userMessage },
@@ -65,7 +66,8 @@ export class AnthropicLLMProvider implements LLMProvider {
   async summarizeInterview(transcriptText: string, language?: string): Promise<SummaryResult> {
     const raw = await this.message(
       getSummaryPrompt(language) + '\n\nIMPORTANT: Respond ONLY with valid JSON, no other text.',
-      transcriptText
+      transcriptText,
+      0.7
     );
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('Failed to parse summary result');

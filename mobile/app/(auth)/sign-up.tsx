@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Sign Up Screen (Production)
+// Matra — Sign Up Screen (Production)
 // ============================================================
 
 import React, { useCallback, useRef, useState } from 'react';

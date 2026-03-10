@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Family Invitation Management
+// Matra — Family Invitation Management
 // ============================================================
 // Premium users can create, list, and revoke family invitations.
 // Each invitation generates a unique code for sharing.

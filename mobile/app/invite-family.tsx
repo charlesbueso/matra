@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Invite Family Members Screen
+// Matra — Invite Family Members Screen
 // ============================================================
 
 import React, { useState, useEffect } from 'react';

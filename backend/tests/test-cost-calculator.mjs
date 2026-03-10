@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ============================================================
-// MATRA — Premium User Monthly Cost Calculator
+// Matra — Premium User Monthly Cost Calculator
 // ============================================================
 // Uses the ACTUAL Groq API to measure real token usage for
 // a simulated 30-minute interview transcript, then extrapolates
@@ -248,7 +248,7 @@ async function callGroqWithUsage(systemPrompt, userMessage, label) {
 
 async function main() {
   console.log('╔══════════════════════════════════════════════════════════════╗');
-  console.log('║   MATRA — Premium User Monthly Cost Calculator             ║');
+  console.log('║   Matra — Premium User Monthly Cost Calculator             ║');
   console.log('║   Using REAL Groq API token measurements                   ║');
   console.log('╠══════════════════════════════════════════════════════════════╣');
   console.log('║   Scenario: 30 conversations/month × 30 mins each         ║');

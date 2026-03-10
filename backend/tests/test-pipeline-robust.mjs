@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ============================================================
-// MATRA — ROBUST AI Pipeline Test
+// Matra — ROBUST AI Pipeline Test
 // ============================================================
 // Run: node test-pipeline-robust.mjs
 //
@@ -1045,7 +1045,7 @@ function generateHTML(people, relationships, summaryResult) {
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>MATRA — Robust Pipeline Test Results</title>
+<title>Matra — Robust Pipeline Test Results</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0a1628; color: #e8e0d4; }
@@ -1085,7 +1085,7 @@ function generateHTML(people, relationships, summaryResult) {
 </head>
 <body>
 <div class="header">
-  <h1>🌳 MATRA — Robust Pipeline Test (Rodriguez-Chen Family)</h1>
+  <h1>🌳 Matra — Robust Pipeline Test (Rodriguez-Chen Family)</h1>
   <p>4 generations · 22+ people · ${edges.length} relationships (${edges.filter(e=>e.inferred).length} inferred)</p>
 </div>
 <div class="container">
@@ -1165,7 +1165,7 @@ async function main() {
   const provider = GROQ_API_KEY ? 'Groq (Llama 3.3 70B)' : 'OpenAI (GPT-4o-mini)';
 
   console.log('╔══════════════════════════════════════════════════════════╗');
-  console.log('║   MATRA — ROBUST AI Pipeline Test (Rodriguez-Chen)      ║');
+  console.log('║   Matra — ROBUST AI Pipeline Test (Rodriguez-Chen)      ║');
   console.log('╠══════════════════════════════════════════════════════════╣');
   console.log('║   22+ people · 4 generations · all relationship types   ║');
   console.log('╚══════════════════════════════════════════════════════════╝');

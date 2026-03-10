@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Export Memory Book Edge Function
+// Matra — Export Memory Book Edge Function
 // ============================================================
 // Generates a branded PDF memory book with family data.
 // Premium-only, rate-limited to once per week, requires new data.
@@ -28,7 +28,7 @@ const BRAND = {
   margin: 50,
 };
 
-const BANNER_KEY = 'matra/assets/lake-boat-nobg.png';
+const BANNER_KEY = 'matra/assets/new-lakeboat-nobg.png';
 const LOGOTYPE_KEY = 'matra/assets/logo-new-nobg.png';
 const MATRA_LOGOTYPE_KEY = 'matra/assets/matra-gold-logotype.png';
 
@@ -1400,9 +1400,9 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
 
   // Metadata
   pdf.setTitle(`${familyName} — Memory Book`);
-  pdf.setAuthor('MATRA');
+  pdf.setAuthor('Matra');
   pdf.setSubject('Family Memory Book');
-  pdf.setCreator('MATRA — A living tree of your ancestry');
+  pdf.setCreator('Matra — A living tree of your ancestry');
   pdf.setCreationDate(new Date());
 
   return pdf.save();

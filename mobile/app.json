@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "MATRA",
+    "name": "Matra",
     "slug": "matra",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -19,7 +19,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.matra.app",
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "MATRA needs microphone access to record family interviews.",
+        "NSMicrophoneUsageDescription": "Matra needs microphone access to record family interviews.",
         "UIBackgroundModes": [
           "audio"
         ]
@@ -50,7 +50,7 @@
       [
         "expo-av",
         {
-          "microphonePermission": "Allow MATRA to access your microphone to record family interviews."
+          "microphonePermission": "Allow Matra to access your microphone to record family interviews."
         }
       ],
       "@react-native-community/datetimepicker",

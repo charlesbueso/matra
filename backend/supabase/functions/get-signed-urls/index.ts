@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Get Signed URLs Edge Function
+// Matra — Get Signed URLs Edge Function
 // ============================================================
 // Accepts an array of storage keys (or legacy CDN URLs) and
 // returns time-limited presigned URLs for private DO Spaces

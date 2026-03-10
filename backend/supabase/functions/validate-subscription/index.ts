@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Validate Subscription (RevenueCat Webhook)
+// Matra — Validate Subscription (RevenueCat Webhook)
 // ============================================================
 // Receives webhooks from RevenueCat when subscription state changes.
 // Updates the database accordingly.

@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Supabase Client Factory
+// Matra — Supabase Client Factory
 // ============================================================
 
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';

@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Reset Password Screen
+// Matra — Reset Password Screen
 // ============================================================
 
 import React, { useRef, useState } from 'react';

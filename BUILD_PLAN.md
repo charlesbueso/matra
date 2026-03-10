@@ -1,4 +1,4 @@
-# MATRA — MVP Build Plan
+# Matra — MVP Build Plan
 
 > Step-by-step execution guide. Each sprint = 1 week.  
 > Total MVP timeline: **8-10 weeks** (solo dev) or **5-6 weeks** (2 devs).

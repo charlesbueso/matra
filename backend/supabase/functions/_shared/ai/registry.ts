@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — AI Registry (Provider Factory)
+// Matra — AI Registry (Provider Factory)
 // ============================================================
 // Centralized provider instantiation.
 // Configure active providers via environment variables.

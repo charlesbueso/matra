@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Accept Family Invitation Screen
+// Matra — Accept Family Invitation Screen
 // ============================================================
 // Shown when user opens a matra://invite/{code} deep link.
 // Previews the invitation details and lets them accept.

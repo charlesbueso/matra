@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — User Entitlements Check
+// Matra — User Entitlements Check
 // ============================================================
 // Quick endpoint for the frontend to check feature access.
 // ============================================================

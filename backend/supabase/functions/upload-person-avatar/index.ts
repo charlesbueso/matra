@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Upload Person Avatar Edge Function
+// Matra — Upload Person Avatar Edge Function
 // ============================================================
 // Accepts a person photo via multipart form data, uploads it
 // to DigitalOcean Spaces (S3-compatible), and updates the

@@ -356,6 +356,14 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
   },
 
   deletePerson: async (id) => {
+    // Delete relationships referencing this person first
+    const { error: relError } = await supabase
+      .from('relationships')
+      .delete()
+      .or(`person_a_id.eq.${id},person_b_id.eq.${id}`);
+
+    if (relError) throw relError;
+
     const { error } = await supabase
       .from('people')
       .update({ deleted_at: new Date().toISOString() })

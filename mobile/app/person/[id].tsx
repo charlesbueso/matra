@@ -689,7 +689,7 @@ export default function PersonDetailScreen() {
                       onPress: async () => {
                         try {
                           await deletePerson(person.id);
-                          router.back();
+                          router.replace('/(tabs)/tree');
                         } catch (err: any) {
                           Alert.alert(t('common.error'), err.message);
                         }

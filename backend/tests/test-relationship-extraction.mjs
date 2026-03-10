@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ============================================================
-// MATRA — Comprehensive Relationship Extraction Test Suite
+// Matra — Comprehensive Relationship Extraction Test Suite
 // ============================================================
 // Run: node test-relationship-extraction.mjs
 //
@@ -1854,7 +1854,7 @@ function generateHTML(allScenarioResults) {
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>MATRA — Relationship Extraction Test Report</title>
+<title>Matra — Relationship Extraction Test Report</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0a1628; color: #e8e0d4; }
@@ -1894,7 +1894,7 @@ body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0a1628; colo
 </head>
 <body>
 <div class="header">
-  <h1>🧬 MATRA — Relationship Extraction Test Report</h1>
+  <h1>🧬 Matra — Relationship Extraction Test Report</h1>
   <div class="subtitle">10 Scenarios · English & Spanish · ${new Date().toISOString().slice(0, 10)}</div>
 </div>
 <div class="overview">
@@ -1931,7 +1931,7 @@ async function main() {
   const provider = GROQ_API_KEY ? 'Groq (Llama 3.3 70B)' : 'OpenAI (GPT-4o-mini)';
 
   console.log('╔════════════════════════════════════════════════════════════════╗');
-  console.log('║   MATRA — Comprehensive Relationship Extraction Test Suite    ║');
+  console.log('║   Matra — Comprehensive Relationship Extraction Test Suite    ║');
   console.log('╠════════════════════════════════════════════════════════════════╣');
   console.log('║   10 scenarios · English & Spanish · Every relationship type  ║');
   console.log('║   Nuclear · Blended · In-laws · Adoption · Extreme           ║');

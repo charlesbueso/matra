@@ -1,5 +1,5 @@
 # ============================================================
-# MATRA — One-Command Dev Environment Startup
+# Matra — One-Command Dev Environment Startup
 # Usage:
 #   .\dev.ps1              → Android Emulator (default)
 #   .\dev.ps1 -Target expo → Expo Go on physical device (LAN)

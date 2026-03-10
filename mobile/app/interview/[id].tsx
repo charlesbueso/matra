@@ -3,7 +3,7 @@
 // ============================================================
 
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, ActivityIndicator, Share } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
@@ -132,12 +132,28 @@ export default function InterviewDetailScreen() {
         {/* Transcript */}
         <Animated.View entering={FadeInDown.delay(400)}>
           <Card variant="default" style={styles.section}>
-            <Text style={styles.sectionTitle}>{t('interview.transcript')}</Text>
+            <View style={styles.transcriptHeader}>
+              <Text style={styles.sectionTitle}>{t('interview.transcript')}</Text>
+              {transcript && (
+                <Pressable
+                  onPress={async () => {
+                    await Share.share({ message: transcript.full_text });
+                  }}
+                  style={styles.copyButton}
+                >
+                  <Ionicons
+                    name="share-outline"
+                    size={18}
+                    color={Colors.text.moonlight}
+                  />
+                </Pressable>
+              )}
+            </View>
             {loading ? (
               <ActivityIndicator color={Colors.accent.cyan} style={{ marginVertical: Spacing.xl }} />
             ) : transcript ? (
               <>
-                <Text style={styles.transcriptText}>{transcript.full_text}</Text>
+                <Text selectable style={styles.transcriptText}>{transcript.full_text}</Text>
                 <View style={styles.transcriptMeta}>
                   <Text style={styles.transcriptMetaText}>
                     {t('interview.providerLanguage', { provider: transcript.provider, language: transcript.language || 'en' })}
@@ -210,6 +226,15 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.h4,
     fontFamily: Typography.fonts.subheading,
     color: Colors.accent.cyan,
+    marginBottom: Spacing.md,
+  },
+  transcriptHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  copyButton: {
+    padding: Spacing.sm,
     marginBottom: Spacing.md,
   },
   summaryText: {

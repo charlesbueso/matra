@@ -1,4 +1,4 @@
-# MATRA — Local Development Setup
+# Matra — Local Development Setup
 
 A living archive of your ancestry. Dark neon interstellar ocean meets bioluminescent ecosystem.
 

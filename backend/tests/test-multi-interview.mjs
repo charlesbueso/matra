@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ============================================================
-// MATRA — Multi-Interview Pipeline Test
+// Matra — Multi-Interview Pipeline Test
 // ============================================================
 // Run: node test-multi-interview.mjs
 //
@@ -1494,7 +1494,7 @@ function generateHTML(db) {
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>MATRA — Multi-Interview Pipeline Test Results</title>
+<title>Matra — Multi-Interview Pipeline Test Results</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0a1628; color: #e8e0d4; }
@@ -1537,7 +1537,7 @@ function generateHTML(db) {
 </head>
 <body>
 <div class="header">
-  <h1>🌳 MATRA — Multi-Interview Pipeline Test</h1>
+  <h1>🌳 Matra — Multi-Interview Pipeline Test</h1>
   <p>${interviewResults.length} interviews · ${nodes.length} people · ${edges.length} relationships (${edges.filter(e=>e.inferred).length} inferred) · ${stories.length} stories</p>
   <div class="progress">
     ${interviewResults.map(() => '<div class="step done"></div>').join('')}
@@ -1626,7 +1626,7 @@ async function main() {
   const provider = GROQ_API_KEY ? 'Groq (Llama 3.3 70B)' : 'OpenAI (GPT-4o-mini)';
 
   console.log('╔══════════════════════════════════════════════════════════╗');
-  console.log('║   MATRA — Multi-Interview Pipeline Test                 ║');
+  console.log('║   Matra — Multi-Interview Pipeline Test                 ║');
   console.log('╠══════════════════════════════════════════════════════════╣');
   console.log('║   4 narrators · sequential interviews · cumulative tree ║');
   console.log('║   Tests: dedup, enrichment, inference, story gen        ║');

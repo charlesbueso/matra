@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Deactivate / Reactivate Account
+// Matra — Deactivate / Reactivate Account
 // ============================================================
 // Industry-grade account deactivation with full data snapshot.
 //

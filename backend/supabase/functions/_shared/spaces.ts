@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — DigitalOcean Spaces (S3) Client
+// Matra — DigitalOcean Spaces (S3) Client
 // ============================================================
 
 import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from 'https://esm.sh/@aws-sdk/client-s3@3.525.0';

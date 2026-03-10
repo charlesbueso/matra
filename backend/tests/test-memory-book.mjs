@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ============================================================
-// MATRA — Memory Book PDF Test Harness
+// Matra — Memory Book PDF Test Harness
 // ============================================================
 // Generates a preview PDF with rich mock data for rapid design
 // iteration — no Supabase, no auth, no rate limits.
@@ -47,7 +47,7 @@ async function getPresignedUrl(key, expiresIn = 3600) {
 }
 
 // Keys for brand assets in DO Spaces
-const BANNER_KEY = 'matra/assets/lake-boat-nobg.png';
+const BANNER_KEY = 'matra/assets/new-lakeboat-nobg.png';
 const LOGOTYPE_KEY = 'matra/assets/logo-new-nobg.png';
 const MATRA_LOGOTYPE_KEY = 'matra/assets/matra-gold-logotype.png';
 // The ONE avatar that exists — will be reused for all people
@@ -303,6 +303,9 @@ async function generateMemoryBookPDF(data) {
     ]);
     if (bannerBytes && bannerBytes.byteLength <= MAX_IMAGE_BYTES) {
       bannerImage = await pdf.embedPng(new Uint8Array(bannerBytes));
+      console.log(`Banner loaded (${(bannerBytes.byteLength / 1024).toFixed(0)}KB)`);
+    } else {
+      console.warn('Banner NOT loaded — resp ok:', bannerResp.ok, 'size:', bannerBytes?.byteLength, 'max:', MAX_IMAGE_BYTES);
     }
     if (logotypeBytes && logotypeBytes.byteLength <= MAX_IMAGE_BYTES) {
       try {
@@ -490,8 +493,8 @@ async function generateMemoryBookPDF(data) {
       x: (pageWidth - ltW) / 2, y: centerY + 100, width: ltW, height: ltH,
     });
   } else {
-    cover.drawText('MATRA', {
-      x: (pageWidth - fonts.sansBold.widthOfTextAtSize('MATRA', 28)) / 2,
+    cover.drawText('Matra', {
+      x: (pageWidth - fonts.sansBold.widthOfTextAtSize('Matra', 28)) / 2,
       y: centerY + 110, size: 28, font: fonts.sansBold, color: BRAND.gold,
     });
   }
@@ -548,6 +551,21 @@ async function generateMemoryBookPDF(data) {
     x: (pageWidth - fonts.sans.widthOfTextAtSize(dateText, 9)) / 2,
     y: usableBottom + 10, size: 9, font: fonts.sans, color: BRAND.gold,
   });
+
+  // Banner between stats and date on cover
+  if (bannerImage) {
+    const bannerMargin = 25;
+    const bannerW = pageWidth - borderInset * 2 - bannerMargin * 2;
+    const bannerNatW = bannerImage.width;
+    const bannerNatH = bannerImage.height;
+    const bannerH = bannerW * (bannerNatH / bannerNatW);
+    const availTop = centerY - 40;
+    const availBottom = usableBottom + 25;
+    const bannerY = availBottom + (availTop - availBottom - bannerH) / 2;
+    cover.drawImage(bannerImage, {
+      x: borderInset + bannerMargin, y: Math.max(bannerY, availBottom), width: bannerW, height: Math.min(bannerH, availTop - availBottom),
+    });
+  }
 
   // ═══════════════════════════════════════════
   // TABLE OF CONTENTS
@@ -1285,8 +1303,8 @@ async function generateMemoryBookPDF(data) {
       x: (pageWidth - ltW) / 2, y: pageHeight / 2 + 10, width: ltW, height: ltH,
     });
   } else {
-    back.drawText('MATRA', {
-      x: (pageWidth - fonts.sansBold.widthOfTextAtSize('MATRA', 36)) / 2,
+    back.drawText('Matra', {
+      x: (pageWidth - fonts.sansBold.widthOfTextAtSize('Matra', 36)) / 2,
       y: pageHeight / 2 + 20, size: 36, font: fonts.sansBold, color: BRAND.gold,
     });
   }
@@ -1317,9 +1335,9 @@ async function generateMemoryBookPDF(data) {
   });
 
   pdf.setTitle(`${familyName} - Memory Book`);
-  pdf.setAuthor('MATRA');
+  pdf.setAuthor('Matra');
   pdf.setSubject('Family Memory Book');
-  pdf.setCreator('MATRA - A living tree of your ancestry');
+  pdf.setCreator('Matra — A living tree of your ancestry');
   pdf.setCreationDate(new Date());
 
   return pdf.save();

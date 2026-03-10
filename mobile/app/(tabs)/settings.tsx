@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Settings Tab
+// Matra — Settings Tab
 // ============================================================
 
 import React, { useState, useRef, useEffect } from 'react';
@@ -9,6 +9,7 @@ import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { File as FSFile, Directory, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
+import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { StarField, Card, Button, BioAlgae, CornerBush, AvatarViewer } from '../../src/components/ui';
 import { SubscriptionInfoSheet } from '../../src/components/SubscriptionInfoSheet';
@@ -559,9 +560,9 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('settings.family')}</Text>
           <Card variant="default">
-            <SettingItem label={t('settings.manageFamilyGroups')} onPress={() => router.push('/family-group')} />
-            <SettingItem label={t('settings.inviteFamilyMembers')} onPress={() => profile?.subscription_tier === 'free' ? router.push('/paywall') : router.push('/invite-family')} locked={profile?.subscription_tier === 'free'} />
-            <SettingItem label={isExportingMemoryBook ? t('settings.memoryBookGenerating') : t('settings.exportMemoryBook')} onPress={handleExportMemoryBook} locked={profile?.subscription_tier === 'free' && !downgrade.exportAccessUntil} disabled={isExportingMemoryBook} />
+            <SettingItem label={t('settings.manageFamilyGroups')} onPress={() => router.push('/family-group')} badge={!familyGroups[0] || familyGroups[0].name === 'My Family' || !familyGroups[0].name.trim()} />
+            <SettingItem label={t('settings.inviteFamilyMembers')} onPress={() => profile?.subscription_tier === 'free' ? router.push('/paywall') : router.push('/invite-family')} locked={profile?.subscription_tier === 'free'} premium />
+            <SettingItem label={isExportingMemoryBook ? t('settings.memoryBookGenerating') : t('settings.exportMemoryBook')} onPress={handleExportMemoryBook} locked={profile?.subscription_tier === 'free' && !downgrade.exportAccessUntil} disabled={isExportingMemoryBook} premium />
           </Card>
         </View>
 
@@ -770,7 +771,7 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        <Text style={styles.version}>MATRA v1.0.0</Text>
+        <Text style={styles.version}>Matra v1.0.0</Text>
       </ScrollView>
       <AvatarViewer
         visible={isViewingAvatar}
@@ -786,11 +787,12 @@ export default function SettingsScreen() {
   );
 }
 
-function SettingItem({ label, onPress, locked, disabled }: { label: string; onPress: () => void; locked?: boolean; disabled?: boolean }) {
+function SettingItem({ label, onPress, locked, disabled, premium, badge }: { label: string; onPress: () => void; locked?: boolean; disabled?: boolean; premium?: boolean; badge?: boolean }) {
   return (
     <Pressable onPress={onPress} disabled={disabled} style={[styles.settingItem, disabled && { opacity: 0.5 }]}>
       <Text style={styles.settingItemLabel}>{label}</Text>
-      {locked && <Text style={styles.lockIcon}>🔒</Text>}
+      {badge && <View style={styles.notificationBadge}><Text style={styles.notificationBadgeText}>1</Text></View>}
+      {(locked || premium) && <Ionicons name="diamond" size={16} color="#C9A84C" />}
     </Pressable>
   );
 }
@@ -880,7 +882,7 @@ const styles = StyleSheet.create({
   },
   tierBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: Colors.background.current,
+    backgroundColor: 'rgba(201, 168, 76, 0.12)',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.full,
@@ -888,7 +890,7 @@ const styles = StyleSheet.create({
   tierText: {
     fontSize: Typography.sizes.caption,
     fontFamily: Typography.fonts.bodySemiBold,
-    color: Colors.accent.glow,
+    color: '#C9A84C',
   },
   section: {
     marginBottom: Spacing.xl,
@@ -939,8 +941,20 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fonts.body,
     color: Colors.text.starlight,
   },
-  lockIcon: {
-    fontSize: 14,
+  notificationBadge: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: Colors.accent.coral,
+    marginLeft: Spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notificationBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontFamily: Typography.fonts.bodySemiBold,
+    lineHeight: 13,
   },
   languageSelector: {
     flexDirection: 'row',

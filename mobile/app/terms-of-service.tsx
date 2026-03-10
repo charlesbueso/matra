@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Terms of Service
+// Matra — Terms of Service
 // ============================================================
 
 import React from 'react';
@@ -22,14 +22,14 @@ export default function TermsOfServiceScreen() {
         </Pressable>
 
         <Text style={styles.title}>Terms of Service</Text>
-        <Text style={styles.updated}>Last updated: March 5, 2026</Text>
+        <Text style={styles.updated}>Last updated: March 10, 2026</Text>
 
         <Section title="1. Acceptance">
-          {`By downloading, installing, or using MATRA ("the App"), you agree to these Terms of Service. If you do not agree, please do not use the App.`}
+          {`By downloading, installing, or using Matra ("the App"), you agree to these Terms of Service. If you do not agree, please do not use the App.`}
         </Section>
 
-        <Section title="2. What MATRA Does">
-          {`MATRA is a personal family storytelling app. You record conversations, and our AI helps transcribe, organize, and preserve your family's stories and relationships. The App is provided "as is" for personal, non-commercial use.`}
+        <Section title="2. What Matra Does">
+          {`Matra is a personal family storytelling app. You record conversations, and our AI helps transcribe, organize, and preserve your family's stories and relationships. The App is provided "as is" for personal, non-commercial use.`}
         </Section>
 
         <Section title="3. Your Account">
@@ -39,7 +39,7 @@ export default function TermsOfServiceScreen() {
         </Section>
 
         <Section title="4. Your Content">
-          {`You own all content you create in MATRA — your recordings, your stories, your family data. By using the App, you grant MATRA a limited license to process your content solely for the purpose of providing the service (e.g., AI transcription and analysis). We do not claim ownership of your content.`}
+          {`You own all content you create in Matra — your recordings, your stories, your family data. By using the App, you grant Matra a limited license to process your content solely for the purpose of providing the service (e.g., AI transcription and analysis). We do not claim ownership of your content.`}
         </Section>
 
         <Section title="5. Acceptable Use">
@@ -52,28 +52,42 @@ export default function TermsOfServiceScreen() {
         </Section>
 
         <Section title="6. Subscriptions & Payments">
-          {`• MATRA offers free and paid subscription tiers.
+          {`• Matra offers free and paid subscription tiers.
 • Paid subscriptions are billed through the Apple App Store or Google Play Store. Billing, renewals, and cancellations are governed by the respective store's policies.
+• Subscription status and entitlements are managed through RevenueCat, a third-party service that processes your purchase receipts. RevenueCat does not have access to your family data.
 • We reserve the right to change pricing with reasonable notice.`}
         </Section>
 
         <Section title="7. AI-Generated Content">
-          {`MATRA uses AI to generate transcriptions, summaries, biographies, and other content based on your recordings. AI-generated content may contain errors or inaccuracies. You are responsible for reviewing and verifying any AI-generated content before relying on it.`}
+          {`Matra uses AI to generate transcriptions, summaries, biographies, and other content based on your recordings. AI-generated content may contain errors or inaccuracies. You are responsible for reviewing and verifying any AI-generated content before relying on it.`}
         </Section>
 
         <Section title="8. Limitation of Liability">
-          {`MATRA is provided "as is" without warranties of any kind. To the maximum extent permitted by law, MATRA shall not be liable for any indirect, incidental, or consequential damages arising from your use of the App, including loss of data. Our total liability shall not exceed the amount you paid for the App in the 12 months preceding the claim.`}
+          {`Matra is provided "as is" without warranties of any kind. To the maximum extent permitted by law, Matra shall not be liable for any indirect, incidental, or consequential damages arising from your use of the App, including loss of data. Our total liability shall not exceed the amount you paid for the App in the 12 months preceding the claim.`}
         </Section>
 
         <Section title="9. Termination">
           {`We may suspend or terminate your access to the App if you violate these terms. You may stop using the App at any time. Upon termination, your right to use the App ceases, but sections regarding your content ownership, limitation of liability, and dispute resolution survive.`}
         </Section>
 
-        <Section title="10. Changes">
-          {`We may update these terms from time to time. Continued use of MATRA after changes constitutes acceptance. We will notify you of significant changes through the App.`}
+        <Section title="10. Third-Party Services">
+          {`Matra uses the following third-party services to provide and improve the App:
+
+• Groq (Llama) for AI transcription and analysis.
+• Supabase for secure data storage and authentication.
+• PostHog for anonymous usage analytics.
+• Sentry for crash reporting and error monitoring.
+• RevenueCat for subscription and in-app purchase management.
+• DigitalOcean for secure file storage.
+
+Each service processes data in accordance with their respective terms and privacy policies.`}
         </Section>
 
-        <Section title="11. Contact">
+        <Section title="11. Changes">
+          {`We may update these terms from time to time. Continued use of Matra after changes constitutes acceptance. We will notify you of significant changes through the App.`}
+        </Section>
+
+        <Section title="12. Contact">
           {`For questions about these terms, contact us at:
 
 voxcentra@gmail.com`}

@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Delete Account (Cascade)
+// Matra — Delete Account (Cascade)
 // ============================================================
 // Permanently deletes the authenticated user's account and all
 // associated data, including remote files in DO Spaces.

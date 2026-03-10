@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Accept Family Invitation & Merge Trees
+// Matra — Accept Family Invitation & Merge Trees
 // ============================================================
 // When a user accepts an invitation:
 // 1. Validate the invite code (pending, not expired)

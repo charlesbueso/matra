@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Onboarding Layout
+// Matra — Onboarding Layout
 // ============================================================
 
 import { Stack } from 'expo-router';

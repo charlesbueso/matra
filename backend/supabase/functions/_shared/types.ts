@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Shared Types
+// Matra — Shared Types
 // ============================================================
 // These types are shared across all Edge Functions.
 // Generated DB types will supplement these application-level types.

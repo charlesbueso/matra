@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Fetch with Retry
+// Matra — Fetch with Retry
 // ============================================================
 // Shared retry wrapper for AI provider API calls.
 // Handles transient network errors (TLS drops, DNS failures)

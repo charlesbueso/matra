@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Entry Point (Router Redirect)
+// Matra — Entry Point (Router Redirect)
 // ============================================================
 
 import { Redirect } from 'expo-router';

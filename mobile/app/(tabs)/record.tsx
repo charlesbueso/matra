@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Record Tab (Conversation Entry Point)
+// Matra — Record Tab (Conversation Entry Point)
 // ============================================================
 
 import React, { useState, useRef, useCallback, useMemo } from 'react';

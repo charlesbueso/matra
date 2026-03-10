@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ============================================================
-// MATRA — AI Pipeline Test Harness
+// Matra — AI Pipeline Test Harness
 // ============================================================
 // Run: node test-pipeline.mjs
 //
@@ -636,7 +636,7 @@ function generateHTML(people, relationships, summaryResult) {
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>MATRA — Pipeline Test Results</title>
+<title>Matra — Pipeline Test Results</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0a1628; color: #e8e0d4; }
@@ -676,7 +676,7 @@ function generateHTML(people, relationships, summaryResult) {
 </head>
 <body>
 <div class="header">
-  <h1>🌳 MATRA — Pipeline Test Results</h1>
+  <h1>🌳 Matra — Pipeline Test Results</h1>
   <p>Extraction + Summarization + Relationship Inference</p>
 </div>
 <div class="container">
@@ -756,7 +756,7 @@ async function main() {
   const provider = GROQ_API_KEY ? 'Groq (Llama 3.3 70B)' : 'OpenAI (GPT-4o-mini)';
 
   console.log('╔══════════════════════════════════════════════════════════╗');
-  console.log('║        MATRA — AI Pipeline Test Harness                 ║');
+  console.log('║        Matra — AI Pipeline Test Harness                 ║');
   console.log('╚══════════════════════════════════════════════════════════╝');
   console.log(`\n  Provider: ${provider}`);
   console.log(`  Narrator: ${NARRATOR.firstName} ${NARRATOR.lastName} (${NARRATOR.gender})`);

@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Lineage (Tree) View
+// Matra — Lineage (Tree) View
 // ============================================================
 // The family tree rendered as a living canopy.
 // Each person is a warm organic node on branches.

@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Feature Gating
+// Matra — Feature Gating
 // ============================================================
 // Server-side feature gate enforcement.
 // NEVER trust client-side tier claims.

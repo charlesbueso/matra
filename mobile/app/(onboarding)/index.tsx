@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Onboarding Flow
+// Matra — Onboarding Flow
 // ============================================================
 
 import React, { useState, useRef } from 'react';

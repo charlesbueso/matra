@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Groq Provider (fast inference)
+// Matra — Groq Provider (fast inference)
 // ============================================================
 
 import type { STTProvider, LLMProvider, PersonBiographyInput, FamilyDocumentaryInput } from './provider.ts';
@@ -160,7 +160,8 @@ export class GroqLLMProvider implements LLMProvider {
   private async chatCompletion(
     systemPrompt: string,
     userMessage: string,
-    jsonMode = true
+    jsonMode = true,
+    temperature = 0.3
   ): Promise<string> {
     for (let attempt = 0; attempt < 2; attempt++) {
       const model = resolvedLLMModel || this.model;
@@ -176,7 +177,7 @@ export class GroqLLMProvider implements LLMProvider {
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userMessage },
           ],
-          temperature: 0.3,
+          temperature,
           max_tokens: 4096,
           ...(jsonMode ? { response_format: { type: 'json_object' } } : {}),
         }),
@@ -210,7 +211,7 @@ export class GroqLLMProvider implements LLMProvider {
   }
 
   async summarizeInterview(transcriptText: string, language?: string): Promise<SummaryResult> {
-    const raw = await this.chatCompletion(getSummaryPrompt(language), transcriptText);
+    const raw = await this.chatCompletion(getSummaryPrompt(language), transcriptText, true, 0.7);
     return JSON.parse(raw) as SummaryResult;
   }
 

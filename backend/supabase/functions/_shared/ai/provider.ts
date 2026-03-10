@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — AI Provider Interface
+// Matra — AI Provider Interface
 // ============================================================
 // All AI providers must implement these interfaces.
 // This allows swapping providers without touching business logic.

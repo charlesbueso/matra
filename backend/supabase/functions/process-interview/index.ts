@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Process Interview Edge Function
+// Matra — Process Interview Edge Function
 // ============================================================
 // Orchestrates the full AI processing pipeline:
 // 1. Upload audio to storage
@@ -1083,8 +1083,13 @@ serve(async (req: Request) => {
 
       // Guarantee at least 1 story per conversation — synthesize from summary if AI returned none
       if (storiesToSave.length === 0 && summaryResult.summary) {
+        // Generate a meaningful title from the summary instead of using the generic interview title
+        const firstSentence = summaryResult.summary.split(/[.!?]/)[0]?.trim();
+        const fallbackTitle = firstSentence && firstSentence.length > 10 && firstSentence.length < 80
+          ? firstSentence
+          : (summaryResult.keyTopics?.[0] || 'A Family Memory');
         storiesToSave = [{
-          title: interview.title || 'A Family Story',
+          title: fallbackTitle,
           content: summaryResult.summary,
           involvedPeople: [],
           approximateDate: undefined,
@@ -1151,12 +1156,14 @@ serve(async (req: Request) => {
       const fallbackContent = summaryResult?.summary
         || transcriptText.slice(0, 2000)
         || 'A family conversation was recorded and preserved.';
+      const firstTopic = summaryResult?.keyTopics?.[0];
+      const fallbackTitle = firstTopic || 'A Family Memory';
       const { data: fallbackStory } = await supabase
         .from('stories')
         .insert({
           family_group_id: familyGroupId,
           interview_id: interview.id,
-          title: interview.title || 'A Family Story',
+          title: fallbackTitle,
           content: fallbackContent,
           ai_generated: true,
           created_by: userId,

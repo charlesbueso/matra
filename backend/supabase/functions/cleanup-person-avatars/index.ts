@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Cleanup Person Avatars Edge Function
+// Matra — Cleanup Person Avatars Edge Function
 // ============================================================
 // Accepts an array of person IDs and deletes their avatar
 // images from DigitalOcean Spaces. Called before soft-deleting

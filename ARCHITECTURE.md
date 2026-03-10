@@ -1,4 +1,4 @@
-# MATRA — Architecture Document
+# Matra — Architecture Document
 
 ## 1. High-Level Architecture
 
