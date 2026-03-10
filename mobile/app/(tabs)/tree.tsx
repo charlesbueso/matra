@@ -39,12 +39,14 @@ function layoutNodes(
 ): {
   positions: Map<string, { x: number; y: number }>;
   roleLabels: Map<string, string>;
+  generation: Map<string, number>;
   width: number;
   height: number;
 } {
   const positions = new Map<string, { x: number; y: number }>();
   const roleLabels = new Map<string, string>();
-  if (people.length === 0) return { positions, roleLabels, width: SCREEN_WIDTH, height: SCREEN_HEIGHT };
+  const generation = new Map<string, number>();
+  if (people.length === 0) return { positions, roleLabels, generation, width: SCREEN_WIDTH, height: SCREEN_HEIGHT };
 
   const peopleById = new Map(people.map((p) => [p.id, p]));
 
@@ -162,86 +164,102 @@ function layoutNodes(
     }
   }
 
-  // Assign generations via BFS from root ancestors (people with no parents)
-  const generation = new Map<string, number>();
+  // ── Assign generations via self-centric BFS ──
+  // Start from self (gen 0) and walk outward using relationship-type offsets.
+  // This correctly places parents at gen -1, grandparents at -2, great-grandparents
+  // at -3, children at +1, etc. — regardless of how many roots there are.
   const visited = new Set<string>();
 
-  // Find roots: people with no parents
-  // Exclude people who have no parents but ARE siblings/step_siblings of someone
-  // who does have parents — they belong in the child generation, not the root.
-  const roots = people.filter((p) => {
-    if (parentOf.has(p.id) && parentOf.get(p.id)!.length > 0) return false; // has parents → not root
-    // Check if this person is a sibling/step-sibling of someone who has parents
-    const sibs = siblingOf.get(p.id);
-    if (sibs) {
-      for (const sibId of sibs) {
-        if (parentOf.has(sibId) && parentOf.get(sibId)!.length > 0) {
-          return false; // sibling has parents → this person belongs in their generation
-        }
-      }
-    }
-    return true;
-  });
-  // If no clear roots, pick the person with the most children
-  const startNodes = roots.length > 0 ? roots : [people[0]];
+  // Generation offset map: how many generations ABOVE self is person A when
+  // "A is [type] of B" (the directional semantics of the relationships table).
+  const GEN_OFFSET_A: Record<string, number> = {
+    parent: -1, child: 1,
+    spouse: 0, ex_spouse: 0,
+    sibling: 0, half_sibling: 0, step_sibling: 0,
+    grandparent: -2, grandchild: 2,
+    great_grandparent: -3, great_grandchild: 3,
+    great_great_grandparent: -4, great_great_grandchild: 4,
+    uncle_aunt: -1, nephew_niece: 1,
+    cousin: 0,
+    in_law: 0,
+    parent_in_law: -1, child_in_law: 1,
+    step_parent: -1, step_child: 1,
+    adopted_parent: -1, adopted_child: 1,
+    godparent: -1, godchild: 1,
+    other: 0,
+  };
 
-  const queue: { id: string; gen: number }[] = [];
-  for (const root of startNodes) {
-    if (!visited.has(root.id)) {
-      queue.push({ id: root.id, gen: 0 });
-      visited.add(root.id);
-    }
+  // Build a bidirectional adjacency list with signed offsets from the raw relationships
+  const adjList = new Map<string, { targetId: string; offset: number }[]>();
+  const addAdj = (from: string, to: string, offset: number) => {
+    if (!adjList.has(from)) adjList.set(from, []);
+    adjList.get(from)!.push({ targetId: to, offset });
+  };
+  for (const rel of relationships) {
+    const a = rel.person_a_id;
+    const b = rel.person_b_id;
+    if (!peopleById.has(a) || !peopleById.has(b)) continue;
+    const off = GEN_OFFSET_A[rel.relationship_type] ?? 0;
+    // A is at offset `off` relative to B  →  from B's perspective, A is `off` gens away
+    addAdj(b, a, off);       // going from B → A means moving `off` generations
+    addAdj(a, b, -off);      // going from A → B means moving `-off` generations
   }
 
-  while (queue.length > 0) {
-    const { id, gen } = queue.shift()!;
-    generation.set(id, gen);
-
-    // Spouses go to same generation
-    const spouses = spouseOf.get(id);
-    if (spouses) {
-      for (const spId of spouses) {
-        if (!visited.has(spId)) {
-          visited.add(spId);
-          queue.push({ id: spId, gen });
+  // BFS from self at generation 0
+  const startNode = selfPersonId && peopleById.has(selfPersonId) ? selfPersonId : null;
+  if (startNode) {
+    const queue: { id: string; gen: number }[] = [{ id: startNode, gen: 0 }];
+    visited.add(startNode);
+    while (queue.length > 0) {
+      const { id, gen } = queue.shift()!;
+      generation.set(id, gen);
+      const neighbors = adjList.get(id) || [];
+      for (const { targetId, offset } of neighbors) {
+        if (!visited.has(targetId)) {
+          visited.add(targetId);
+          queue.push({ id: targetId, gen: gen + offset });
         }
-      }
-    }
-
-    // Siblings go to same generation
-    const siblings = siblingOf.get(id);
-    if (siblings) {
-      for (const sibId of siblings) {
-        if (!visited.has(sibId)) {
-          visited.add(sibId);
-          queue.push({ id: sibId, gen });
-        }
-      }
-    }
-
-    // Children go one generation down
-    const children = childrenOf.get(id) || [];
-    for (const childId of children) {
-      if (!visited.has(childId)) {
-        visited.add(childId);
-        queue.push({ id: childId, gen: gen + 1 });
-      }
-    }
-
-    // Multi-generation descendants (grandchildren, great-grandchildren, etc.)
-    const descendants = ancestorOf.get(id) || [];
-    for (const { descendantId, gap } of descendants) {
-      if (!visited.has(descendantId)) {
-        visited.add(descendantId);
-        queue.push({ id: descendantId, gen: gen + gap });
       }
     }
   }
 
-  // Assign unvisited people (no relationships) to generation 0
+  // Handle unvisited people (disconnected components or no self)
+  // Use root-based BFS as fallback
   for (const p of people) {
-    if (!generation.has(p.id)) {
+    if (visited.has(p.id)) continue;
+    // Check if this person connects to an already-placed person
+    const neighbors = adjList.get(p.id) || [];
+    const placedNeighbor = neighbors.find((n) => generation.has(n.targetId));
+    if (placedNeighbor) {
+      const queue: { id: string; gen: number }[] = [{
+        id: p.id,
+        gen: generation.get(placedNeighbor.targetId)! + placedNeighbor.offset,
+      }];
+      visited.add(p.id);
+      while (queue.length > 0) {
+        const { id, gen } = queue.shift()!;
+        generation.set(id, gen);
+        const ns = adjList.get(id) || [];
+        for (const { targetId, offset } of ns) {
+          if (!visited.has(targetId)) {
+            visited.add(targetId);
+            queue.push({ id: targetId, gen: gen + offset });
+          }
+        }
+      }
+    } else {
       generation.set(p.id, 0);
+    }
+  }
+
+  // Shift all generations so the minimum is 0
+  let minGen = 0;
+  for (const gen of generation.values()) {
+    if (gen < minGen) minGen = gen;
+  }
+  if (minGen < 0) {
+    for (const [personId, gen] of generation) {
+      generation.set(personId, gen - minGen);
     }
   }
 
@@ -284,7 +302,10 @@ function layoutNodes(
   for (let gi = 0; gi < sortedGens.length; gi++) {
     const gen = sortedGens[gi];
     const row = genGroups.get(gen)!;
-    const y = PADDING + gi * VERTICAL_SPACING;
+    // Use actual generation number (not loop index) so empty intermediate
+    // generations still consume vertical space in the layout.
+    const minGen = sortedGens[0];
+    const y = PADDING + (gen - minGen) * VERTICAL_SPACING;
 
     if (gi === 0) {
       // Root generation — just center
@@ -409,8 +430,9 @@ function layoutNodes(
     if (pos.x > actualMaxX) actualMaxX = pos.x;
     if (pos.y > actualMaxY) actualMaxY = pos.y;
   }
+  const genRange = sortedGens.length > 0 ? (sortedGens[sortedGens.length - 1] - sortedGens[0] + 1) : 1;
   const graphWidth = Math.max(actualMaxX + PADDING * 3, maxRowWidth + PADDING * 2, SCREEN_WIDTH * 1.5);
-  const graphHeight = Math.max(actualMaxY + PADDING * 3, PADDING * 2 + sortedGens.length * VERTICAL_SPACING, SCREEN_HEIGHT);
+  const graphHeight = Math.max(actualMaxY + PADDING * 3, PADDING * 2 + genRange * VERTICAL_SPACING, SCREEN_HEIGHT);
 
   // Compute role labels relative to the self person
   // Each person's label describes their relationship TO the user
@@ -514,7 +536,7 @@ function layoutNodes(
     }
   }
 
-  return { positions, roleLabels, width: graphWidth, height: graphHeight };
+  return { positions, roleLabels, generation, width: graphWidth, height: graphHeight };
 }
 
 type ViewMode = 'graph' | 'table';
@@ -555,7 +577,7 @@ export default function TreeScreen() {
 
   const translateRole = (role: string) => roleTranslations[role] || role;
 
-  const { positions, roleLabels, width: GRAPH_WIDTH, height: GRAPH_HEIGHT } = useMemo(
+  const { positions, roleLabels, generation, width: GRAPH_WIDTH, height: GRAPH_HEIGHT } = useMemo(
     () => layoutNodes(people, relationships, selfPersonId),
     [people, relationships, selfPersonId]
   );
@@ -761,10 +783,32 @@ export default function TreeScreen() {
               return null;
             }
 
-            // Only draw lines for direct parent-child and multi-gen ancestor relationships
+            // Only draw ancestor-type lines (parent, grandparent, etc.)
             const ancestorTypes = ['parent', 'child', 'grandparent', 'grandchild',
               'great_grandparent', 'great_grandchild', 'great_great_grandparent', 'great_great_grandchild'];
             if (!ancestorTypes.includes(type)) return null;
+
+            // For multi-gen links (grandparent+), skip if there's an intermediate
+            // person bridging both endpoints — the chain lines already cover it.
+            if (type !== 'parent' && type !== 'child') {
+              const genA = generation.get(rel.person_a_id) ?? 0;
+              const genB = generation.get(rel.person_b_id) ?? 0;
+              const minG = Math.min(genA, genB);
+              const maxG = Math.max(genA, genB);
+              // Check if any person at an intermediate gen connects to both endpoints
+              const hasBridge = relationships.some((r2) => {
+                if (r2.id === rel.id) return false;
+                const otherId = r2.person_a_id === rel.person_a_id || r2.person_a_id === rel.person_b_id
+                  ? r2.person_b_id
+                  : r2.person_b_id === rel.person_a_id || r2.person_b_id === rel.person_b_id
+                    ? r2.person_a_id
+                    : null;
+                if (!otherId) return false;
+                const otherGen = generation.get(otherId) ?? -999;
+                return otherGen > minG && otherGen < maxG;
+              });
+              if (hasBridge) return null;
+            }
 
             // Parent-child: elbow connector
             const parent = posA.y < posB.y ? posA : posB;

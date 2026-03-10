@@ -420,9 +420,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm,
     borderWidth: 1,
-    borderColor: Colors.overlay.dark,
+    borderColor: Colors.overlay.heavy,
     borderRadius: BorderRadius.md,
-    backgroundColor: Colors.background.void,
+    backgroundColor: Colors.background.abyss,
   },
   personPickerText: {
     fontSize: Typography.sizes.body,
@@ -432,7 +432,7 @@ const styles = StyleSheet.create({
   personList: {
     marginTop: Spacing.xs,
     borderWidth: 1,
-    borderColor: Colors.overlay.dark,
+    borderColor: Colors.overlay.heavy,
     borderRadius: BorderRadius.md,
     backgroundColor: Colors.background.abyss,
     maxHeight: 200,

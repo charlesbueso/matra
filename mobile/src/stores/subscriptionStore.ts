@@ -10,7 +10,8 @@ import {
   getCustomerInfo,
   isPremiumActive,
 } from '../services/purchases';
-import type { SubscriptionTier, FeatureLimits } from '../types';
+import { useNotificationStore } from './notificationStore';
+import type { SubscriptionTier, FeatureLimits, DowngradeInfo } from '../types';
 
 // Feature limits by tier (client-side mirror of server TIER_LIMITS)
 export const TIER_LIMITS: Record<SubscriptionTier, FeatureLimits> = {
@@ -44,6 +45,8 @@ interface SubscriptionState {
   isLoading: boolean;
   /** True if user belongs to a premium user's family group. */
   familySharingActive: boolean;
+  /** Downgrade/grace-period state for lapsed premium users. */
+  downgrade: DowngradeInfo;
 
   fetchEntitlements: () => Promise<void>;
   /** Identify the user with RevenueCat and sync tier. */
@@ -63,6 +66,12 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   storageUsedMb: 0,
   isLoading: false,
   familySharingActive: false,
+  downgrade: {
+    isLapsed: false,
+    inGracePeriod: false,
+    gracePeriodEndsAt: null,
+    exportAccessUntil: null,
+  },
 
   fetchEntitlements: async () => {
     set({ isLoading: true });
@@ -72,6 +81,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
         limits: FeatureLimits;
         usage: { interview_count: number; storage_used_mb: number };
         familySharingActive?: boolean;
+        downgrade?: DowngradeInfo;
       }>('get-entitlements');
 
       set({
@@ -80,7 +90,21 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
         interviewCount: data.usage.interview_count,
         storageUsedMb: data.usage.storage_used_mb,
         familySharingActive: data.familySharingActive ?? false,
+        downgrade: data.downgrade ?? {
+          isLapsed: false,
+          inGracePeriod: false,
+          gracePeriodEndsAt: null,
+          exportAccessUntil: null,
+        },
       });
+
+      // Schedule / cancel grace period push notifications
+      const dg = data.downgrade;
+      if (dg?.inGracePeriod && dg.gracePeriodEndsAt) {
+        useNotificationStore.getState().scheduleGracePeriodReminders(dg.gracePeriodEndsAt);
+      } else {
+        useNotificationStore.getState().cancelGracePeriodReminders();
+      }
     } catch {
       // Fallback to free tier on error
       set({ tier: 'free', limits: TIER_LIMITS.free });

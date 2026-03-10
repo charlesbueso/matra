@@ -23,6 +23,7 @@ serve(async (req: Request) => {
         interview_count: entitlements.interviewCount,
       },
       familySharingActive: entitlements.familySharingActive,
+      downgrade: entitlements.downgrade,
     });
   } catch (err) {
     return errorResponse(

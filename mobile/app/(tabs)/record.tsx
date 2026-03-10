@@ -2,8 +2,8 @@
 // MATRA — Record Tab (Conversation Entry Point)
 // ============================================================
 
-import React, { useState, useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, Alert, Pressable, ScrollView, FlatList } from 'react-native';
+import React, { useState, useRef, useCallback, useMemo } from 'react';
+import { View, Text, TextInput, StyleSheet, Alert, Pressable, ScrollView, FlatList, Modal, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
@@ -17,22 +17,38 @@ import Animated, {
 } from 'react-native-reanimated';
 import { StarField, BioAlgae, Button, VoiceWaveform, TreeTrunk, Card } from '../../src/components/ui';
 import { useTranslation } from 'react-i18next';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useFamilyStore, Person, BackgroundJob } from '../../src/stores/familyStore';
 import { trackEvent, AnalyticsEvents } from '../../src/services/analytics';
 import { Colors, Typography, Spacing } from '../../src/theme/tokens';
 
-const DEV_TRANSCRIPT = `So my grandmother, Rose Thompson, she was born in 1932 in a small town in the countryside. She married my grandfather, Walter Thompson, in 1955. They had three children — my mother Helen, my uncle James, and my aunt Dorothy.
-
-Grandma Rose always told us stories about growing up on the farm. She said her father, my great-grandfather Arthur, used to wake up before sunrise every morning to tend to the orchard. He passed away in 1968, and that's when the family decided to move to the city.
-
-They settled in a small apartment in 1970. Walter got a job at a factory and Rose worked as a seamstress. My mother Helen was born in 1958, but she grew up mostly in the city. She met my father, Robert Lee, at a community college in 1982. They got married in 1985.
-
-Uncle James, he stayed in the countryside actually. He married a woman named Margaret and they have two kids — my cousins Peter and Anne. We used to visit them every summer when I was a kid.
-
-Aunt Dorothy became a nurse. She never married but she was everyone's favorite aunt. She used to make this incredible stew recipe that grandma taught her. Dorothy passed away in 2019 and we all miss her terribly.
-
-One of my favorite memories is Christmas at grandma's house. The whole family would gather — sometimes twenty people crammed into that little house. She'd cook for days. Her soup was legendary in the neighborhood.`;
+const ADD_NEW_RELATIONSHIP_OPTIONS = [
+  { type: 'parent', labelKey: 'relationships.parent' },
+  { type: 'child', labelKey: 'relationships.child' },
+  { type: 'spouse', labelKey: 'relationships.spouse' },
+  { type: 'ex_spouse', labelKey: 'relationships.ex_spouse' },
+  { type: 'sibling', labelKey: 'relationships.sibling' },
+  { type: 'half_sibling', labelKey: 'relationships.half_sibling' },
+  { type: 'grandparent', labelKey: 'relationships.grandparent' },
+  { type: 'grandchild', labelKey: 'relationships.grandchild' },
+  { type: 'great_grandparent', labelKey: 'relationships.great_grandparent' },
+  { type: 'great_grandchild', labelKey: 'relationships.great_grandchild' },
+  { type: 'uncle_aunt', labelKey: 'relationships.uncle_aunt' },
+  { type: 'nephew_niece', labelKey: 'relationships.nephew_niece' },
+  { type: 'cousin', labelKey: 'relationships.cousin' },
+  { type: 'in_law', labelKey: 'relationships.in_law' },
+  { type: 'parent_in_law', labelKey: 'relationships.parent_in_law' },
+  { type: 'child_in_law', labelKey: 'relationships.child_in_law' },
+  { type: 'step_parent', labelKey: 'relationships.step_parent' },
+  { type: 'step_child', labelKey: 'relationships.step_child' },
+  { type: 'step_sibling', labelKey: 'relationships.step_sibling' },
+  { type: 'adopted_parent', labelKey: 'relationships.adopted_parent' },
+  { type: 'adopted_child', labelKey: 'relationships.adopted_child' },
+  { type: 'godparent', labelKey: 'relationships.godparent' },
+  { type: 'godchild', labelKey: 'relationships.godchild' },
+  { type: 'other', labelKey: 'relationships.other' },
+];
 
 export default function RecordScreen() {
   const { t } = useTranslation();
@@ -47,7 +63,7 @@ export default function RecordScreen() {
     premium: 30 * 60,  // 30 minutes
   };
   const maxSeconds = MAX_RECORDING_SECONDS[profile?.subscription_tier || 'free'];
-  const { activeFamilyGroupId, people, fetchAllFamilyData, fetchFamilyGroups } = useFamilyStore();
+  const { activeFamilyGroupId, people, relationships, fetchAllFamilyData, fetchFamilyGroups } = useFamilyStore();
   const isProcessing = useFamilyStore((s) => s.isProcessingInterview);
   const backgroundJobs = useFamilyStore((s) => s.backgroundJobs);
   const dismissJob = useFamilyStore((s) => s.dismissJob);
@@ -58,6 +74,77 @@ export default function RecordScreen() {
   const [recordedUri, setRecordedUri] = useState<string | null>(null);
   const recordingRef = useRef<Audio.Recording | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
+
+  // Add new person flow
+  const [showAddPerson, setShowAddPerson] = useState(false);
+  const [newPersonFirstName, setNewPersonFirstName] = useState('');
+  const [newPersonLastName, setNewPersonLastName] = useState('');
+  const [newPersonRelType, setNewPersonRelType] = useState<string | null>(null);
+  const [connectedThroughId, setConnectedThroughId] = useState<string | null>(null);
+  const [isCreatingPerson, setIsCreatingPerson] = useState(false);
+  const { createPerson, createRelationship } = useFamilyStore();
+
+  // Lineage chain: for multi-gen types, try each fallback level until we find
+  // existing intermediate people. `inverse` means the chain link direction is
+  // reversed (intermediate IS chainRelType OF newPerson) — used for descendants.
+  type ChainOption = { lookupType: string; chainRelType: string; inverse?: boolean };
+  const CHAIN_LEVELS: Record<string, ChainOption[]> = {
+    grandparent:             [{ lookupType: 'parent',             chainRelType: 'parent' }],
+    grandchild:              [{ lookupType: 'child',              chainRelType: 'parent', inverse: true }],
+    great_grandparent:       [{ lookupType: 'grandparent',        chainRelType: 'parent' },
+                              { lookupType: 'parent',             chainRelType: 'grandparent' }],
+    great_grandchild:        [{ lookupType: 'grandchild',         chainRelType: 'parent', inverse: true },
+                              { lookupType: 'child',              chainRelType: 'grandparent', inverse: true }],
+    great_great_grandparent: [{ lookupType: 'great_grandparent',  chainRelType: 'parent' },
+                              { lookupType: 'grandparent',        chainRelType: 'grandparent' },
+                              { lookupType: 'parent',             chainRelType: 'great_grandparent' }],
+    great_great_grandchild:  [{ lookupType: 'great_grandchild',   chainRelType: 'parent', inverse: true },
+                              { lookupType: 'grandchild',         chainRelType: 'grandparent', inverse: true },
+                              { lookupType: 'child',              chainRelType: 'great_grandparent', inverse: true }],
+    uncle_aunt:              [{ lookupType: 'parent',             chainRelType: 'sibling' }],
+    nephew_niece:            [{ lookupType: 'sibling',            chainRelType: 'parent', inverse: true }],
+  };
+
+  const INVERSE_TYPES: Record<string, string> = {
+    parent: 'child', child: 'parent',
+    grandparent: 'grandchild', grandchild: 'grandparent',
+    great_grandparent: 'great_grandchild', great_grandchild: 'great_grandparent',
+    sibling: 'sibling',
+  };
+
+  // Helper: find people of a given relationship type relative to self
+  const findRelatedPeople = useCallback((lookupType: string): Person[] => {
+    if (!selfPersonId) return [];
+    const ids: string[] = [];
+    // A is lookupType of B — find As where B is self
+    relationships.forEach((r) => {
+      if (r.relationship_type === lookupType && r.person_b_id === selfPersonId) {
+        if (!ids.includes(r.person_a_id)) ids.push(r.person_a_id);
+      }
+    });
+    // Check inverse: if self IS inverseType OF someone
+    const inv = INVERSE_TYPES[lookupType];
+    if (inv) {
+      relationships.forEach((r) => {
+        if (r.relationship_type === inv && r.person_a_id === selfPersonId) {
+          if (!ids.includes(r.person_b_id)) ids.push(r.person_b_id);
+        }
+      });
+    }
+    return people.filter((p) => ids.includes(p.id));
+  }, [selfPersonId, relationships, people]);
+
+  // Resolve the first non-empty fallback level for the current relationship type
+  const { connectablepeople, activeChainOption } = useMemo(() => {
+    if (!newPersonRelType || !selfPersonId) return { connectablepeople: [], activeChainOption: null };
+    const levels = CHAIN_LEVELS[newPersonRelType];
+    if (!levels) return { connectablepeople: [], activeChainOption: null };
+    for (const opt of levels) {
+      const found = findRelatedPeople(opt.lookupType);
+      if (found.length > 0) return { connectablepeople: found, activeChainOption: opt };
+    }
+    return { connectablepeople: [], activeChainOption: null };
+  }, [newPersonRelType, selfPersonId, findRelatedPeople]);
   // Map real processing stage from backend to UI step index
   const activeJobs = backgroundJobs.filter((j) => j.status === 'processing');
   const completedJobs = backgroundJobs.filter((j) => j.status === 'completed');
@@ -230,18 +317,40 @@ export default function RecordScreen() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const sendDevTranscript = () => {
-    if (!activeFamilyGroupId) {
-      Alert.alert(t('common.error'), t('record.noFamilyGroup'));
+  const handleAddNewPerson = async () => {
+    if (!newPersonFirstName.trim()) {
+      Alert.alert(t('common.error'), t('record.newPersonNameRequired'));
       return;
     }
-    useFamilyStore.getState().processInterviewInBackground(
-      null,
-      activeFamilyGroupId,
-      'Dev Conversation',
-      DEV_TRANSCRIPT,
-      selectedPerson?.id
-    );
+    setIsCreatingPerson(true);
+    try {
+      const person = await createPerson({
+        first_name: newPersonFirstName.trim(),
+        last_name: newPersonLastName.trim() || null,
+      });
+      if (newPersonRelType && selfPersonId) {
+        await createRelationship(person.id, selfPersonId, newPersonRelType);
+        // Create intermediate chain relationship for lineage placement
+        if (activeChainOption && connectedThroughId) {
+          if (activeChainOption.inverse) {
+            await createRelationship(connectedThroughId, person.id, activeChainOption.chainRelType);
+          } else {
+            await createRelationship(person.id, connectedThroughId, activeChainOption.chainRelType);
+          }
+        }
+      }
+      setSelectedPerson(person);
+      setShowAddPerson(false);
+      setNewPersonFirstName('');
+      setNewPersonLastName('');
+      setNewPersonRelType(null);
+      setConnectedThroughId(null);
+    } catch (e) {
+      console.error('Failed to create person:', e);
+      Alert.alert(t('common.error'), t('record.newPersonError'));
+    } finally {
+      setIsCreatingPerson(false);
+    }
   };
 
   const isSelf = selectedPerson?.id === selfPersonId;
@@ -291,14 +400,147 @@ export default function RecordScreen() {
                 </Card>
               );
             })}
+            {/* Add Someone New card */}
+            <Card
+              variant="default"
+              style={styles.personCard}
+              onPress={() => setShowAddPerson(true)}
+            >
+              <View style={styles.personCardContent}>
+                <View style={[styles.personAvatar, styles.addPersonAvatar]}>
+                  <Ionicons name="add" size={24} color={Colors.text.starlight} />
+                </View>
+                <View style={styles.personInfo}>
+                  <Text style={styles.personName}>{t('record.addNewPerson')}</Text>
+                  <Text style={styles.personSelfBadge}>{t('record.addNewPersonHint')}</Text>
+                </View>
+                <Text style={styles.personArrow}>→</Text>
+              </View>
+            </Card>
           </ScrollView>
 
-          {/* Dev mode: fake conversation button */}
-          {__DEV__ && (
-            <Pressable onPress={sendDevTranscript} style={styles.devButton}>
-              <Text style={styles.devButtonText}>{t('record.devFake')}</Text>
-            </Pressable>
-          )}
+          {/* Add New Person Modal */}
+          <Modal
+            visible={showAddPerson}
+            transparent
+            animationType="slide"
+            onRequestClose={() => setShowAddPerson(false)}
+          >
+            <KeyboardAvoidingView
+              style={styles.modalOverlay}
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+            >
+              <Pressable style={styles.modalOverlay} onPress={() => setShowAddPerson(false)}>
+                <Pressable style={styles.modalSheet} onPress={(e) => e.stopPropagation()}>
+                  <ScrollView
+                    bounces={false}
+                    keyboardShouldPersistTaps="handled"
+                    showsVerticalScrollIndicator={false}
+                  >
+                    <Text style={styles.modalTitle}>{t('record.newPersonTitle')}</Text>
+                    <Text style={styles.modalSubtitle}>{t('record.newPersonSubtitle')}</Text>
+
+                    <Text style={styles.modalLabel}>{t('record.newPersonFirstName')}</Text>
+                    <TextInput
+                      style={styles.modalInput}
+                      value={newPersonFirstName}
+                      onChangeText={setNewPersonFirstName}
+                      placeholder={t('record.newPersonFirstNamePlaceholder')}
+                      placeholderTextColor={Colors.text.shadow}
+                      autoFocus
+                      returnKeyType="next"
+                    />
+
+                    <Text style={styles.modalLabel}>{t('record.newPersonLastName')}</Text>
+                    <TextInput
+                      style={styles.modalInput}
+                      value={newPersonLastName}
+                      onChangeText={setNewPersonLastName}
+                      placeholder={t('record.newPersonLastNamePlaceholder')}
+                      placeholderTextColor={Colors.text.shadow}
+                      returnKeyType="done"
+                    />
+
+                    <Text style={[styles.modalLabel, { marginTop: Spacing.sm }]}>{t('record.newPersonRelationship')}</Text>
+                    <View style={styles.relGrid}>
+                      {ADD_NEW_RELATIONSHIP_OPTIONS.map((opt) => (
+                        <Pressable
+                          key={opt.type}
+                          style={[
+                            styles.relPill,
+                            newPersonRelType === opt.type && styles.relPillActive,
+                          ]}
+                          onPress={() => {
+                            const next = newPersonRelType === opt.type ? null : opt.type;
+                            setNewPersonRelType(next);
+                            setConnectedThroughId(null);
+                          }}
+                        >
+                          <Text
+                            style={[
+                              styles.relPillText,
+                              newPersonRelType === opt.type && styles.relPillTextActive,
+                            ]}
+                          >
+                            {t(opt.labelKey)}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+
+                    {connectablepeople.length > 0 && newPersonRelType && CHAIN_LEVELS[newPersonRelType] && (
+                      <View style={styles.chainSection}>
+                        <Text style={styles.chainLabel}>{t('record.connectedThrough')}</Text>
+                        <View style={styles.relGrid}>
+                          {connectablepeople.map((p) => (
+                            <Pressable
+                              key={p.id}
+                              style={[
+                                styles.relPill,
+                                connectedThroughId === p.id && styles.relPillActive,
+                              ]}
+                              onPress={() => setConnectedThroughId(
+                                connectedThroughId === p.id ? null : p.id
+                              )}
+                            >
+                              <Text
+                                style={[
+                                  styles.relPillText,
+                                  connectedThroughId === p.id && styles.relPillTextActive,
+                                ]}
+                              >
+                                {p.first_name}{p.last_name ? ` ${p.last_name}` : ''}
+                              </Text>
+                            </Pressable>
+                          ))}
+                        </View>
+                      </View>
+                    )}
+
+                    {newPersonRelType && newPersonFirstName.trim() ? (
+                      <Text style={styles.relGuideText}>
+                        {newPersonFirstName.trim()} {t('record.newPersonRelGuide', { relationship: t(ADD_NEW_RELATIONSHIP_OPTIONS.find(o => o.type === newPersonRelType)?.labelKey || '').toLowerCase() })} {profile?.display_name || t('common.you')}
+                      </Text>
+                    ) : null}
+
+                    <View style={styles.modalActions}>
+                      <Button
+                        title={isCreatingPerson ? t('record.newPersonCreating') : t('record.newPersonCreate')}
+                        onPress={handleAddNewPerson}
+                        variant="primary"
+                        size="md"
+                        disabled={isCreatingPerson}
+                      />
+                      <Pressable onPress={() => setShowAddPerson(false)} style={styles.modalCancelButton}>
+                        <Text style={styles.modalCancelText}>{t('common.cancel')}</Text>
+                      </Pressable>
+                    </View>
+                  </ScrollView>
+                </Pressable>
+              </Pressable>
+            </KeyboardAvoidingView>
+          </Modal>
 
           {/* Background job notifications */}
           {backgroundJobs.length > 0 && (
@@ -481,6 +723,7 @@ export default function RecordScreen() {
             {isSelf ? (
               <>
                 <Text style={styles.tip}>{t('record.tipSelf1')}</Text>
+                <Text style={styles.tip}>{t('record.tipOneSpeaker')}</Text>
                 <Text style={styles.tip}>{t('record.tipSelf2')}</Text>
                 <Text style={styles.tip}>{t('record.tipSelf3')}</Text>
                 <Text style={styles.tip}>{t('record.tipSelf4')}</Text>
@@ -488,6 +731,7 @@ export default function RecordScreen() {
             ) : (
               <>
                 <Text style={styles.tip}>{t('record.tipOther1')}</Text>
+                <Text style={styles.tip}>{t('record.tipOneSpeaker')}</Text>
                 <Text style={styles.tip}>{t('record.tipOther2')}</Text>
                 <Text style={styles.tip}>{t('record.tipOther3')}</Text>
                 <Text style={styles.tip}>{t('record.tipOther4')}</Text>
@@ -496,12 +740,6 @@ export default function RecordScreen() {
           </View>
         )}
 
-        {/* Dev mode: fake conversation button */}
-        {__DEV__ && !isRecording && !isProcessing && !recordedUri && (
-          <Pressable onPress={sendDevTranscript} style={styles.devButton}>
-            <Text style={styles.devButtonText}>{t('record.devFake')}</Text>
-          </Pressable>
-        )}
       </View>
     </StarField>
   );
@@ -758,25 +996,115 @@ const styles = StyleSheet.create({
     color: Colors.text.twilight,
     lineHeight: Typography.sizes.caption * Typography.lineHeights.relaxed,
   },
-  devButton: {
-    backgroundColor: Colors.background.abyss,
+  addPersonAvatar: {
+    backgroundColor: Colors.overlay.heavy,
     borderWidth: 1,
-    borderColor: Colors.accent.glow,
-    borderRadius: 8,
-    paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.lg,
-    alignSelf: 'center',
-    marginTop: Spacing.md,
+    borderColor: Colors.overlay.dark,
+    borderStyle: 'dashed',
   },
-  devButtonText: {
+  // ── Add Person Modal ──
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+  },
+  modalSheet: {
+    backgroundColor: Colors.background.abyss,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: Spacing.xl,
+    paddingBottom: Spacing.xxl + Spacing.xl,
+    maxHeight: '85%',
+  },
+  modalTitle: {
+    fontSize: Typography.sizes.h3,
+    fontFamily: Typography.fonts.heading,
+    color: Colors.text.starlight,
+    marginBottom: Spacing.xs,
+  },
+  modalSubtitle: {
+    fontSize: Typography.sizes.caption,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.twilight,
+    marginBottom: Spacing.lg,
+  },
+  modalLabel: {
     fontSize: Typography.sizes.caption,
     fontFamily: Typography.fonts.bodySemiBold,
-    color: Colors.accent.glow,
+    color: Colors.text.moonlight,
+    marginBottom: Spacing.xs,
+  },
+  modalInput: {
+    backgroundColor: Colors.background.trench,
+    borderRadius: 10,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm + 2,
+    fontSize: Typography.sizes.body,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.starlight,
+    marginBottom: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.overlay.dark,
+  },
+  relGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+    marginBottom: Spacing.lg,
+  },
+  relPill: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs + 2,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: Colors.overlay.heavy,
+    backgroundColor: Colors.background.trench,
+  },
+  relPillActive: {
+    backgroundColor: Colors.accent.cyan + '20',
+    borderColor: Colors.accent.cyan,
+  },
+  relPillText: {
+    fontSize: Typography.sizes.small,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.moonlight,
+  },
+  relPillTextActive: {
+    color: Colors.accent.cyan,
+    fontFamily: Typography.fonts.bodySemiBold,
+  },
+  relGuideText: {
+    fontSize: Typography.sizes.small,
+    fontFamily: Typography.fonts.body,
+    fontStyle: 'italic' as const,
+    color: Colors.accent.cyan,
+    textAlign: 'center',
+    marginBottom: Spacing.md,
+  },
+  chainSection: {
+    marginBottom: Spacing.sm,
+  },
+  chainLabel: {
+    fontSize: Typography.sizes.caption,
+    fontFamily: Typography.fonts.bodySemiBold,
+    color: Colors.text.twilight,
+    marginBottom: Spacing.xs,
+  },
+  modalActions: {
+    gap: Spacing.sm,
+  },
+  modalCancelButton: {
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+  },
+  modalCancelText: {
+    fontSize: Typography.sizes.body,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.twilight,
   },
   // ── Person Selection Styles ──
   personList: {
     flex: 1,
-    marginTop: Spacing.lg,
   },
   personListContent: {
     gap: Spacing.sm,

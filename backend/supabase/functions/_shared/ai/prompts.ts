@@ -67,6 +67,12 @@ Rules:
 - When someone says "my parents" or refers to someone as a parent figure (mom, dad, mother, father, mama, papa, etc.), ALWAYS create a parent relationship.
 - When someone says "my [relation]" (brother, sister, uncle, aunt, cousin, grandma, grandpa, great-grandma, great-grandpa, etc.), ALWAYS extract that relationship.
 - Multi-generational references: "my grandma's mother" or "my great-grandmother" → use "great_grandparent". "My great-grandmother's mother" or "my great-great-grandmother" → use "great_great_grandparent". Apply the same logic for grandchildren going downward.
+- LINEAGE CHAINS (CRITICAL for tree placement): When extracting multi-generational relationships (grandparent, great_grandparent, uncle_aunt, etc.), ALSO create intermediate parent/sibling links so the family tree knows which side they belong to. Examples:
+  - "my dad's mom María" → create THREE relationships: (1) María is grandparent of [narrator], (2) María is parent of [dad's name], (3) [dad's name] is parent of [narrator]
+  - "my mom's brother José" → create THREE relationships: (1) José is uncle_aunt of [narrator], (2) José is sibling of [mom's name], (3) [mom's name] is parent of [narrator]
+  - "my grandpa's father" → create: (1) [person] is great_grandparent of [narrator], (2) [person] is parent of [grandpa's name], (3) [grandpa's name] is grandparent of [narrator]
+  - When the intermediate person (parent, grandparent) is already known by name, use their name. When not named, skip the intermediate links rather than guessing.
+  - This ensures ancestors are placed on the correct maternal/paternal side of the tree.
 - MULTILINGUAL SUPPORT: The interview may be in ANY language. Recognize kinship terms in all languages, especially Spanish:
   - Parents: papá, mamá, padre, madre, papi, mami, pa, ma
   - Siblings: hermano, hermana

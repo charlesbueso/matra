@@ -6,7 +6,7 @@
 // ============================================================
 
 import { getServiceClient } from './supabase.ts';
-import { SubscriptionTier, FeatureLimits, TIER_LIMITS } from './types.ts';
+import { SubscriptionTier, FeatureLimits, DowngradeInfo, TIER_LIMITS } from './types.ts';
 
 export interface UserEntitlements {
   tier: SubscriptionTier;
@@ -14,11 +14,14 @@ export interface UserEntitlements {
   interviewCount: number;
   /** True if user belongs to a family group owned by a premium user. */
   familySharingActive: boolean;
+  /** Downgrade/grace-period state for lapsed premium users. */
+  downgrade: DowngradeInfo;
 }
 
 /**
  * Get user's current subscription tier and limits.
  * Checks actual subscription status, not cached profile value.
+ * Handles grace periods and billing retries gracefully.
  */
 export async function getUserEntitlements(userId: string): Promise<UserEntitlements> {
   const supabase = getServiceClient();
@@ -34,26 +37,96 @@ export async function getUserEntitlements(userId: string): Promise<UserEntitleme
     throw new Error('User profile not found');
   }
 
-  // Verify against active subscription (source of truth)
+  // Check for active or grace-period/billing-retry subscriptions
   const { data: subscription } = await supabase
     .from('subscriptions')
-    .select('tier, status, expires_at')
+    .select('tier, status, expires_at, grace_period_ends_at, export_access_until')
     .eq('user_id', userId)
-    .eq('status', 'active')
+    .in('status', ['active', 'grace_period', 'billing_retry'])
     .order('created_at', { ascending: false })
     .limit(1)
     .single();
 
   let tier: SubscriptionTier = 'free';
+  const downgrade: DowngradeInfo = {
+    isLapsed: false,
+    inGracePeriod: false,
+    gracePeriodEndsAt: null,
+    exportAccessUntil: null,
+  };
 
   if (subscription) {
-    // Check if subscription is still valid
-    const isExpired = subscription.expires_at && 
-      new Date(subscription.expires_at) < new Date();
-    
-    if (!isExpired) {
+    const now = new Date();
+
+    if (subscription.status === 'active') {
+      // Active subscription — check expiry
+      const isExpired = subscription.expires_at &&
+        new Date(subscription.expires_at) < now;
+
+      if (!isExpired) {
+        tier = subscription.tier as SubscriptionTier;
+      }
+    } else if (subscription.status === 'billing_retry') {
+      // Payment failed but store is retrying — keep full access
+      // Apple/Google retry for ~16 days; don't punish the user
       tier = subscription.tier as SubscriptionTier;
+    } else if (subscription.status === 'grace_period') {
+      const graceEnd = subscription.grace_period_ends_at
+        ? new Date(subscription.grace_period_ends_at)
+        : null;
+
+      if (graceEnd && graceEnd > now) {
+        // Still in grace period — full premium access
+        tier = subscription.tier as SubscriptionTier;
+        downgrade.inGracePeriod = true;
+        downgrade.gracePeriodEndsAt = subscription.grace_period_ends_at;
+      } else {
+        // Grace period has expired — transition to free
+        tier = 'free';
+        downgrade.isLapsed = true;
+
+        // Check if export access is still available
+        const exportEnd = subscription.export_access_until
+          ? new Date(subscription.export_access_until)
+          : null;
+        if (exportEnd && exportEnd > now) {
+          downgrade.exportAccessUntil = subscription.export_access_until;
+        }
+
+        // Finalize the subscription record
+        await supabase
+          .from('subscriptions')
+          .update({ status: 'expired' })
+          .eq('user_id', userId)
+          .eq('status', 'grace_period');
+      }
     }
+  } else {
+    // No active/grace/retry subscription — check if they're a lapsed premium user
+    const { data: expiredSub } = await supabase
+      .from('subscriptions')
+      .select('tier, export_access_until')
+      .eq('user_id', userId)
+      .eq('status', 'expired')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (expiredSub && expiredSub.tier === 'premium') {
+      downgrade.isLapsed = true;
+      const exportEnd = expiredSub.export_access_until
+        ? new Date(expiredSub.export_access_until)
+        : null;
+      if (exportEnd && exportEnd > new Date()) {
+        downgrade.exportAccessUntil = expiredSub.export_access_until;
+      }
+    }
+  }
+
+  // Build limits — lapsed users with export grace get export access on free tier
+  let limits = { ...TIER_LIMITS[tier] };
+  if (tier === 'free' && downgrade.exportAccessUntil) {
+    limits = { ...limits, memoryBookExport: true };
   }
 
   // Sync profile if tier drifted
@@ -102,9 +175,10 @@ export async function getUserEntitlements(userId: string): Promise<UserEntitleme
 
   return {
     tier,
-    limits: TIER_LIMITS[tier],
+    limits,
     interviewCount: profile.interview_count,
     familySharingActive,
+    downgrade,
   };
 }
 
@@ -117,10 +191,10 @@ export async function canCreateInterview(userId: string): Promise<{ allowed: boo
 
   // Total limit (free tier)
   if (entitlements.interviewCount >= entitlements.limits.maxInterviews) {
-    return {
-      allowed: false,
-      reason: `Free tier limited to ${entitlements.limits.maxInterviews} interviews. Upgrade to Premium for more.`,
-    };
+    const reason = entitlements.downgrade.isLapsed
+      ? `Your previous interviews are safe! Re-subscribe to create new ones.`
+      : `Free tier limited to ${entitlements.limits.maxInterviews} interviews. Upgrade to Premium for more.`;
+    return { allowed: false, reason };
   }
 
   // Monthly and daily rate limits (premium only — free is capped by total limit above)

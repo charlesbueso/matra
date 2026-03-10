@@ -8,12 +8,14 @@ import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography } from '../../src/theme/tokens';
 import { useNotificationStore } from '../../src/stores/notificationStore';
+import { useSubscriptionStore } from '../../src/stores/subscriptionStore';
 import { useTranslation } from 'react-i18next';
 
 export default function TabLayout() {
   const { t } = useTranslation();
   const unreadLineage = useNotificationStore((s) => s.unreadLineageCount);
   const unreadStories = useNotificationStore((s) => s.unreadStoryCount);
+  const isPremium = useSubscriptionStore((s) => s.tier) === 'premium';
 
   return (
     <Tabs
@@ -56,7 +58,7 @@ export default function TabLayout() {
           title: t('tabs.record'),
           tabBarLabel: () => null,
           tabBarIcon: ({ size }) => (
-            <View style={styles.recordButton}>
+            <View style={[styles.recordButton, isPremium && styles.recordButtonPremium]}>
               <Ionicons name="mic" size={size + 4} color="#FFFFFF" />
               <Text style={styles.recordLabel}>{t('tabs.record')}</Text>
             </View>
@@ -123,6 +125,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.5,
     shadowRadius: 16,
     elevation: 12,
+  },
+  recordButtonPremium: {
+    backgroundColor: Colors.accent.amber,
+    shadowColor: Colors.accent.amber,
+    shadowOpacity: 0.45,
   },
   recordLabel: {
     color: '#FFFFFF',

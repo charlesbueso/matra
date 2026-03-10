@@ -15,6 +15,7 @@ import { trackEvent, AnalyticsEvents } from '../../src/services/analytics';
 import { useTranslation } from 'react-i18next';
 import { useSignedUrl } from '../../src/hooks';
 import { Colors, Typography, Spacing, BorderRadius } from '../../src/theme/tokens';
+import { shareStory } from '../../src/utils/share';
 
 export default function StoryDetailScreen() {
   const { t } = useTranslation();
@@ -146,12 +147,23 @@ export default function StoryDetailScreen() {
 
         {/* Story Header */}
         <Animated.View entering={FadeInDown.delay(100)} style={styles.header}>
-          {story.ai_generated && (
-            <View style={styles.aiBadge}>
-              <Text style={styles.aiBadgeText}>{t('storyDetail.aiCrafted')}</Text>
+          <View style={styles.headerRow}>
+            <View style={{ flex: 1 }}>
+              {story.ai_generated && (
+                <View style={styles.aiBadge}>
+                  <Text style={styles.aiBadgeText}>{t('storyDetail.aiCrafted')}</Text>
+                </View>
+              )}
+              <Text style={styles.title}>{story.title}</Text>
             </View>
-          )}
-          <Text style={styles.title}>{story.title}</Text>
+            <Pressable
+              onPress={() => shareStory(story.title, story.content, interviewPerson?.first_name)}
+              hitSlop={8}
+              style={styles.shareButton}
+            >
+              <Ionicons name="share-outline" size={22} color={Colors.accent.cyan} />
+            </Pressable>
+          </View>
           <View style={styles.meta}>
             {interviewPerson && (
               <Pressable
@@ -313,6 +325,15 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: Spacing.xl,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  shareButton: {
+    marginTop: Spacing.xs,
+    marginLeft: Spacing.md,
   },
   aiBadge: {
     alignSelf: 'flex-start',

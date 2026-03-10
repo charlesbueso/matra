@@ -12,6 +12,7 @@ import { useTranslation } from 'react-i18next';
 import { useFamilyStore } from '../../src/stores/familyStore';
 import { supabase } from '../../src/services/supabase';
 import { Colors, Typography, Spacing, BorderRadius } from '../../src/theme/tokens';
+import { shareInterviewSummary } from '../../src/utils/share';
 
 interface Transcript {
   id: string;
@@ -96,7 +97,19 @@ export default function InterviewDetailScreen() {
         {interview.ai_summary && (
           <Animated.View entering={FadeInDown.delay(200)}>
             <Card variant="glow" style={styles.section}>
-              <Text style={styles.sectionTitle}>{t('interview.aiSummary')}</Text>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>{t('interview.aiSummary')}</Text>
+                <Pressable
+                  onPress={() => shareInterviewSummary(
+                    interview.title || t('interview.untitled'),
+                    interview.ai_summary!,
+                    interview.ai_key_topics ?? undefined,
+                  )}
+                  hitSlop={8}
+                >
+                  <Ionicons name="share-outline" size={20} color={Colors.accent.cyan} />
+                </Pressable>
+              </View>
               <Text style={styles.summaryText}>{interview.ai_summary}</Text>
             </Card>
           </Animated.View>
@@ -186,6 +199,12 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: Spacing.lg,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
   },
   sectionTitle: {
     fontSize: Typography.sizes.h4,

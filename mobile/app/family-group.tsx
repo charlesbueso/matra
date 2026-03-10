@@ -166,10 +166,12 @@ export default function ManageFamilyGroupScreen() {
                   ) : logoUrl ? (
                     <Image source={{ uri: logoUrl }} style={styles.logoImage} contentFit="cover" transition={300} />
                   ) : (
-                    <View style={styles.logoPlaceholder}>
-                      <Ionicons name="image-outline" size={32} color={Colors.text.twilight} />
+                    <>
+                      <View style={styles.logoPlaceholder}>
+                        <Ionicons name="image-outline" size={32} color={Colors.text.twilight} />
+                      </View>
                       <Text style={styles.logoPlaceholderText}>{t('familyGroup.tapToAdd')}</Text>
-                    </View>
+                    </>
                   )}
                 </Pressable>
                 <Text style={styles.hint}>{t('familyGroup.tapToChange')}</Text>
@@ -280,6 +282,23 @@ export default function ManageFamilyGroupScreen() {
           </Card>
         </View>
 
+        {/* Invite Family Members — premium only */}
+        {isPremium && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{t('familyGroup.inviteMembers')}</Text>
+            <Card variant="default" style={{ alignItems: 'center' }}>
+              <Text style={styles.inviteText}>{t('familyGroup.inviteMembersDesc')}</Text>
+              <Button
+                title={t('familyGroup.inviteMembersAction')}
+                onPress={() => router.push('/invite-family')}
+                variant="premium"
+                size="md"
+                style={{ marginTop: Spacing.md, alignSelf: 'stretch' }}
+              />
+            </Card>
+          </View>
+        )}
+
         <View style={{ height: 40 }} />
       </ScrollView>
     </StarField>
@@ -361,10 +380,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.sm,
   },
   logoContainer: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    overflow: 'hidden',
+    alignItems: 'center',
     marginVertical: Spacing.md,
   },
   logoImage: {
@@ -382,13 +398,13 @@ const styles = StyleSheet.create({
     borderStyle: 'dashed',
     alignItems: 'center',
     justifyContent: 'center',
-    marginVertical: Spacing.md,
   },
   logoPlaceholderText: {
     fontSize: Typography.sizes.caption,
     fontFamily: Typography.fonts.body,
     color: Colors.text.twilight,
-    marginTop: 4,
+    marginTop: Spacing.xs,
+    textAlign: 'center',
   },
   lockedContent: {
     alignItems: 'center',
@@ -436,5 +452,12 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.caption,
     fontFamily: Typography.fonts.body,
     color: Colors.accent.cyan,
+  },
+  inviteText: {
+    fontSize: Typography.sizes.body,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.moonlight,
+    textAlign: 'center',
+    lineHeight: Typography.sizes.body * Typography.lineHeights.relaxed,
   },
 });

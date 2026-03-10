@@ -3,7 +3,19 @@
 // ============================================================
 
 export type SubscriptionTier = 'free' | 'premium';
-export type SubscriptionStatus = 'active' | 'past_due' | 'cancelled' | 'expired';
+export type SubscriptionStatus = 'active' | 'past_due' | 'cancelled' | 'expired' | 'grace_period' | 'billing_retry';
+
+/** Describes downgrade/grace-period state for lapsed premium users. */
+export interface DowngradeInfo {
+  /** User was previously premium and is now on free tier. */
+  isLapsed: boolean;
+  /** True while in 7-day grace period — full premium access. */
+  inGracePeriod: boolean;
+  /** When the grace period expires (null if not applicable). */
+  gracePeriodEndsAt: string | null;
+  /** Lapsed users can still export until this date (30 days from expiration). */
+  exportAccessUntil: string | null;
+}
 export type InterviewStatus = 'draft' | 'uploading' | 'transcribing' | 'extracting' | 'summarising' | 'complete' | 'failed';
 export type RelationshipType =
   | 'parent' | 'child' | 'sibling' | 'spouse' | 'ex_spouse'

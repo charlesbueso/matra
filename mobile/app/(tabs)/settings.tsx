@@ -11,8 +11,11 @@ import { File as FSFile, Directory, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import { useTranslation } from 'react-i18next';
 import { StarField, Card, Button, BioAlgae, CornerBush, AvatarViewer } from '../../src/components/ui';
+import { SubscriptionInfoSheet } from '../../src/components/SubscriptionInfoSheet';
+import { SubscriptionStatusBanner } from '../../src/components/SubscriptionStatusBanner';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useFamilyStore, Interview } from '../../src/stores/familyStore';
+import { useSubscriptionStore } from '../../src/stores/subscriptionStore';
 import { invokeFunction } from '../../src/services/supabase';
 import { useSignedUrl } from '../../src/hooks';
 import { Colors, Typography, Spacing, BorderRadius } from '../../src/theme/tokens';
@@ -90,7 +93,7 @@ export default function SettingsScreen() {
   const { profile, signOut, updateProfile, deleteAccount, deactivateAccount, updateEmail } = useAuthStore();
   const setLanguage = useAuthStore((s) => s.setLanguage);
   const { t } = useTranslation();
-  const { uploadPersonAvatar, interviews, stories, people, deleteInterview, deleteAllInterviews } = useFamilyStore();
+  const { uploadPersonAvatar, interviews, stories, people, relationships, familyGroups, deleteInterview, deleteAllInterviews } = useFamilyStore();
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [isViewingAvatar, setIsViewingAvatar] = useState(false);
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
@@ -101,8 +104,10 @@ export default function SettingsScreen() {
   const [isExportingMemoryBook, setIsExportingMemoryBook] = useState(false);
   const [isChangingEmail, setIsChangingEmail] = useState(false);
   const [showEmailInput, setShowEmailInput] = useState(false);
+  const [showSubscriptionInfo, setShowSubscriptionInfo] = useState(false);
   const [newEmail, setNewEmail] = useState('');
   const avatarUrl = useSignedUrl(profile?.avatar_url);
+  const downgrade = useSubscriptionStore((s) => s.downgrade);
 
   const handleDeleteInterview = (interview: Interview) => {
     Alert.alert(
@@ -266,11 +271,50 @@ export default function SettingsScreen() {
   };
 
   const handleExportMemoryBook = async () => {
-    if (profile?.subscription_tier === 'free') {
+    // Allow export for premium users and lapsed users within their export grace window
+    const hasExportAccess = profile?.subscription_tier === 'premium' ||
+      (downgrade.exportAccessUntil && new Date(downgrade.exportAccessUntil) > new Date());
+    if (!hasExportAccess) {
       router.push('/paywall');
       return;
     }
 
+    // First-time readiness check: prompt user to fill in family info
+    const activeGroup = familyGroups[0];
+    const groupNameFilled = activeGroup && activeGroup.name !== 'My Family' && activeGroup.name.trim().length > 0;
+    const biosGenerated = people.filter((p) => p.ai_biography).length;
+    const totalPeople = people.length;
+    const verifiedRelationships = relationships.filter((r) => r.verified).length;
+    const totalRelationships = relationships.length;
+
+    const issues: string[] = [];
+    if (!groupNameFilled) issues.push(t('settings.readinessGroupName'));
+    if (biosGenerated < totalPeople) issues.push(t('settings.readinessBios', { done: biosGenerated, total: totalPeople }));
+    if (totalRelationships > 0 && verifiedRelationships < totalRelationships) {
+      issues.push(t('settings.readinessConnections', { done: verifiedRelationships, total: totalRelationships }));
+    }
+
+    if (issues.length > 0) {
+      const checklist = issues.map((i) => `• ${i}`).join('\n');
+      return new Promise<void>((resolve) => {
+        Alert.alert(
+          t('settings.readinessTitle'),
+          `${t('settings.readinessMessage')}\n\n${checklist}`,
+          [
+            { text: t('settings.readinessGoFix'), style: 'cancel', onPress: () => resolve() },
+            {
+              text: t('settings.readinessContinue'),
+              onPress: () => { resolve(); proceedWithExport(); },
+            },
+          ],
+        );
+      });
+    }
+
+    await proceedWithExport();
+  };
+
+  const proceedWithExport = async () => {
     setIsExportingMemoryBook(true);
     try {
       const result = await invokeFunction<{
@@ -443,15 +487,31 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('settings.subscription')}</Text>
           
+          {/* Grace period / lapsed banner in settings context */}
+          {(downgrade.inGracePeriod || downgrade.isLapsed) && (
+            <SubscriptionStatusBanner />
+          )}
+
           <Card variant="default">
             <View style={styles.settingRow}>
               <Text style={styles.settingLabel}>{t('settings.currentPlan')}</Text>
               <Text style={styles.settingValue}>{tierLabel}</Text>
             </View>
 
-            {profile?.subscription_tier === 'free' && (
+            {profile?.subscription_tier === 'free' && !downgrade.isLapsed && (
               <Button
                 title={t('settings.upgradeToPremium')}
+                onPress={() => router.push('/paywall')}
+                variant="premium"
+                size="sm"
+                style={{ marginTop: Spacing.sm }}
+              />
+            )}
+
+            {/* Re-subscribe for lapsed users */}
+            {downgrade.isLapsed && (
+              <Button
+                title={t('home.resubscribe')}
                 onPress={() => router.push('/paywall')}
                 variant="premium"
                 size="sm"
@@ -501,7 +561,7 @@ export default function SettingsScreen() {
           <Card variant="default">
             <SettingItem label={t('settings.manageFamilyGroups')} onPress={() => router.push('/family-group')} />
             <SettingItem label={t('settings.inviteFamilyMembers')} onPress={() => profile?.subscription_tier === 'free' ? router.push('/paywall') : router.push('/invite-family')} locked={profile?.subscription_tier === 'free'} />
-            <SettingItem label={isExportingMemoryBook ? t('settings.memoryBookGenerating') : t('settings.exportMemoryBook')} onPress={handleExportMemoryBook} locked={profile?.subscription_tier === 'free'} disabled={isExportingMemoryBook} />
+            <SettingItem label={isExportingMemoryBook ? t('settings.memoryBookGenerating') : t('settings.exportMemoryBook')} onPress={handleExportMemoryBook} locked={profile?.subscription_tier === 'free' && !downgrade.exportAccessUntil} disabled={isExportingMemoryBook} />
           </Card>
         </View>
 
@@ -583,6 +643,9 @@ export default function SettingsScreen() {
             <SettingItem label={t('settings.privacyPolicy')} onPress={() => router.push('/privacy-policy')} />
             <SettingItem label={t('settings.termsOfService')} onPress={() => router.push('/terms-of-service')} />
             <SettingItem label={t('settings.aboutMatra')} onPress={() => router.push('/about')} />
+            {(isPremium || downgrade.isLapsed || downgrade.inGracePeriod) && (
+              <SettingItem label={t('settings.whatIfICancel')} onPress={() => setShowSubscriptionInfo(true)} />
+            )}
           </Card>
         </View>
 
@@ -714,6 +777,10 @@ export default function SettingsScreen() {
         uri={avatarUrl}
         onClose={() => setIsViewingAvatar(false)}
         name={profile?.display_name}
+      />
+      <SubscriptionInfoSheet
+        visible={showSubscriptionInfo}
+        onClose={() => setShowSubscriptionInfo(false)}
       />
     </StarField>
   );

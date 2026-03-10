@@ -5,11 +5,14 @@
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { StarField, BioAlgae, Card, Button, TreeTrunk } from '../../src/components/ui';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useFamilyStore } from '../../src/stores/familyStore';
+import { useSubscriptionStore } from '../../src/stores/subscriptionStore';
 import { useTranslation } from 'react-i18next';
-import { Colors, Typography, Spacing } from '../../src/theme/tokens';
+import { Colors, Typography, Spacing, BorderRadius } from '../../src/theme/tokens';
+import { SubscriptionStatusBanner } from '../../src/components/SubscriptionStatusBanner';
 
 export default function HomeScreen() {
   const { t } = useTranslation();
@@ -20,10 +23,18 @@ export default function HomeScreen() {
   const isProcessingInterview = useFamilyStore((s) => s.isProcessingInterview);
   const backgroundJobs = useFamilyStore((s) => s.backgroundJobs);
   const dismissJob = useFamilyStore((s) => s.dismissJob);
+  const fetchEntitlements = useSubscriptionStore((s) => s.fetchEntitlements);
+  const tier = useSubscriptionStore((s) => s.tier);
+  const downgrade = useSubscriptionStore((s) => s.downgrade);
   const [refreshing, setRefreshing] = React.useState(false);
+
+  const isPremium = tier === 'premium';
+  const familyGroups = useFamilyStore((s) => s.familyGroups);
+  const relationships = useFamilyStore((s) => s.relationships);
 
   useEffect(() => {
     fetchFamilyGroups().then(() => fetchAllFamilyData());
+    fetchEntitlements();
   }, []);
 
   const onRefresh = async () => {
@@ -54,19 +65,34 @@ export default function HomeScreen() {
       >
         {/* Greeting */}
         <View style={styles.greeting}>
-          <Text style={styles.greetingText}>
-            {t('home.welcomeBack', { name: profile?.display_name || 'Explorer' })}
-          </Text>
+          <View style={styles.greetingRow}>
+            <Text style={styles.greetingText}>
+              {t('home.welcomeBack', { name: profile?.display_name || 'Explorer' })}
+            </Text>
+            {isPremium && (
+              <LinearGradient
+                colors={Colors.gradients.premium as any}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.premiumBadge}
+              >
+                <Text style={styles.premiumBadgeText}>◈ {t('home.premium')}</Text>
+              </LinearGradient>
+            )}
+          </View>
           <Text style={styles.greetingSubtext}>
             {people.length <= 1 ? t('home.startConversation') : t('home.treeGrowing')}
           </Text>
         </View>
 
+        {/* Subscription Status Banners (grace period / lapsed / billing retry) */}
+        <SubscriptionStatusBanner />
+
         {/* Quick Stats */}
         <View style={styles.statsRow}>
-          <StatCard label={t('home.people', { count: people.length })} value={people.length} icon="🌳" onPress={() => router.push('/(tabs)/tree')} />
-          <StatCard label={t('home.sessions', { count: interviews.length })} value={interviews.length} icon="🎙" onPress={() => router.push({ pathname: '/(tabs)/settings', params: { scrollTo: 'conversations' } })} />
-          <StatCard label={t('home.stories', { count: stories.length })} value={stories.length} icon="📖" onPress={() => router.push('/(tabs)/stories')} />
+          <StatCard label={t('home.people', { count: people.length })} value={people.length} icon="🌳" onPress={() => router.push('/(tabs)/tree')} isPremium={isPremium} />
+          <StatCard label={t('home.sessions', { count: interviews.length })} value={interviews.length} icon="🎙" onPress={() => router.push({ pathname: '/(tabs)/settings', params: { scrollTo: 'conversations' } })} isPremium={isPremium} />
+          <StatCard label={t('home.stories', { count: stories.length })} value={stories.length} icon="📖" onPress={() => router.push('/(tabs)/stories')} isPremium={isPremium} />
         </View>
 
         {/* Processing / Completed Job Banners */}
@@ -115,9 +141,25 @@ export default function HomeScreen() {
           </Pressable>
         ))}
 
+        {/* First-time family setup prompt — shown when user just onboarded */}
+        {people.length <= 1 && interviews.length === 0 && (
+          <Card variant="glow" style={styles.ctaCard}>
+            <Text style={styles.ctaTitle}>{t('home.setupFamilyTitle')}</Text>
+            <Text style={styles.ctaDescription}>{t('home.setupFamilyDesc')}</Text>
+            <View style={{ gap: Spacing.sm, marginTop: Spacing.md }}>
+              <Button
+                title={t('home.setupFamilyAction')}
+                onPress={() => router.push('/family-group')}
+                variant="primary"
+                size="md"
+              />
+            </View>
+          </Card>
+        )}
+
         {/* First Conversation CTA — shown when no conversations exist */}
         {!hasConversations && (
-          <Card variant="glow" style={styles.ctaCard}>
+          <Card variant="glow" style={[styles.ctaCard, isPremium && styles.ctaCardPremium]}>
             <Text style={styles.ctaTitle}>{t('home.shareStoryFirst')}</Text>
             <Text style={styles.ctaDescription}>
               {t('home.shareStoryFirstDesc')}
@@ -136,7 +178,7 @@ export default function HomeScreen() {
                   router.push('/(tabs)/record');
                 }
               }}
-              variant="primary"
+              variant={isPremium ? 'premium' : 'primary'}
               size="md"
               style={{ marginTop: Spacing.md }}
             />
@@ -145,7 +187,7 @@ export default function HomeScreen() {
 
         {/* General Record CTA — shown when conversations exist */}
         {hasConversations && (
-          <Card variant="glow" style={styles.ctaCard}>
+          <Card variant="glow" style={[styles.ctaCard, isPremium && styles.ctaCardPremium]}>
             <Text style={styles.ctaTitle}>{t('home.recordConversation')}</Text>
             <Text style={styles.ctaDescription}>
               {t('home.recordConversationDesc')}
@@ -158,7 +200,7 @@ export default function HomeScreen() {
             <Button
               title={t('home.startRecording')}
               onPress={() => router.push('/(tabs)/record')}
-              variant="primary"
+              variant={isPremium ? 'premium' : 'primary'}
               size="md"
               style={{ marginTop: Spacing.md }}
             />
@@ -230,8 +272,44 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* Upgrade Banner (free tier only) */}
-        {profile?.subscription_tier === 'free' && (
+        {/* Premium Features Section (premium users) */}
+        {isPremium && (
+          <View style={styles.premiumFeaturesCard}>
+            <View style={styles.premiumFeaturesHeader}>
+              <Text style={styles.premiumFeaturesIcon}>◈</Text>
+              <Text style={styles.premiumFeaturesTitle}>{t('home.premiumFeatures')}</Text>
+            </View>
+            <View style={styles.premiumFeaturesGrid}>
+              <View style={styles.premiumFeatureItem}>
+                <Text style={styles.premiumFeatureEmoji}>🎙️</Text>
+                <Text style={styles.premiumFeatureLabel}>{t('home.premium30mo')}</Text>
+              </View>
+              <View style={styles.premiumFeatureItem}>
+                <Text style={styles.premiumFeatureEmoji}>✨</Text>
+                <Text style={styles.premiumFeatureLabel}>{t('home.premiumAI')}</Text>
+              </View>
+              <View style={styles.premiumFeatureItem}>
+                <Text style={styles.premiumFeatureEmoji}>📖</Text>
+                <Text style={styles.premiumFeatureLabel}>{t('home.premiumExport')}</Text>
+              </View>
+              <View style={styles.premiumFeatureItem}>
+                <Text style={styles.premiumFeatureEmoji}>👨‍👩‍👧‍👦</Text>
+                <Text style={styles.premiumFeatureLabel}>{t('home.premiumSharing')}</Text>
+              </View>
+              <View style={styles.premiumFeatureItem}>
+                <Text style={styles.premiumFeatureEmoji}>🔊</Text>
+                <Text style={styles.premiumFeatureLabel}>{t('home.premiumAudioSnippets')}</Text>
+              </View>
+              <View style={styles.premiumFeatureItem}>
+                <Text style={styles.premiumFeatureEmoji}>🌟</Text>
+                <Text style={styles.premiumFeatureLabel}>{t('home.premiumMoreStories')}</Text>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Upgrade Banner (free tier only, not shown for lapsed users who already see their banner) */}
+        {!isPremium && !downgrade.isLapsed && !downgrade.inGracePeriod && (
           <Card
             variant="elevated"
             style={styles.upgradeCard}
@@ -255,12 +333,12 @@ export default function HomeScreen() {
   );
 }
 
-function StatCard({ label, value, icon, onPress }: { label: string; value: number; icon: string; onPress?: () => void }) {
+function StatCard({ label, value, icon, onPress, isPremium }: { label: string; value: number; icon: string; onPress?: () => void; isPremium?: boolean }) {
   return (
-    <Card variant="default" style={styles.statCard} onPress={onPress}>
+    <Card variant="default" style={[styles.statCard, isPremium && styles.statCardPremium]} onPress={onPress}>
       <Text style={styles.statIcon}>{icon}</Text>
       <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+      <Text style={[styles.statLabel, isPremium && styles.statLabelPremium]}>{label}</Text>
     </Card>
   );
 }
@@ -277,10 +355,28 @@ const styles = StyleSheet.create({
   greeting: {
     marginBottom: Spacing.xxl,
   },
+  greetingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
   greetingText: {
     fontSize: Typography.sizes.h2,
     fontFamily: Typography.fonts.heading,
     color: Colors.text.starlight,
+  },
+  premiumBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xxs,
+    borderRadius: BorderRadius.sm,
+    alignSelf: 'center',
+  },
+  premiumBadgeText: {
+    fontSize: Typography.sizes.small,
+    fontFamily: Typography.fonts.bodySemiBold,
+    color: '#FFFFFF',
+    letterSpacing: Typography.letterSpacing.wide,
   },
   greetingSubtext: {
     fontSize: Typography.sizes.body,
@@ -297,6 +393,10 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     padding: Spacing.md,
+  },
+  statCardPremium: {
+    borderColor: Colors.accent.amber + '30',
+    borderWidth: 1,
   },
   statIcon: {
     fontSize: 20,
@@ -315,8 +415,19 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: Typography.letterSpacing.wider,
   },
+  statLabelPremium: {
+    color: Colors.accent.amber,
+  },
   ctaCard: {
     marginBottom: Spacing.xl,
+  },
+  ctaCardPremium: {
+    borderColor: Colors.accent.amber + '25',
+    shadowColor: Colors.accent.amber,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    elevation: 6,
   },
   ctaTitle: {
     fontSize: Typography.sizes.h3,
@@ -381,6 +492,53 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.small,
     fontFamily: Typography.fonts.bodyMedium,
     color: Colors.semantic.success,
+  },
+  premiumFeaturesCard: {
+    backgroundColor: Colors.accent.amber + '08',
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: Colors.accent.amber + '20',
+    padding: Spacing.lg,
+    marginBottom: Spacing.xl,
+  },
+  premiumFeaturesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  premiumFeaturesIcon: {
+    fontSize: 18,
+    color: Colors.accent.amber,
+  },
+  premiumFeaturesTitle: {
+    fontSize: Typography.sizes.caption,
+    fontFamily: Typography.fonts.subheading,
+    color: Colors.accent.amber,
+    letterSpacing: Typography.letterSpacing.wide,
+    textTransform: 'uppercase',
+  },
+  premiumFeaturesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
+  premiumFeatureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    backgroundColor: Colors.accent.amber + '10',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.sm,
+  },
+  premiumFeatureEmoji: {
+    fontSize: 14,
+  },
+  premiumFeatureLabel: {
+    fontSize: Typography.sizes.small,
+    fontFamily: Typography.fonts.bodyMedium,
+    color: Colors.text.moonlight,
   },
   upgradeCard: {
     borderColor: Colors.accent.amber,

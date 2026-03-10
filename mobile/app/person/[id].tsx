@@ -17,6 +17,7 @@ import { useAuthStore } from '../../src/stores/authStore';
 import { useSignedUrl } from '../../src/hooks';
 import { Colors, Typography, Spacing, BorderRadius } from '../../src/theme/tokens';
 import { resizeImageForUpload } from '../../src/utils/image';
+import { shareBiography } from '../../src/utils/share';
 
 const RELATIONSHIP_TYPE_VALUES = [
   'parent', 'child', 'spouse', 'ex_spouse', 'sibling', 'half_sibling',
@@ -427,7 +428,14 @@ export default function PersonDetailScreen() {
         {/* Biography */}
         <Animated.View entering={FadeInDown.delay(200)}>
           <Card variant="glow" style={styles.biographyCard}>
-            <Text style={styles.sectionTitle}>{t('person.biography')}</Text>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>{t('person.biography')}</Text>
+              {person.ai_biography && (
+                <Pressable onPress={() => shareBiography(fullName, person.ai_biography!)} hitSlop={8}>
+                  <Ionicons name="share-outline" size={20} color={Colors.accent.cyan} />
+                </Pressable>
+              )}
+            </View>
             {person.ai_biography ? (
               <View>
                 <Text style={styles.biography}>{person.ai_biography}</Text>

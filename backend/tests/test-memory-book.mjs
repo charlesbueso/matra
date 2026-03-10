@@ -1,312 +1,271 @@
+#!/usr/bin/env node
 // ============================================================
-// MATRA — Export Memory Book Edge Function
+// MATRA — Memory Book PDF Test Harness
 // ============================================================
-// Generates a branded PDF memory book with family data.
-// Premium-only, rate-limited to once per week, requires new data.
-// Returns the PDF as base64 for client-side download.
+// Generates a preview PDF with rich mock data for rapid design
+// iteration — no Supabase, no auth, no rate limits.
+//
+// Usage:
+//   cd backend/tests
+//   npm install pdf-lib    (first time only)
+//   node test-memory-book.mjs
+//
+// Output: memory-book-preview.pdf  (auto-opens on Windows)
 // ============================================================
 
-import { serve } from 'https://deno.land/std@0.208.0/http/server.ts';
-import { encode as base64Encode } from 'https://deno.land/std@0.208.0/encoding/base64.ts';
-import { handleCors, jsonResponse, errorResponse } from '../_shared/cors.ts';
-import { getAuthUserId, getServiceClient } from '../_shared/supabase.ts';
-import { checkFeatureAccess } from '../_shared/feature-gate.ts';
-import { getPresignedUrl } from '../_shared/spaces.ts';
-import { PDFDocument, rgb, StandardFonts, PageSizes } from 'https://esm.sh/pdf-lib@1.17.1';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { PDFDocument, rgb, StandardFonts, PageSizes } from 'pdf-lib';
+import { S3Client, GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import dotenv from 'dotenv';
 
-// ── Brand Constants ──
+// Load env from backend/.env.local
+dotenv.config({ path: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.env.local') });
+
+const DO_SPACES_KEY = process.env.DO_SPACES_KEY;
+const DO_SPACES_SECRET = process.env.DO_SPACES_SECRET;
+const DO_SPACES_ENDPOINT = process.env.DO_SPACES_ENDPOINT || 'https://nyc3.digitaloceanspaces.com';
+const DO_SPACES_BUCKET = process.env.DO_SPACES_BUCKET || 'alquimia-felina-spaces-bucket';
+
+let _s3Client = null;
+function getS3Client() {
+  if (!_s3Client) {
+    _s3Client = new S3Client({
+      region: 'nyc3',
+      endpoint: DO_SPACES_ENDPOINT,
+      credentials: { accessKeyId: DO_SPACES_KEY, secretAccessKey: DO_SPACES_SECRET },
+      forcePathStyle: false,
+    });
+  }
+  return _s3Client;
+}
+
+async function getPresignedUrl(key, expiresIn = 3600) {
+  return getSignedUrl(getS3Client(), new GetObjectCommand({ Bucket: DO_SPACES_BUCKET, Key: key }), { expiresIn });
+}
+
+// Keys for brand assets in DO Spaces
+const BANNER_KEY = 'matra/assets/lake-boat-nobg.png';
+const LOGOTYPE_KEY = 'matra/assets/logotype.png';
+// The ONE avatar that exists — will be reused for all people
+const SHARED_AVATAR_KEY = 'matra/avatars/d3419717-3ca9-4ae5-8e5d-6705c1b43be8_1772782064115.jpg';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const OUTPUT = path.join(__dirname, 'memory-book-preview.pdf');
+
+// ── Brand Constants (mirror edge function) ──
 const BRAND = {
-  green: rgb(22 / 255, 67 / 255, 28 / 255),       // #16431c
-  cream: rgb(247 / 255, 242 / 255, 234 / 255),     // #f7f2ea
-  gold: rgb(196 / 255, 154 / 255, 60 / 255),       // #C49A3C
-  darkText: rgb(59 / 255, 46 / 255, 30 / 255),     // #3B2E1E
-  mutedText: rgb(107 / 255, 93 / 255, 79 / 255),   // #6B5D4F
+  green: rgb(22 / 255, 67 / 255, 28 / 255),
+  cream: rgb(247 / 255, 242 / 255, 234 / 255),
+  gold: rgb(196 / 255, 154 / 255, 60 / 255),
+  darkText: rgb(59 / 255, 46 / 255, 30 / 255),
+  mutedText: rgb(107 / 255, 93 / 255, 79 / 255),
   lightLine: rgb(228 / 255, 221 / 255, 210 / 255),
   white: rgb(1, 1, 1),
-  pageWidth: PageSizes.A4[0],   // 595.28
-  pageHeight: PageSizes.A4[1],  // 841.89
+  pageWidth: PageSizes.A4[0],
+  pageHeight: PageSizes.A4[1],
   margin: 50,
 };
 
-const BANNER_KEY = 'matra/assets/lake-boat-nobg.png';
-const LOGOTYPE_KEY = 'matra/assets/logotype.png';
-
-const COOLDOWN_DAYS = 7;
-
-serve(async (req: Request) => {
-  const corsResponse = handleCors(req);
-  if (corsResponse) return corsResponse;
-
-  try {
-    const userId = await getAuthUserId(req);
-
-    // 1. Check premium access
-    const access = await checkFeatureAccess(userId, 'memoryBookExport');
-    if (!access.allowed) {
-      return errorResponse(access.reason!, 'FEATURE_LOCKED', 403);
-    }
-
-    const supabase = getServiceClient();
-
-    // 2. Get user's family group
-    const { data: memberships } = await supabase
-      .from('family_group_members')
-      .select('family_group_id')
-      .eq('user_id', userId);
-
-    const groupIds = (memberships || []).map((m: any) => m.family_group_id);
-    if (groupIds.length === 0) {
-      return errorResponse('No family group found. Record a conversation first.', 'NO_DATA', 400);
-    }
-
-    const familyGroupId = groupIds[0];
-
-    // 3. Rate limit: check last completed export
-    // Bypass rate limit for dev/test user Carlos
-    const UNLIMITED_USERS = ['17533152-4e38-46a6-b46f-4095629bc683'];
-    const { data: lastExport } = await supabase
-      .from('exports')
-      .select('completed_at')
-      .eq('requested_by', userId)
-      .eq('export_type', 'memory_book')
-      .eq('status', 'completed')
-      .order('completed_at', { ascending: false })
-      .limit(1)
-      .single();
-
-    if (lastExport?.completed_at && !UNLIMITED_USERS.includes(userId)) {
-      const lastDate = new Date(lastExport.completed_at);
-      const daysSince = (Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24);
-      if (daysSince < COOLDOWN_DAYS) {
-        const nextDate = new Date(lastDate.getTime() + COOLDOWN_DAYS * 24 * 60 * 60 * 1000);
-        return errorResponse(
-          `You can generate a new memory book on ${nextDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}. Memory books can be generated once per week.`,
-          'RATE_LIMITED',
-          429
-        );
-      }
-
-      // 4. Check for new data since last export
-      const since = lastExport.completed_at;
-      const [newPeople, newStories, newRelationships, newInterviews] = await Promise.all([
-        supabase.from('people')
-          .select('id', { count: 'exact', head: true })
-          .eq('family_group_id', familyGroupId)
-          .gt('updated_at', since)
-          .is('deleted_at', null),
-        supabase.from('stories')
-          .select('id', { count: 'exact', head: true })
-          .eq('family_group_id', familyGroupId)
-          .gt('created_at', since)
-          .is('deleted_at', null),
-        supabase.from('relationships')
-          .select('id', { count: 'exact', head: true })
-          .eq('family_group_id', familyGroupId)
-          .gt('created_at', since),
-        supabase.from('interviews')
-          .select('id', { count: 'exact', head: true })
-          .eq('family_group_id', familyGroupId)
-          .gt('created_at', since)
-          .is('deleted_at', null),
-      ]);
-
-      const totalNew = (newPeople.count || 0) + (newStories.count || 0) +
-        (newRelationships.count || 0) + (newInterviews.count || 0);
-
-      if (totalNew === 0) {
-        return errorResponse(
-          'No new data since your last memory book. Record a conversation, add a relationship, or generate a biography to create a new edition.',
-          'NO_NEW_DATA',
-          400
-        );
-      }
-    }
-
-    // 5. Fetch all family data
-    const [familyGroupRes, peopleRes, relationshipsRes, storiesRes, interviewsRes, profileRes] = await Promise.all([
-      supabase.from('family_groups').select('*').eq('id', familyGroupId).single(),
-      supabase.from('people').select('*').eq('family_group_id', familyGroupId).is('deleted_at', null).order('created_at', { ascending: true }),
-      supabase.from('relationships').select('*').eq('family_group_id', familyGroupId),
-      supabase.from('stories').select('*').eq('family_group_id', familyGroupId).is('deleted_at', null).order('created_at', { ascending: true }),
-      supabase.from('interviews').select('id, title, ai_summary, ai_key_topics, subject_person_id, created_at').eq('family_group_id', familyGroupId).is('deleted_at', null).eq('status', 'completed').order('created_at', { ascending: true }),
-      supabase.from('profiles').select('display_name, preferences, self_person_id').eq('id', userId).single(),
-    ]);
-
-    const familyGroup = familyGroupRes.data;
-    const people = peopleRes.data || [];
-    const relationships = relationshipsRes.data || [];
-    const stories = storiesRes.data || [];
-    const interviews = interviewsRes.data || [];
-    const profile = profileRes.data;
-
-    if (people.length === 0 && stories.length === 0) {
-      return errorResponse('Not enough data for a memory book. Record some conversations first.', 'NO_DATA', 400);
-    }
-
-    // 6. Fetch story-people associations
-    const storyIds = stories.map((s: any) => s.id);
-    let storyPeople: any[] = [];
-    if (storyIds.length > 0) {
-      const { data } = await supabase
-        .from('story_people')
-        .select('story_id, person_id, role')
-        .in('story_id', storyIds);
-      storyPeople = data || [];
-    }
-
-    // 7. Generate the PDF
-    const userLang = profile?.preferences?.language || 'en';
-    const pdfBytes = await generateMemoryBookPDF({
-      familyGroup,
-      people,
-      relationships,
-      stories,
-      interviews,
-      storyPeople,
-      profileName: profile?.display_name || t('yourFamily', userLang),
-      selfPersonId: profile?.self_person_id || undefined,
-      language: userLang,
-    });
-
-    // 8. Record the export
-    await supabase.from('exports').insert({
-      family_group_id: familyGroupId,
-      requested_by: userId,
-      export_type: 'memory_book',
-      status: 'completed',
-      output_size_bytes: pdfBytes.length,
-      started_at: new Date().toISOString(),
-      completed_at: new Date().toISOString(),
-      config: { version: 1, peopleCount: people.length, storiesCount: stories.length },
-    });
-
-    // 9. Return as base64
-    const base64 = base64Encode(pdfBytes);
-    const familySlug = (familyGroup?.name || 'Family')
-      .replace(/[^a-zA-Z0-9\s]/g, '').trim().replace(/\s+/g, '-');
-
-    return jsonResponse({
-      pdf: base64,
-      filename: `${familySlug}-Memory-Book.pdf`,
-      size: pdfBytes.length,
-    });
-  } catch (err: any) {
-    console.error('Export error:', err);
-    return errorResponse(
-      err.message || 'Internal server error',
-      'INTERNAL_ERROR',
-      err.message === 'Unauthorized' ? 401 : 500
-    );
-  }
-});
-
-// ── PDF i18n ──
-const PDF_STRINGS: Record<string, Record<string, string>> = {
-  en: {
-    memoryBook: 'Memory Book',
-    tableOfContents: 'Table of Contents',
-    ourFamily: 'Our Family',
-    familyMembers: 'Family Members',
-    storiesAndMemories: 'Stories & Memories',
-    conversations: 'Conversations',
-    familyConnections: 'Family Connections',
-    people: 'People',
-    stories: 'Stories',
-    connections: 'Connections',
-    born: 'Born',
-    livesIn: 'Lives in',
-    unknown: 'Unknown',
-    untitledStory: 'Untitled Story',
-    untitledConversation: 'Untitled Conversation',
-    featuring: 'Featuring:',
-    aiCrafted: '* AI-crafted narrative',
-    tagline: 'Every family has a story worth preserving.',
-    generatedOn: 'Generated on',
-    familySuffix: "'s Family",
-    yourFamily: 'Your Family',
-  },
-  es: {
-    memoryBook: 'Libro de Recuerdos',
-    tableOfContents: 'Tabla de Contenidos',
-    ourFamily: 'Nuestra Familia',
-    familyMembers: 'Miembros de la Familia',
-    storiesAndMemories: 'Historias y Recuerdos',
-    conversations: 'Conversaciones',
-    familyConnections: 'Conexiones Familiares',
-    people: 'Personas',
-    stories: 'Historias',
-    connections: 'Conexiones',
-    born: 'Nacido/a',
-    livesIn: 'Vive en',
-    unknown: 'Desconocido',
-    untitledStory: 'Historia sin titulo',
-    untitledConversation: 'Conversacion sin titulo',
-    featuring: 'Participantes:',
-    aiCrafted: '* Narrativa generada por IA',
-    tagline: 'Cada familia tiene una historia que vale la pena preservar.',
-    generatedOn: 'Generado el',
-    familySuffix: '',
-    yourFamily: 'Tu Familia',
-  },
+// ── i18n (English only for testing) ──
+const PDF_STRINGS = {
+  memoryBook: 'Memory Book',
+  tableOfContents: 'Table of Contents',
+  ourFamily: 'Our Family',
+  familyMembers: 'Family Members',
+  storiesAndMemories: 'Stories & Memories',
+  conversations: 'Conversations',
+  familyConnections: 'Family Connections',
+  people: 'People',
+  stories: 'Stories',
+  connections: 'Connections',
+  born: 'Born',
+  livesIn: 'Lives in',
+  unknown: 'Unknown',
+  untitledStory: 'Untitled Story',
+  untitledConversation: 'Untitled Conversation',
+  featuring: 'Featuring:',
+  aiCrafted: '* AI-crafted narrative',
+  tagline: 'Every family has a story worth preserving.',
+  generatedOn: 'Generated on',
 };
 
-function t(key: string, lang: string): string {
-  return PDF_STRINGS[lang]?.[key] || PDF_STRINGS.en[key] || key;
-}
+function t(key) { return PDF_STRINGS[key] || key; }
 
-const REL_LABELS_I18N: Record<string, Record<string, string>> = {
-  en: {
-    parent: 'Parent', child: 'Child', spouse: 'Spouse', ex_spouse: 'Ex-Spouse',
-    sibling: 'Sibling', grandparent: 'Grandparent', grandchild: 'Grandchild',
-    great_grandparent: 'Great Grandparent', great_grandchild: 'Great Grandchild',
-    uncle_aunt: 'Uncle/Aunt', nephew_niece: 'Nephew/Niece', cousin: 'Cousin',
-    in_law: 'In-law', step_parent: 'Step Parent', step_child: 'Step Child',
-    step_sibling: 'Step Sibling', godparent: 'Godparent', godchild: 'Godchild',
-    adopted_parent: 'Adopted Parent', adopted_child: 'Adopted Child', other: 'Other',
+const REL_LABELS = {
+  parent: 'Parent', child: 'Child', spouse: 'Spouse', ex_spouse: 'Ex-Spouse',
+  sibling: 'Sibling', grandparent: 'Grandparent', grandchild: 'Grandchild',
+  uncle_aunt: 'Uncle/Aunt', nephew_niece: 'Nephew/Niece', cousin: 'Cousin',
+  in_law: 'In-law', step_parent: 'Step Parent', step_child: 'Step Child',
+  godparent: 'Godparent', godchild: 'Godchild',
+  adopted_parent: 'Adopted Parent', adopted_child: 'Adopted Child', other: 'Other',
+};
+function getRelLabel(type) { return REL_LABELS[type] || type; }
+
+// ══════════════════════════════════════════════════════
+// RICH MOCK DATA — edit this to test different scenarios
+// ══════════════════════════════════════════════════════
+const MOCK = {
+  familyGroup: {
+    name: "The Martinez Family",
+    description: "A warm and vibrant family rooted in the traditions of northern Mexico, spanning four generations across two countries. From the ranch lands of Chihuahua to the bustling streets of San Antonio, the Martinez family story is one of resilience, love, and deep connection to heritage.",
   },
-  es: {
-    parent: 'Padre/Madre', child: 'Hijo/a', spouse: 'Conyuge', ex_spouse: 'Ex-Conyuge',
-    sibling: 'Hermano/a', grandparent: 'Abuelo/a', grandchild: 'Nieto/a',
-    great_grandparent: 'Bisabuelo/a', great_grandchild: 'Bisnieto/a',
-    uncle_aunt: 'Tio/a', nephew_niece: 'Sobrino/a', cousin: 'Primo/a',
-    in_law: 'Politico/a', step_parent: 'Padrastro/Madrastra', step_child: 'Hijastro/a',
-    step_sibling: 'Hermanastro/a', godparent: 'Padrino/Madrina', godchild: 'Ahijado/a',
-    adopted_parent: 'Padre/Madre Adoptivo/a', adopted_child: 'Hijo/a Adoptivo/a', other: 'Otro',
-  },
+  people: [
+    {
+      id: 'p1', first_name: 'Carlos', last_name: 'Martinez',
+      birth_date: '1958-03-15', birth_place: 'Chihuahua, Mexico',
+      current_location: 'San Antonio, TX', death_date: null,
+      avatar_url: SHARED_AVATAR_KEY,
+      ai_biography: 'Carlos Martinez was born on a small ranch outside Chihuahua, Mexico in the spring of 1958. The eldest of five children, Carlos learned early the values of hard work and family loyalty from his father, a cattle rancher, and his mother, a schoolteacher who insisted every child in the region deserved an education. By the age of twelve, Carlos could manage the ranch operations alongside his father, but his mother\'s influence sparked a different dream — he wanted to become an engineer.\n\nAt eighteen, Carlos crossed the border to attend the University of Texas at El Paso on a partial scholarship, working nights at a local restaurant to make ends meet. It was there, during a late shift, that he met Elena Gutierrez, a nursing student with a laugh that could fill any room. They married in 1982 in a small ceremony at San Fernando Cathedral in San Antonio, beginning a partnership that would last over four decades.\n\nCarlos built a successful career in civil engineering, contributing to the design of several bridges and highways across Texas. But those who know him best say his greatest engineering feat was building a family that stayed connected across borders and generations. Every Sunday, without exception, the Martinez home fills with the aroma of Elena\'s tamales and the sound of grandchildren playing in the yard.\n\nNow semi-retired, Carlos spends his mornings tending to a garden that mirrors the one his mother kept in Chihuahua. He volunteers with local organizations that help immigrant families navigate their first years in the United States, driven by the same belief his mother held — that every person deserves a chance to build something meaningful.',
+      ai_summary: null,
+    },
+    {
+      id: 'p2', first_name: 'Elena', last_name: 'Martinez',
+      birth_date: '1960-07-22', birth_place: 'San Antonio, TX',
+      current_location: 'San Antonio, TX', death_date: null,
+      avatar_url: SHARED_AVATAR_KEY,
+      ai_biography: 'Elena Gutierrez Martinez has been the heart of the Martinez family since the day she married Carlos in 1982. Born and raised in San Antonio\'s West Side, Elena grew up in a household where her grandmother\'s remedies and her mother\'s cooking were considered the best medicine for any ailment. She carried this nurturing spirit into her career as a registered nurse at Methodist Hospital, where she worked for over thirty years.\n\nElena is known for her ability to remember every birthday, every anniversary, and every preference of every family member. She keeps a handwritten notebook — now spanning three volumes — of family recipes, medical histories, and the little details that make each person feel seen. When her children were young, she organized weekly "story nights" where the family would share memories, a tradition that planted the seeds for the family\'s deep appreciation of their shared history.\n\nAfter retiring from nursing in 2020, Elena turned her attention to preserving the family\'s cultural heritage, learning traditional embroidery techniques from her mother and teaching them to her granddaughters.',
+      ai_summary: null,
+    },
+    {
+      id: 'p3', first_name: 'Miguel', last_name: 'Martinez',
+      birth_date: '1985-11-03', birth_place: 'San Antonio, TX',
+      current_location: 'Austin, TX', death_date: null,
+      avatar_url: SHARED_AVATAR_KEY,
+      ai_biography: null,
+      ai_summary: 'Miguel is the eldest son of Carlos and Elena. He works as a software developer in Austin and visits his parents every other weekend. Miguel is passionate about music and plays guitar in a local band that performs at community events. He is married to Sarah and they have two children, Lily and Diego.',
+    },
+    {
+      id: 'p4', first_name: 'Sofia', last_name: 'Martinez-Ruiz',
+      birth_date: '1988-04-17', birth_place: 'San Antonio, TX',
+      current_location: 'San Antonio, TX', death_date: null,
+      avatar_url: SHARED_AVATAR_KEY,
+      ai_biography: null,
+      ai_summary: 'Sofia is the youngest child of Carlos and Elena. She followed her mother\'s footsteps into healthcare and works as a pediatrician. Sofia married David Ruiz in 2015 and they have a daughter named Isabella.',
+    },
+    {
+      id: 'p5', first_name: 'Roberto', last_name: 'Martinez',
+      birth_date: '1930-01-08', birth_place: 'Chihuahua, Mexico',
+      current_location: null, death_date: '2005-09-12',
+      avatar_url: SHARED_AVATAR_KEY,
+      ai_biography: 'Roberto Martinez was a cattle rancher in the rugged terrain outside Chihuahua, Mexico. Known throughout the region as a man of few words but great generosity, Roberto built the family ranch from a modest plot of land into a thriving operation that supported not only his family but several neighboring families who worked alongside him. He married Maria Luisa, a schoolteacher from the nearby town, and together they raised five children with a blend of discipline and warmth that became the foundation of the Martinez family values.',
+      ai_summary: null,
+    },
+    {
+      id: 'p6', first_name: 'Maria Luisa', last_name: 'Martinez',
+      birth_date: '1933-06-20', birth_place: 'Delicias, Chihuahua',
+      current_location: 'Chihuahua, Mexico', death_date: null,
+      avatar_url: SHARED_AVATAR_KEY,
+      ai_biography: null,
+      ai_summary: 'Maria Luisa was a beloved schoolteacher who taught for over 40 years in rural Chihuahua. She is known for her incredible memory and can still recite poetry she learned as a young girl. At 92, she continues to live independently and tends to a small garden.',
+    },
+    {
+      id: 'p7', first_name: 'Sarah', last_name: 'Martinez',
+      birth_date: '1987-02-14', birth_place: 'Dallas, TX',
+      current_location: 'Austin, TX', death_date: null,
+      avatar_url: SHARED_AVATAR_KEY, ai_biography: null, ai_summary: null,
+    },
+    {
+      id: 'p8', first_name: 'David', last_name: 'Ruiz',
+      birth_date: '1986-08-30', birth_place: 'Houston, TX',
+      current_location: 'San Antonio, TX', death_date: null,
+      avatar_url: SHARED_AVATAR_KEY, ai_biography: null, ai_summary: null,
+    },
+  ],
+  relationships: [
+    { person_a_id: 'p1', person_b_id: 'p2', relationship_type: 'spouse', family_group_id: 'fg1', verified: true },
+    { person_a_id: 'p1', person_b_id: 'p3', relationship_type: 'parent', family_group_id: 'fg1', verified: true },
+    { person_a_id: 'p1', person_b_id: 'p4', relationship_type: 'parent', family_group_id: 'fg1', verified: true },
+    { person_a_id: 'p2', person_b_id: 'p3', relationship_type: 'parent', family_group_id: 'fg1', verified: true },
+    { person_a_id: 'p2', person_b_id: 'p4', relationship_type: 'parent', family_group_id: 'fg1', verified: true },
+    { person_a_id: 'p3', person_b_id: 'p4', relationship_type: 'sibling', family_group_id: 'fg1', verified: true },
+    { person_a_id: 'p5', person_b_id: 'p6', relationship_type: 'spouse', family_group_id: 'fg1', verified: true },
+    { person_a_id: 'p5', person_b_id: 'p1', relationship_type: 'parent', family_group_id: 'fg1', verified: true },
+    { person_a_id: 'p6', person_b_id: 'p1', relationship_type: 'parent', family_group_id: 'fg1', verified: true },
+    { person_a_id: 'p3', person_b_id: 'p7', relationship_type: 'spouse', family_group_id: 'fg1', verified: true },
+    { person_a_id: 'p4', person_b_id: 'p8', relationship_type: 'spouse', family_group_id: 'fg1', verified: true },
+    { person_a_id: 'p5', person_b_id: 'p3', relationship_type: 'grandparent', family_group_id: 'fg1', verified: false },
+    { person_a_id: 'p5', person_b_id: 'p4', relationship_type: 'grandparent', family_group_id: 'fg1', verified: false },
+    { person_a_id: 'p7', person_b_id: 'p1', relationship_type: 'in_law', family_group_id: 'fg1', verified: false },
+    { person_a_id: 'p8', person_b_id: 'p1', relationship_type: 'in_law', family_group_id: 'fg1', verified: false },
+  ],
+  stories: [
+    {
+      id: 's1',
+      title: 'The Night We Crossed the River',
+      content: 'It was the summer of 1976 when Carlos, barely eighteen, made the journey north that would change the trajectory of the Martinez family forever. His father Roberto drove him to the bus station in Chihuahua City before dawn, pressing a small leather pouch into his hands. Inside were two hundred dollars — nearly three months of ranch earnings — and a handwritten note from his mother: "Study hard. Make us proud. Come home when you can."\n\nThe bus ride to Juarez took eight hours through the desert. Carlos remembered watching the landscape shift from green ranch land to barren brown earth, the temperature rising with each mile. At the border, he clutched his student visa and the acceptance letter from UTEP, his palms sweating not from the heat but from the weight of leaving everything he knew.\n\nThat first night in El Paso, sleeping on a borrowed mattress in a shared apartment with three other students, Carlos could hear the sounds of two countries mixing — radio stations in Spanish drifting through the window alongside English conversations from the hallway. He wrote in his journal: "I am standing between two worlds. I will build a bridge."\n\nDecades later, that metaphor would prove prophetic — Carlos literally became an engineer who designed bridges, connecting communities across Texas just as he had connected his own family across the border.',
+      event_date: 'Summer 1976',
+      event_location: 'Chihuahua to El Paso',
+      ai_generated: false,
+    },
+    {
+      id: 's2',
+      title: 'Grandma\'s Tamale Recipe',
+      content: 'Every December, the Martinez kitchen transforms into a tamale factory. Elena learned the recipe from her grandmother, Abuela Rosa, who claimed the secret was in the masa — it had to be mixed by hand, never with a machine, and you had to sing while you worked.\n\nThe tradition starts the first Saturday of December. Elena rises before dawn to prepare the masa, soaking dried corn husks the night before. By mid-morning, the entire family arrives: Sofia brings the chiles, Miguel handles the meat preparation, and even the grandchildren have assigned roles — usually spreading masa on husks under Elena\'s watchful eye.\n\nThe recipe has never been written down completely. Elena keeps it partially documented in her family notebook, but she insists that certain steps can only be taught in person, hand over hand. "The recipe lives in the doing," she says. "You can\'t learn to make tamales from a book any more than you can learn to love from one."\n\nLast year, the family made over 300 tamales in a single day — enough to distribute to neighbors, Elena\'s former colleagues at the hospital, and the local church. It\'s become as much a community event as a family tradition.',
+      event_date: 'December (Annual)',
+      event_location: 'Martinez Family Home, San Antonio',
+      ai_generated: true,
+    },
+    {
+      id: 's3',
+      title: 'The Wedding at San Fernando Cathedral',
+      content: 'Carlos and Elena\'s wedding on June 12, 1982, was a modest affair by any standard, but those who attended still speak of it as one of the most beautiful ceremonies they\'ve ever witnessed. San Fernando Cathedral, the oldest cathedral in Texas, provided a backdrop that made the small gathering feel grand.\n\nElena wore her mother\'s wedding dress, altered by a seamstress in the neighborhood who refused payment, saying it was her gift to the couple. Carlos wore a suit borrowed from his cousin, slightly too large in the shoulders but impeccable in its pressed creases. Roberto and Maria Luisa made the long journey from Chihuahua, Roberto wearing his best boots and Maria Luisa carrying a rosary that had been in their family for three generations.\n\nThe reception was held in the backyard of Elena\'s parents\' home on the West Side. A local conjunto band played until midnight, and Elena\'s mother prepared enough food to feed twice the number of guests who attended. The highlight of the evening was when Roberto, a man not known for public displays of emotion, stood up and gave a toast in Spanish that brought the entire gathering to tears.',
+      event_date: 'June 12, 1982',
+      event_location: 'San Fernando Cathedral, San Antonio',
+      ai_generated: false,
+    },
+  ],
+  interviews: [
+    {
+      id: 'i1',
+      title: 'Memories of the Ranch',
+      ai_summary: 'Carlos shared vivid memories of growing up on his father\'s cattle ranch outside Chihuahua. He described the daily routines of ranch life — waking before dawn to feed the animals, riding horses through the foothills, and the community gatherings that brought neighboring families together. He spoke with particular warmth about his mother\'s insistence on education, describing how she would tutor him and his siblings by lamplight after the day\'s work was done. Carlos also recounted the bittersweet moment of leaving the ranch at eighteen, knowing that his departure was both his parents\' greatest hope and their deepest sorrow. The conversation revealed how profoundly those early years shaped his values of hard work, family loyalty, and giving back to the community.',
+      ai_key_topics: ['Ranch Life', 'Childhood Memories', 'Education', 'Family Values', 'Immigration', 'Rural Mexico', 'Mother\'s Influence'],
+      subject_person_id: 'p1',
+      created_at: '2025-11-15T14:30:00Z',
+    },
+    {
+      id: 'i2',
+      title: 'Elena\'s Nursing Years',
+      ai_summary: 'Elena reflected on her three decades as a registered nurse at Methodist Hospital in San Antonio. She described the challenges of balancing a demanding career with raising two children, crediting Carlos\'s unwavering support and her own mother\'s willingness to help with childcare. Elena shared stories of patients who left lasting impressions — a young mother she helped through a difficult delivery who later became a lifelong friend, and an elderly veteran whose stories of resilience inspired her own approach to caregiving. She also spoke about the evolution of nursing during her career, from paper charts to digital records, and how she adapted to each change while maintaining the human connection she believes is the essence of healthcare. Elena expressed no regrets about her career choice, saying that nursing taught her to see the extraordinary in ordinary moments.',
+      ai_key_topics: ['Nursing Career', 'Work-Life Balance', 'Patient Stories', 'Healthcare Evolution', 'Caregiving', 'Family Support'],
+      subject_person_id: 'p2',
+      created_at: '2025-12-01T10:00:00Z',
+    },
+    {
+      id: 'i3',
+      title: 'Growing Up Martinez',
+      ai_summary: 'Miguel and Sofia joined together for a conversation about their childhood in the Martinez household. They recalled the Sunday dinners that were non-negotiable family events, the summer trips to visit grandparents in Chihuahua, and the gentle rivalries that defined their sibling relationship. Miguel described learning guitar from a neighbor while Sofia practiced medicine on her stuffed animals. Both siblings emphasized how their parents created a home that celebrated both their Mexican heritage and their American identity, never treating the two as contradictory. Sofia shared a moving story about the moment she decided to become a doctor — watching her mother care for their ailing grandfather with both professional skill and boundless love.',
+      ai_key_topics: ['Sibling Bond', 'Cultural Identity', 'Sunday Dinners', 'Childhood', 'Heritage', 'Career Inspiration', 'Bicultural Life', 'Summer Trips'],
+      subject_person_id: 'p3',
+      created_at: '2026-01-20T16:45:00Z',
+    },
+  ],
+  storyPeople: [
+    { story_id: 's1', person_id: 'p1', role: 'subject' },
+    { story_id: 's1', person_id: 'p5', role: 'mentioned' },
+    { story_id: 's1', person_id: 'p6', role: 'mentioned' },
+    { story_id: 's2', person_id: 'p2', role: 'subject' },
+    { story_id: 's2', person_id: 'p3', role: 'mentioned' },
+    { story_id: 's2', person_id: 'p4', role: 'mentioned' },
+    { story_id: 's3', person_id: 'p1', role: 'subject' },
+    { story_id: 's3', person_id: 'p2', role: 'subject' },
+    { story_id: 's3', person_id: 'p5', role: 'mentioned' },
+    { story_id: 's3', person_id: 'p6', role: 'mentioned' },
+  ],
+  profileName: 'Carlos',
+  selfPersonId: 'p1',
+  language: 'en',
 };
 
-function getRelLabel(type: string, lang: string): string {
-  return REL_LABELS_I18N[lang]?.[type] || REL_LABELS_I18N.en[type] || type;
-}
-
-// ── PDF Generation Types ──
-interface MemoryBookData {
-  familyGroup: any;
-  people: any[];
-  relationships: any[];
-  stories: any[];
-  interviews: any[];
-  storyPeople: any[];
-  profileName: string;
-  selfPersonId?: string;
-  language: string;
-}
-
-interface PageContext {
-  pdf: any;
-  page: any;
-  y: number;
-  pageNum: number;
-  fonts: { regular: any; bold: any; italic: any; boldItalic: any; sans: any; sansBold: any };
-  bannerImage: any;
-  logotypeImage: any;
-}
-
-// ── PDF Generation ──
-async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> {
+// ══════════════════════════════════════════════════════
+// PDF GENERATION (mirrors edge function exactly)
+// ══════════════════════════════════════════════════════
+async function generateMemoryBookPDF(data) {
   const pdf = await PDFDocument.create();
 
-  // Embed fonts (parallel)
   const [regular, bold, italic, boldItalic, sans, sansBold] = await Promise.all([
     pdf.embedFont(StandardFonts.TimesRoman),
     pdf.embedFont(StandardFonts.TimesRomanBold),
@@ -317,13 +276,14 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
   ]);
   const fonts = { regular, bold, italic, boldItalic, sans, sansBold };
 
-  // Fetch and embed logo images (signed URLs for private bucket)
-  // PNG embedding is CPU-intensive; skip images larger than 500KB to avoid edge runtime CPU limits
-  // For best results, keep logo PNGs under ~600px wide
+  // ── Fetch images from DigitalOcean Spaces ──
   const MAX_IMAGE_BYTES = 500_000;
-  let bannerImage: any = null;
-  let logotypeImage: any = null;
+  let bannerImage = null;
+  let logotypeImage = null;
+  const avatarImages = {};
+
   try {
+    console.log('Fetching images from DigitalOcean Spaces...');
     const [bannerUrl, logotypeUrl] = await Promise.all([
       getPresignedUrl(BANNER_KEY),
       getPresignedUrl(LOGOTYPE_KEY),
@@ -342,85 +302,72 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
     if (logotypeBytes && logotypeBytes.byteLength <= MAX_IMAGE_BYTES) {
       logotypeImage = await pdf.embedPng(new Uint8Array(logotypeBytes));
     }
-  } catch (e) { console.warn('Image embed skipped:', e); }
+  } catch (e) { console.warn('Brand image fetch skipped:', e.message); }
+
+  // Fetch the shared avatar once, reuse for all people
+  const avatarPeople = data.people.filter(p => p.avatar_url);
+  if (avatarPeople.length > 0) {
+    try {
+      const avatarUrl = await getPresignedUrl(SHARED_AVATAR_KEY);
+      const resp = await fetch(avatarUrl);
+      if (resp.ok) {
+        const buf = await resp.arrayBuffer();
+        if (buf.byteLength <= MAX_IMAGE_BYTES) {
+          const sharedAvatar = SHARED_AVATAR_KEY.endsWith('.png')
+            ? await pdf.embedPng(new Uint8Array(buf))
+            : await pdf.embedJpg(new Uint8Array(buf));
+          for (const p of avatarPeople) {
+            avatarImages[p.id] = sharedAvatar;
+          }
+          console.log(`Avatar loaded (${(buf.byteLength / 1024).toFixed(0)}KB), mapped to ${avatarPeople.length} people`);
+        }
+      }
+    } catch (e) { console.warn('Avatar fetch skipped:', e.message); }
+  }
 
   const { pageWidth, pageHeight, margin } = BRAND;
   const contentWidth = pageWidth - margin * 2;
   const borderInset = 30;
 
-  // ── Pre-fetch person avatars ──
-  const AVATAR_MAX_BYTES = 500_000;
-  const avatarImages: Record<string, any> = {};
-  const avatarPeople = data.people.filter((p: any) => p.avatar_url);
-  if (avatarPeople.length > 0) {
-    const avatarEntries = await Promise.all(
-      avatarPeople.map(async (p: any) => {
-        try {
-          const url = await getPresignedUrl(p.avatar_url);
-          const resp = await fetch(url);
-          if (!resp.ok) return null;
-          const buf = await resp.arrayBuffer();
-          if (buf.byteLength > AVATAR_MAX_BYTES) return null;
-          const bytes = new Uint8Array(buf);
-          const img = p.avatar_url.endsWith('.png')
-            ? await pdf.embedPng(bytes)
-            : await pdf.embedJpg(bytes);
-          return [p.id, img] as const;
-        } catch { return null; }
-      })
-    );
-    for (const entry of avatarEntries) {
-      if (entry) avatarImages[entry[0]] = entry[1];
-    }
-  }
-
-  // Strip characters that WinAnsi (standard PDF fonts) cannot encode
-  function sanitize(text: string): string {
+  function sanitize(text) {
     return text
-      .replace(/[\u2018\u2019]/g, "'")   // smart single quotes
-      .replace(/[\u201C\u201D]/g, '"')   // smart double quotes
-      .replace(/\u2026/g, '...')          // ellipsis
-      .replace(/[\u2013\u2014]/g, '-')   // en/em dash
+      .replace(/[\u2018\u2019]/g, "'")
+      .replace(/[\u201C\u201D]/g, '"')
+      .replace(/\u2026/g, '...')
+      .replace(/[\u2013\u2014]/g, '-')
       .replace(/[^\x20-\x7E\xA0-\xFF]/g, '');
   }
 
-  // ── Helpers ──
-  function newPage(): any {
+  function newPage() {
     const p = pdf.addPage([pageWidth, pageHeight]);
     p.drawRectangle({ x: 0, y: 0, width: pageWidth, height: pageHeight, color: BRAND.cream });
     return p;
   }
 
-  function drawFooter(p: any, num: number) {
+  function drawFooter(p, num) {
     p.drawLine({
       start: { x: margin, y: margin - 15 }, end: { x: pageWidth - margin, y: margin - 15 },
       thickness: 0.5, color: BRAND.gold,
     });
-    const t = `${num}`;
-    p.drawText(t, {
-      x: (pageWidth - fonts.sans.widthOfTextAtSize(t, 8)) / 2,
+    const txt = `${num}`;
+    p.drawText(txt, {
+      x: (pageWidth - fonts.sans.widthOfTextAtSize(txt, 8)) / 2,
       y: margin - 28, size: 8, font: fonts.sans, color: BRAND.mutedText,
     });
   }
 
-  function drawDivider(p: any, atY: number): number {
+  function drawDivider(p, atY) {
     const centerX = pageWidth / 2;
     const armLen = 70;
     const dotGap = 6;
-    // Left arm
     p.drawLine({
       start: { x: centerX - armLen - dotGap, y: atY },
       end: { x: centerX - dotGap, y: atY },
       thickness: 0.5, color: BRAND.gold,
     });
-    // Center ornament (three small dots)
     for (const dx of [-3, 0, 3]) {
-      p.drawCircle({
-        x: centerX + dx * 2, y: atY,
-        size: 1.2, color: BRAND.gold,
-      });
+      p.drawCircle({ x: centerX + dx * 2, y: atY, size: 1.2, color: BRAND.gold });
     }
-    // Right arm
     p.drawLine({
       start: { x: centerX + dotGap, y: atY },
       end: { x: centerX + armLen + dotGap, y: atY },
@@ -429,7 +376,7 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
     return atY - 28;
   }
 
-  function drawSectionHeader(p: any, title: string, atY: number): number {
+  function drawSectionHeader(p, title, atY) {
     p.drawText(title, { x: margin, y: atY - 6, size: 26, font: fonts.bold, color: BRAND.green });
     p.drawLine({
       start: { x: margin, y: atY - 14 }, end: { x: pageWidth - margin, y: atY - 14 },
@@ -438,11 +385,11 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
     return atY - 40;
   }
 
-  function formatDate(dateStr: string): string {
+  function formatDate(dateStr) {
     if (!dateStr) return '';
     const d = new Date(dateStr + 'T00:00:00');
     if (isNaN(d.getTime())) return sanitize(dateStr);
-    if (lang === 'es') {
+    if (data.language === 'es') {
       const months = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
       return `${d.getDate()} de ${months[d.getMonth()]} ${d.getFullYear()}`;
     }
@@ -452,19 +399,12 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
     return `${months[d.getMonth()]} ${day}${suffix}, ${d.getFullYear()}`;
   }
 
-  // Wraps text across lines, adding new pages when needed. Returns { page, y }.
-  // onPageBreak is called before creating each new overflow page, with the old page
-  // so callers can add footers/page numbers before the page break.
-  function drawWrappedText(
-    ctx: { page: any; y: number },
-    text: string, x: number, font: any, size: number, color: any,
-    maxWidth: number, lineHeight?: number,
-    onPageBreak?: (oldPage: any) => void
-  ): { page: any; y: number } {
+  function drawWrappedText(ctx, text, x, font, size, color, maxWidth, lineHeight, onPageBreak) {
     const lh = lineHeight || size * 1.5;
     const words = sanitize(text).split(' ');
     let line = '';
-    let { page: pg, y: curY } = ctx;
+    let pg = ctx.page;
+    let curY = ctx.y;
 
     for (const word of words) {
       const test = line ? `${line} ${word}` : word;
@@ -492,27 +432,23 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
   const lang = data.language;
   const today = new Date();
   const dateText = formatDate(today.toISOString().split('T')[0]);
-  const familyName = data.familyGroup?.name ||
-    (lang === 'es' ? `Familia de ${data.profileName}` : `${data.profileName}'s Family`);
+  const familyName = data.familyGroup?.name || `${data.profileName}'s Family`;
 
   // ═══════════════════════════════════════════
   // COVER PAGE
   // ═══════════════════════════════════════════
   const cover = pdf.addPage([pageWidth, pageHeight]);
   cover.drawRectangle({ x: 0, y: 0, width: pageWidth, height: pageHeight, color: BRAND.green });
-  // Outer gold border
   cover.drawRectangle({
     x: borderInset, y: borderInset,
     width: pageWidth - borderInset * 2, height: pageHeight - borderInset * 2,
     borderColor: BRAND.gold, borderWidth: 2,
   });
-  // Inner gold border (double-frame effect)
   cover.drawRectangle({
     x: borderInset + 6, y: borderInset + 6,
     width: pageWidth - borderInset * 2 - 12, height: pageHeight - borderInset * 2 - 12,
     borderColor: BRAND.gold, borderWidth: 0.5,
   });
-  // Corner ornaments (small gold squares at each corner)
   const co = 4;
   for (const cx of [borderInset - co / 2, pageWidth - borderInset - co / 2]) {
     for (const cy of [borderInset - co / 2, pageHeight - borderInset - co / 2]) {
@@ -520,19 +456,23 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
     }
   }
 
-  // ── Cover layout: vertically center all content within border ──
   const usableTop = pageHeight - borderInset - 15;
   const usableBottom = borderInset + 15;
   const usableH = usableTop - usableBottom;
   const centerY = usableBottom + usableH / 2;
 
-  // Logotype above family name
+  // Logotype on cover
   if (logotypeImage) {
     const ltDim = logotypeImage.scale(0.25);
     const ltW = Math.min(ltDim.width, 200);
     const ltH = ltW * (ltDim.height / ltDim.width);
     cover.drawImage(logotypeImage, {
       x: (pageWidth - ltW) / 2, y: centerY + 100, width: ltW, height: ltH,
+    });
+  } else {
+    cover.drawText('MATRA', {
+      x: (pageWidth - fonts.sansBold.widthOfTextAtSize('MATRA', 28)) / 2,
+      y: centerY + 110, size: 28, font: fonts.sansBold, color: BRAND.gold,
     });
   }
 
@@ -544,7 +484,7 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
     size: titleSize, font: fonts.bold, color: BRAND.cream,
   });
 
-  const subtitle = t('memoryBook', lang);
+  const subtitle = t('memoryBook');
   cover.drawText(subtitle, {
     x: (pageWidth - fonts.italic.widthOfTextAtSize(subtitle, 20)) / 2,
     y: centerY + 15, size: 20, font: fonts.italic, color: BRAND.gold,
@@ -555,11 +495,8 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
     end: { x: pageWidth / 2 - 10, y: centerY - 5 },
     thickness: 0.8, color: BRAND.gold,
   });
-  // Center diamond ornament
   cover.drawRectangle({
-    x: pageWidth / 2 - 3, y: centerY - 8,
-    width: 6, height: 6,
-    color: BRAND.gold,
+    x: pageWidth / 2 - 3, y: centerY - 8, width: 6, height: 6, color: BRAND.gold,
   });
   cover.drawLine({
     start: { x: pageWidth / 2 + 10, y: centerY - 5 },
@@ -567,7 +504,7 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
     thickness: 0.8, color: BRAND.gold,
   });
 
-  const statsText = `${data.people.length} ${t('people', lang)} · ${data.stories.length} ${t('stories', lang)} · ${data.relationships.length} ${t('connections', lang)}`;
+  const statsText = `${data.people.length} ${t('people')} · ${data.stories.length} ${t('stories')} · ${data.relationships.length} ${t('connections')}`;
   cover.drawText(statsText, {
     x: (pageWidth - fonts.sans.widthOfTextAtSize(statsText, 10)) / 2,
     y: centerY - 25, size: 10, font: fonts.sans, color: BRAND.gold,
@@ -578,50 +515,31 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
     y: usableBottom + 10, size: 9, font: fonts.sans, color: BRAND.gold,
   });
 
-  // Banner between stats and date on cover
-  if (bannerImage) {
-    const bannerMargin = 25;
-    const bannerW = pageWidth - borderInset * 2 - bannerMargin * 2;
-    const bannerNatW = bannerImage.width;
-    const bannerNatH = bannerImage.height;
-    const bannerH = bannerW * (bannerNatH / bannerNatW);
-    const availTop = centerY - 40;
-    const availBottom = usableBottom + 25;
-    const bannerY = availBottom + (availTop - availBottom - bannerH) / 2;
-    cover.drawImage(bannerImage, {
-      x: borderInset + bannerMargin, y: Math.max(bannerY, availBottom), width: bannerW, height: Math.min(bannerH, availTop - availBottom),
-    });
-  }
-
   // ═══════════════════════════════════════════
   // TABLE OF CONTENTS
   // ═══════════════════════════════════════════
   pageNum++;
   const tocPage = newPage();
-  let tocY = drawSectionHeader(tocPage, t('tableOfContents', lang), pageHeight - margin);
+  let tocY = drawSectionHeader(tocPage, t('tableOfContents'), pageHeight - margin);
 
-  const tocEntries: string[] = [t('ourFamily', lang)];
-  if (data.people.length > 0) tocEntries.push(t('familyMembers', lang));
-  if (data.stories.length > 0) tocEntries.push(t('storiesAndMemories', lang));
-  if (data.interviews.length > 0) tocEntries.push(t('conversations', lang));
-  if (data.relationships.length > 0) tocEntries.push(t('familyConnections', lang));
+  const tocEntries = [t('ourFamily')];
+  if (data.people.length > 0) tocEntries.push(t('familyMembers'));
+  if (data.stories.length > 0) tocEntries.push(t('storiesAndMemories'));
+  if (data.interviews.length > 0) tocEntries.push(t('conversations'));
+  if (data.relationships.length > 0) tocEntries.push(t('familyConnections'));
 
-  // Add spacing before entries for a premium feel
   tocY -= 10;
   for (let i = 0; i < tocEntries.length; i++) {
     const entry = tocEntries[i];
-    // Chapter number
     const chNum = `${i + 1}`;
     tocPage.drawText(chNum, {
       x: margin + 8 - fonts.sansBold.widthOfTextAtSize(chNum, 11) / 2,
       y: tocY, size: 11, font: fonts.sansBold, color: BRAND.gold,
     });
-    // Dotted leader line
     const entryX = margin + 28;
     tocPage.drawText(entry, { x: entryX, y: tocY, size: 14, font: fonts.regular, color: BRAND.darkText });
     const leaderStartX = entryX + fonts.regular.widthOfTextAtSize(entry, 14) + 8;
     const leaderEndX = pageWidth - margin;
-    // Draw dot leaders
     for (let lx = leaderStartX; lx < leaderEndX - 4; lx += 6) {
       tocPage.drawCircle({ x: lx, y: tocY + 3, size: 0.5, color: BRAND.lightLine });
     }
@@ -630,17 +548,15 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
   drawFooter(tocPage, pageNum);
 
   // ═══════════════════════════════════════════
-  // OUR FAMILY (overview)
+  // OUR FAMILY
   // ═══════════════════════════════════════════
   pageNum++;
   let page = newPage();
-  let y = drawSectionHeader(page, t('ourFamily', lang), pageHeight - margin);
+  let y = drawSectionHeader(page, t('ourFamily'), pageHeight - margin);
 
   if (data.familyGroup?.description) {
-    // Draw a decorative left quote accent
     page.drawLine({
-      start: { x: margin + 8, y: y + 4 },
-      end: { x: margin + 8, y: y - 40 },
+      start: { x: margin + 8, y: y + 4 }, end: { x: margin + 8, y: y - 40 },
       thickness: 2, color: BRAND.gold,
     });
     const res = drawWrappedText(
@@ -651,36 +567,21 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
     page = res.page; y = res.y - 20;
   }
 
-  // Stats card — premium elevated design
   const cardH = 90;
   const cardY = y - cardH;
-  // Card shadow (subtle offset rectangle)
-  page.drawRectangle({
-    x: margin + 2, y: cardY - 2, width: contentWidth, height: cardH,
-    color: BRAND.lightLine,
-  });
-  // Card background
-  page.drawRectangle({
-    x: margin, y: cardY, width: contentWidth, height: cardH,
-    color: BRAND.white, borderColor: BRAND.gold, borderWidth: 1,
-  });
-  // Gold top accent line
-  page.drawLine({
-    start: { x: margin, y: cardY + cardH },
-    end: { x: margin + contentWidth, y: cardY + cardH },
-    thickness: 2.5, color: BRAND.gold,
-  });
+  page.drawRectangle({ x: margin + 2, y: cardY - 2, width: contentWidth, height: cardH, color: BRAND.lightLine });
+  page.drawRectangle({ x: margin, y: cardY, width: contentWidth, height: cardH, color: BRAND.white, borderColor: BRAND.gold, borderWidth: 1 });
+  page.drawLine({ start: { x: margin, y: cardY + cardH }, end: { x: margin + contentWidth, y: cardY + cardH }, thickness: 2.5, color: BRAND.gold });
 
   const statItems = [
-    { label: t('people', lang), value: `${data.people.length}` },
-    { label: t('stories', lang), value: `${data.stories.length}` },
-    { label: t('conversations', lang), value: `${data.interviews.length}` },
-    { label: t('connections', lang), value: `${data.relationships.length}` },
+    { label: t('people'), value: `${data.people.length}` },
+    { label: t('stories'), value: `${data.stories.length}` },
+    { label: t('conversations'), value: `${data.interviews.length}` },
+    { label: t('connections'), value: `${data.relationships.length}` },
   ];
   const statW = contentWidth / statItems.length;
   statItems.forEach((stat, i) => {
     const sx = margin + statW * i + statW / 2;
-    // Vertical separator between stats (except first)
     if (i > 0) {
       page.drawLine({
         start: { x: margin + statW * i, y: cardY + 15 },
@@ -705,7 +606,7 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
   if (data.people.length > 0) {
     pageNum++;
     page = newPage();
-    y = drawSectionHeader(page, t('familyMembers', lang), pageHeight - margin);
+    y = drawSectionHeader(page, t('familyMembers'), pageHeight - margin);
 
     const AVATAR_SIZE = 150;
     const AVATAR_GAP = 20;
@@ -717,6 +618,7 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
       const avatar = avatarImages[person.id] || null;
       const hasBio = !!(person.ai_biography || person.ai_summary);
 
+      // Each person starts on enough space or a new page
       if (y < margin + 250) {
         drawFooter(page, pageNum);
         pageNum++;
@@ -725,24 +627,24 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
       }
 
       // Build details and relationships
-      const details: string[] = [];
+      const details = [];
       if (person.birth_date) {
         details.push(person.death_date
           ? `${formatDate(person.birth_date)} - ${formatDate(person.death_date)}`
           : `${formatDate(person.birth_date)}`);
       }
       if (person.birth_place) details.push(person.birth_place);
-      if (person.current_location) details.push(`${t('livesIn', lang)} ${person.current_location}`);
+      if (person.current_location) details.push(`${t('livesIn')} ${person.current_location}`);
 
       const personRels = data.relationships.filter(
-        (r: any) => r.person_a_id === person.id || r.person_b_id === person.id
+        r => r.person_a_id === person.id || r.person_b_id === person.id
       );
       const relTexts = personRels.length > 0
-        ? personRels.slice(0, 6).map((r: any) => {
+        ? personRels.slice(0, 6).map(r => {
             const otherId = r.person_a_id === person.id ? r.person_b_id : r.person_a_id;
-            const other = data.people.find((p: any) => p.id === otherId);
-            const otherName = other ? [other.first_name, other.last_name].filter(Boolean).join(' ') : t('unknown', lang);
-            return `${getRelLabel(r.relationship_type, lang)}: ${otherName}`;
+            const other = data.people.find(p => p.id === otherId);
+            const otherName = other ? [other.first_name, other.last_name].filter(Boolean).join(' ') : t('unknown');
+            return `${getRelLabel(r.relationship_type)}: ${otherName}`;
           })
         : [];
 
@@ -761,14 +663,14 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
           x: imgX, y: blockTopY - AVATAR_SIZE, width: AVATAR_SIZE, height: AVATAR_SIZE,
         });
 
-        let leftY = blockTopY - AVATAR_SIZE - AVATAR_BORDER - 20;
+        let leftY = blockTopY - AVATAR_SIZE - AVATAR_BORDER - 10;
 
         // LEFT COL: Detail tags below avatar
         for (const detail of details) {
           const detRes = drawWrappedText(
             { page, y: leftY }, detail, imgX,
             fonts.sans, 9, BRAND.mutedText, AVATAR_SIZE, 13,
-            (pg: any) => { drawFooter(pg, pageNum); pageNum++; }
+            (pg) => { drawFooter(pg, pageNum); pageNum++; }
           );
           page = detRes.page; leftY = detRes.y;
         }
@@ -780,7 +682,7 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
             const relRes = drawWrappedText(
               { page, y: leftY }, relLine, imgX,
               fonts.sans, 8.5, BRAND.mutedText, AVATAR_SIZE, 12,
-              (pg: any) => { drawFooter(pg, pageNum); pageNum++; }
+              (pg) => { drawFooter(pg, pageNum); pageNum++; }
             );
             page = relRes.page; leftY = relRes.y;
           }
@@ -801,7 +703,7 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
 
         const bioRes = drawWrappedText(
           { page, y: rightY }, bioText, rightColX, bioFont, 10.5, bioColor, rightColWidth, 15,
-          (pg: any) => { drawFooter(pg, pageNum); pageNum++; }
+          (pg) => { drawFooter(pg, pageNum); pageNum++; }
         );
         page = bioRes.page; rightY = bioRes.y;
 
@@ -840,7 +742,7 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
           const detailRes = drawWrappedText(
             { page, y: ty }, details.join('  \u00b7  '), textX,
             fonts.sans, 9.5, BRAND.mutedText, textWidth, 14,
-            (pg: any) => { drawFooter(pg, pageNum); pageNum++; }
+            (pg) => { drawFooter(pg, pageNum); pageNum++; }
           );
           page = detailRes.page; ty = detailRes.y;
         }
@@ -850,12 +752,12 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
           const relResult = drawWrappedText(
             { page, y: ty }, relTexts.join('  \u00b7  '), textX,
             fonts.sans, 8.5, BRAND.mutedText, textWidth, 13,
-            (pg: any) => { drawFooter(pg, pageNum); pageNum++; }
+            (pg) => { drawFooter(pg, pageNum); pageNum++; }
           );
           page = relResult.page; ty = relResult.y;
         }
 
-        const imgBottomY = blockTopY - AVATAR_SIZE - AVATAR_BORDER - 18;
+        const imgBottomY = blockTopY - AVATAR_SIZE - AVATAR_BORDER - 8;
         y = avatar ? Math.min(ty, imgBottomY) : ty;
       }
 
@@ -871,7 +773,7 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
   if (data.stories.length > 0) {
     pageNum++;
     page = newPage();
-    y = drawSectionHeader(page, t('storiesAndMemories', lang), pageHeight - margin);
+    y = drawSectionHeader(page, t('storiesAndMemories'), pageHeight - margin);
 
     for (const story of data.stories) {
       if (y < margin + 120) {
@@ -881,25 +783,22 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
         y = pageHeight - margin;
       }
 
-      // Story title — larger, more prominent
-      page.drawText(sanitize(story.title || t('untitledStory', lang)), { x: margin, y, size: 16, font: fonts.bold, color: BRAND.darkText });
+      page.drawText(sanitize(story.title || t('untitledStory')), { x: margin, y, size: 16, font: fonts.bold, color: BRAND.darkText });
       y -= 20;
 
-      // Metadata line with gold accents
-      const meta: string[] = [];
+      const meta = [];
       if (story.event_date) meta.push(formatDate(story.event_date));
       if (story.event_location) meta.push(story.event_location);
       const peoplInStory = data.storyPeople
-        .filter((sp: any) => sp.story_id === story.id)
-        .map((sp: any) => { const p = data.people.find((pp: any) => pp.id === sp.person_id); return p?.first_name; })
+        .filter(sp => sp.story_id === story.id)
+        .map(sp => { const p = data.people.find(pp => pp.id === sp.person_id); return p?.first_name; })
         .filter(Boolean);
-      if (peoplInStory.length > 0) meta.push(`${t('featuring', lang)} ${peoplInStory.join(', ')}`);
+      if (peoplInStory.length > 0) meta.push(`${t('featuring')} ${peoplInStory.join(', ')}`);
       if (meta.length > 0) {
         page.drawText(sanitize(meta.join('  ·  ')), { x: margin, y, size: 9.5, font: fonts.sans, color: BRAND.gold });
         y -= 18;
       }
 
-      // Story content — FULL text, no truncation
       if (story.content) {
         const res = drawWrappedText({ page, y }, story.content, margin, fonts.regular, 10.5, BRAND.darkText, contentWidth, 15,
           (pg) => { drawFooter(pg, pageNum); pageNum++; }
@@ -909,7 +808,7 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
 
       if (story.ai_generated) {
         y -= 5;
-        page.drawText(t('aiCrafted', lang), { x: margin, y, size: 7.5, font: fonts.italic, color: BRAND.mutedText });
+        page.drawText(t('aiCrafted'), { x: margin, y, size: 7.5, font: fonts.italic, color: BRAND.mutedText });
         y -= 12;
       }
 
@@ -925,7 +824,7 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
   if (data.interviews.length > 0) {
     pageNum++;
     page = newPage();
-    y = drawSectionHeader(page, t('conversations', lang), pageHeight - margin);
+    y = drawSectionHeader(page, t('conversations'), pageHeight - margin);
 
     for (const interview of data.interviews) {
       if (y < margin + 120) {
@@ -935,20 +834,17 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
         y = pageHeight - margin;
       }
 
-      // Conversation title — larger
-      page.drawText(sanitize(interview.title || t('untitledConversation', lang)), {
+      page.drawText(sanitize(interview.title || t('untitledConversation')), {
         x: margin, y, size: 15, font: fonts.bold, color: BRAND.darkText,
       });
       y -= 20;
 
-      // Date with subtle styling
       const convDateObj = new Date(interview.created_at);
       const convDate = formatDate(convDateObj.toISOString().split('T')[0]);
       page.drawText(convDate, { x: margin, y, size: 9.5, font: fonts.sans, color: BRAND.mutedText });
 
-      // Subject person name alongside date if available
       if (interview.subject_person_id) {
-        const subject = data.people.find((p: any) => p.id === interview.subject_person_id);
+        const subject = data.people.find(p => p.id === interview.subject_person_id);
         if (subject) {
           const subName = [subject.first_name, subject.last_name].filter(Boolean).join(' ');
           const dateW = fonts.sans.widthOfTextAtSize(convDate, 9.5);
@@ -959,22 +855,18 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
       }
       y -= 18;
 
-      // Key topics as styled tags
       if (interview.ai_key_topics?.length > 0) {
         const topics = interview.ai_key_topics.slice(0, 8);
         let topicX = margin;
         for (const topic of topics) {
           const topicText = sanitize(topic);
           const tw = fonts.sans.widthOfTextAtSize(topicText, 8) + 12;
-          // Check if topic fits on current line
           if (topicX + tw > pageWidth - margin) {
             topicX = margin;
             y -= 18;
           }
-          // Tag background
           page.drawRectangle({
-            x: topicX, y: y - 4,
-            width: tw, height: 15,
+            x: topicX, y: y - 4, width: tw, height: 15,
             color: BRAND.white, borderColor: BRAND.gold, borderWidth: 0.5,
           });
           page.drawText(topicText, {
@@ -985,7 +877,6 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
         y -= 22;
       }
 
-      // AI Summary — FULL text, no truncation
       if (interview.ai_summary) {
         const res = drawWrappedText({ page, y }, interview.ai_summary, margin, fonts.italic, 10.5, BRAND.mutedText, contentWidth, 15,
           (pg) => { drawFooter(pg, pageNum); pageNum++; }
@@ -1005,50 +896,51 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
   if (data.relationships.length > 0) {
     pageNum++;
     page = newPage();
-    y = drawSectionHeader(page, t('familyConnections', lang), pageHeight - margin);
+    y = drawSectionHeader(page, t('familyConnections'), pageHeight - margin);
 
     // ── Build adjacency maps ──
-    const childrenOf = new Map<string, string[]>();
-    const parentOfMap = new Map<string, string[]>();
-    const spouseOf = new Map<string, Set<string>>();
-    const siblingOf = new Map<string, Set<string>>();
+    const childrenOf = new Map();
+    const parentOf = new Map();
+    const spouseOf = new Map();
+    const siblingOf = new Map();
 
     for (const rel of data.relationships) {
       const { person_a_id: a, person_b_id: b, relationship_type: type } = rel;
       if (type === 'parent') {
         if (!childrenOf.has(a)) childrenOf.set(a, []);
-        childrenOf.get(a)!.push(b);
-        if (!parentOfMap.has(b)) parentOfMap.set(b, []);
-        parentOfMap.get(b)!.push(a);
+        childrenOf.get(a).push(b);
+        if (!parentOf.has(b)) parentOf.set(b, []);
+        parentOf.get(b).push(a);
       } else if (type === 'spouse' || type === 'ex_spouse') {
         if (!spouseOf.has(a)) spouseOf.set(a, new Set());
         if (!spouseOf.has(b)) spouseOf.set(b, new Set());
-        spouseOf.get(a)!.add(b);
-        spouseOf.get(b)!.add(a);
+        spouseOf.get(a).add(b);
+        spouseOf.get(b).add(a);
       } else if (type === 'sibling' || type === 'half_sibling' || type === 'step_sibling') {
         if (!siblingOf.has(a)) siblingOf.set(a, new Set());
         if (!siblingOf.has(b)) siblingOf.set(b, new Set());
-        siblingOf.get(a)!.add(b);
-        siblingOf.get(b)!.add(a);
+        siblingOf.get(a).add(b);
+        siblingOf.get(b).add(a);
       }
     }
 
     // ── BFS from self person (the app user) ──
     const selfId = data.selfPersonId || data.people[0]?.id;
-    const generation = new Map<string, number>();
+    const generation = new Map();
+    const peopleById = new Map(data.people.map(p => [p.id, p]));
 
     generation.set(selfId, 0);
-    const queue: string[] = [selfId];
+    const queue = [selfId];
     while (queue.length > 0) {
-      const pid = queue.shift()!;
-      const gen = generation.get(pid)!;
+      const pid = queue.shift();
+      const gen = generation.get(pid);
       for (const sid of (spouseOf.get(pid) || [])) {
         if (!generation.has(sid)) { generation.set(sid, gen); queue.push(sid); }
       }
       for (const cid of (childrenOf.get(pid) || [])) {
         if (!generation.has(cid)) { generation.set(cid, gen + 1); queue.push(cid); }
       }
-      for (const ppid of (parentOfMap.get(pid) || [])) {
+      for (const ppid of (parentOf.get(pid) || [])) {
         if (!generation.has(ppid)) { generation.set(ppid, gen - 1); queue.push(ppid); }
       }
       for (const sid of (siblingOf.get(pid) || [])) {
@@ -1060,10 +952,10 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
     }
 
     // ── Group by generation ──
-    const genGroups = new Map<number, string[]>();
+    const genGroups = new Map();
     for (const [pid, gen] of generation) {
       if (!genGroups.has(gen)) genGroups.set(gen, []);
-      genGroups.get(gen)!.push(pid);
+      genGroups.get(gen).push(pid);
     }
     const sortedGens = [...genGroups.keys()].sort((a, b) => a - b);
 
@@ -1078,17 +970,19 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
     const availH = graphTopY - graphBottomY;
     const availW = graphRightX - graphLeftX;
 
-    const maxPerRow = Math.max(...sortedGens.map((g: number) => genGroups.get(g)!.length));
+    const maxPerRow = Math.max(...sortedGens.map(g => genGroups.get(g).length));
     const H_SPACING = Math.min(100, availW / Math.max(maxPerRow, 1));
     const V_SPACING = Math.min(110, availH / Math.max(sortedGens.length, 1));
 
-    const positions = new Map<string, { x: number; y: number }>();
+    const positions = new Map();
     for (let gi = 0; gi < sortedGens.length; gi++) {
       const gen = sortedGens[gi];
-      const members = genGroups.get(gen)!;
+      const members = genGroups.get(gen);
 
-      const sorted: string[] = [];
-      const placed = new Set<string>();
+      // Sort: self person centered, couples together
+      const sorted = [];
+      const placed = new Set();
+      // Place self person first in their generation
       if (members.includes(selfId) && !placed.has(selfId)) {
         sorted.push(selfId);
         placed.add(selfId);
@@ -1116,6 +1010,7 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
       const posY = graphTopY - gi * V_SPACING;
 
       for (let xi = 0; xi < sorted.length; xi++) {
+        // Clamp X to stay within margins
         const rawX = startX + xi * H_SPACING;
         const clampedX = Math.max(graphLeftX, Math.min(graphRightX, rawX));
         positions.set(sorted[xi], { x: clampedX, y: posY });
@@ -1141,7 +1036,7 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
 
     // ── Build relationship label lookup (relative to self) ──
     // Invert type when self is person_a: "self is parent of X" → X is "child" to self
-    const INVERSE_REL: Record<string, string> = {
+    const INVERSE_REL = {
       parent: 'child', child: 'parent',
       grandparent: 'grandchild', grandchild: 'grandparent',
       uncle_aunt: 'nephew_niece', nephew_niece: 'uncle_aunt',
@@ -1149,7 +1044,7 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
       adopted_parent: 'adopted_child', adopted_child: 'adopted_parent',
       godparent: 'godchild', godchild: 'godparent',
     };
-    const relToSelf = new Map<string, string>();
+    const relToSelf = new Map();
     for (const rel of data.relationships) {
       if (rel.person_a_id === selfId) {
         relToSelf.set(rel.person_b_id, INVERSE_REL[rel.relationship_type] || rel.relationship_type);
@@ -1177,7 +1072,7 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
     );
 
     // ── Draw edges ──
-    const drawnSpouses = new Set<string>();
+    const drawnSpouses = new Set();
     for (const rel of data.relationships) {
       if (rel.relationship_type !== 'spouse' && rel.relationship_type !== 'ex_spouse') continue;
       const key = [rel.person_a_id, rel.person_b_id].sort().join('-');
@@ -1187,6 +1082,7 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
       const posB = positions.get(rel.person_b_id);
       if (!posA || !posB) continue;
       const isDashed = rel.relationship_type === 'ex_spouse';
+      // Connect edge-to-edge of circles
       const leftPos = posA.x < posB.x ? posA : posB;
       const rightPos = posA.x < posB.x ? posB : posA;
       const leftX = leftPos.x + NODE_RADIUS;
@@ -1207,7 +1103,7 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
       }
     }
 
-    const drawnParentChild = new Set<string>();
+    const drawnParentChild = new Set();
     for (const rel of data.relationships) {
       if (rel.relationship_type !== 'parent') continue;
       const key = `${rel.person_a_id}-${rel.person_b_id}`;
@@ -1216,6 +1112,7 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
       const parentPos = positions.get(rel.person_a_id);
       const childPos = positions.get(rel.person_b_id);
       if (!parentPos || !childPos) continue;
+      // Connect bottom of parent node to top of child label area
       const startY = parentPos.y - NODE_RADIUS;
       const endY = childPos.y + NODE_RADIUS;
       const midY = (startY + endY) / 2;
@@ -1236,7 +1133,7 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
       });
     }
 
-    const drawnSiblings = new Set<string>();
+    const drawnSiblings = new Set();
     for (const rel of data.relationships) {
       if (rel.relationship_type !== 'sibling' && rel.relationship_type !== 'half_sibling') continue;
       const key = [rel.person_a_id, rel.person_b_id].sort().join('-');
@@ -1245,6 +1142,7 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
       const posA = positions.get(rel.person_a_id);
       const posB = positions.get(rel.person_b_id);
       if (!posA || !posB) continue;
+      // Connect edge-to-edge horizontally below nodes
       const leftPos = posA.x < posB.x ? posA : posB;
       const rightPos = posA.x < posB.x ? posB : posA;
       const arcY = leftPos.y - NODE_RADIUS - 3;
@@ -1261,12 +1159,16 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
       if (!pos) continue;
       const isSelf = person.id === selfId;
 
+      // Node glow
       page.drawCircle({ x: pos.x, y: pos.y, size: NODE_RADIUS + 4, color: isSelf ? BRAND.gold : BRAND.lightLine });
+
+      // Node circle
       page.drawCircle({
         x: pos.x, y: pos.y, size: NODE_RADIUS,
         color: BRAND.green, borderColor: isSelf ? BRAND.gold : BRAND.lightLine, borderWidth: isSelf ? 2.5 : 1.5,
       });
 
+      // Avatar inside circle
       const avatar = avatarImages[person.id];
       if (avatar) {
         const imgSize = NODE_RADIUS * 1.4;
@@ -1287,6 +1189,7 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
         });
       }
 
+      // Name label below node
       const firstName = sanitize(person.first_name || '');
       const fnW = fonts.sansBold.widthOfTextAtSize(firstName, 8.5);
       page.drawText(firstName, {
@@ -1294,10 +1197,11 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
         size: 8.5, font: fonts.sansBold, color: BRAND.darkText,
       });
 
+      // Relationship tag to self (below name)
       if (!isSelf) {
         const relType = relToSelf.get(person.id);
         if (relType) {
-          const relTag = sanitize(getRelLabel(relType, lang));
+          const relTag = sanitize(getRelLabel(relType));
           const rtW = fonts.sans.widthOfTextAtSize(relTag, 7);
           page.drawText(relTag, {
             x: pos.x - rtW / 2, y: pos.y - NODE_RADIUS - LABEL_OFFSET - 11,
@@ -1305,7 +1209,7 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
           });
         }
       } else {
-        const meLabel = lang === 'es' ? 'Yo' : 'Me';
+        const meLabel = 'Me';
         const meW = fonts.sansBold.widthOfTextAtSize(meLabel, 7);
         page.drawText(meLabel, {
           x: pos.x - meW / 2, y: pos.y - NODE_RADIUS - LABEL_OFFSET - 11,
@@ -1322,7 +1226,6 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
   // ═══════════════════════════════════════════
   const back = pdf.addPage([pageWidth, pageHeight]);
   back.drawRectangle({ x: 0, y: 0, width: pageWidth, height: pageHeight, color: BRAND.green });
-  // Double border frame (matching cover)
   back.drawRectangle({
     x: borderInset, y: borderInset,
     width: pageWidth - borderInset * 2, height: pageHeight - borderInset * 2,
@@ -1333,13 +1236,13 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
     width: pageWidth - borderInset * 2 - 12, height: pageHeight - borderInset * 2 - 12,
     borderColor: BRAND.gold, borderWidth: 0.5,
   });
-  // Corner ornaments
   for (const cx of [borderInset - co / 2, pageWidth - borderInset - co / 2]) {
     for (const cy of [borderInset - co / 2, pageHeight - borderInset - co / 2]) {
       back.drawRectangle({ x: cx, y: cy, width: co, height: co, color: BRAND.gold });
     }
   }
 
+  // Logotype on back cover
   if (logotypeImage) {
     const ltDim = logotypeImage.scale(0.45);
     const ltW = Math.min(ltDim.width, 300);
@@ -1347,43 +1250,61 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
     back.drawImage(logotypeImage, {
       x: (pageWidth - ltW) / 2, y: pageHeight / 2 + 10, width: ltW, height: ltH,
     });
+  } else {
+    back.drawText('MATRA', {
+      x: (pageWidth - fonts.sansBold.widthOfTextAtSize('MATRA', 36)) / 2,
+      y: pageHeight / 2 + 20, size: 36, font: fonts.sansBold, color: BRAND.gold,
+    });
   }
 
-  const tagline = t('tagline', lang);
+  const tagline = t('tagline');
   back.drawText(tagline, {
     x: (pageWidth - fonts.italic.widthOfTextAtSize(tagline, 13)) / 2,
     y: pageHeight / 2 - 30, size: 13, font: fonts.italic, color: BRAND.cream,
   });
 
-  // Decorative ornament below tagline
   const backCX = pageWidth / 2;
   back.drawLine({
     start: { x: backCX - 60, y: pageHeight / 2 - 50 },
     end: { x: backCX - 8, y: pageHeight / 2 - 50 },
     thickness: 0.5, color: BRAND.gold,
   });
-  back.drawRectangle({
-    x: backCX - 3, y: pageHeight / 2 - 53,
-    width: 6, height: 6, color: BRAND.gold,
-  });
+  back.drawRectangle({ x: backCX - 3, y: pageHeight / 2 - 53, width: 6, height: 6, color: BRAND.gold });
   back.drawLine({
     start: { x: backCX + 8, y: pageHeight / 2 - 50 },
     end: { x: backCX + 60, y: pageHeight / 2 - 50 },
     thickness: 0.5, color: BRAND.gold,
   });
 
-  const genText = `${t('generatedOn', lang)} ${dateText}`;
+  const genText = `${t('generatedOn')} ${dateText}`;
   back.drawText(genText, {
     x: (pageWidth - fonts.sans.widthOfTextAtSize(genText, 8)) / 2,
     y: borderInset + 30, size: 8, font: fonts.sans, color: BRAND.gold,
   });
 
-  // Metadata
-  pdf.setTitle(`${familyName} — Memory Book`);
+  pdf.setTitle(`${familyName} - Memory Book`);
   pdf.setAuthor('MATRA');
   pdf.setSubject('Family Memory Book');
-  pdf.setCreator('MATRA — A living tree of your ancestry');
+  pdf.setCreator('MATRA - A living tree of your ancestry');
   pdf.setCreationDate(new Date());
 
   return pdf.save();
 }
+
+// ══════════════════════════════════════════════════════
+// RUN
+// ══════════════════════════════════════════════════════
+console.log('Generating memory book preview...');
+const startTime = Date.now();
+
+const pdfBytes = await generateMemoryBookPDF(MOCK);
+fs.writeFileSync(OUTPUT, pdfBytes);
+
+const elapsed = Date.now() - startTime;
+const sizeMB = (pdfBytes.length / 1024 / 1024).toFixed(2);
+console.log(`Done! ${sizeMB} MB, ${elapsed}ms`);
+console.log(`Output: ${OUTPUT}`);
+
+// Auto-open on Windows
+import { exec } from 'child_process';
+exec(`start "" "${OUTPUT}"`);

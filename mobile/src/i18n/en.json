@@ -216,7 +216,24 @@
     "recentConversations": "Recent Conversations",
     "unlockPremium": "◈ Unlock Premium",
     "unlockPremiumDesc": "Unlimited conversations, AI biographies, memory book exports, and more.",
-    "seePlans": "See Plans"
+    "seePlans": "See Plans",
+    "premium": "Premium",
+    "premiumFeatures": "Your Premium Features",
+    "premium30mo": "30/mo · 30 min",
+    "premiumAI": "AI & Bios",
+    "premiumExport": "Memory Book",
+    "premiumSharing": "Family Sharing",
+    "premiumAudioSnippets": "Audio Snippets",
+    "premiumMoreStories": "More Stories/Session",
+    "setupFamilyTitle": "Set Up Your Family",
+    "setupFamilyDesc": "Name your family group, add family members, and start recording conversations to build your family tree.",
+    "setupFamilyAction": "Set Up Family Group",
+    "gracePeriodBanner": "Your subscription ended. You have {{days}} days of full access remaining.",
+    "gracePeriodAction": "Renew Now",
+    "lapsedBanner": "Welcome back! Your memories are safe. Upgrade to unlock all features again.",
+    "lapsedExportBanner": "You can still export your memory book for {{days}} more days.",
+    "billingRetryBanner": "We had trouble with your payment. Your access continues while we retry.",
+    "resubscribe": "Re-subscribe"
   },
   "record": {
     "whoSharing": "Who's sharing today?",
@@ -257,6 +274,7 @@
     "tipSelf2": "• Talk about your earliest family memories",
     "tipSelf3": "• Mention names, places, and dates you recall",
     "tipSelf4": "• Share stories your parents or grandparents told you",
+    "tipOneSpeaker": "• Only one person should speak per session for best results",
     "tipOther1": "• Find a quiet place",
     "tipOther2": "• Encourage them to share freely",
     "tipOther3": "• Let them tell stories in their own words",
@@ -270,7 +288,22 @@
     "recordError": "Failed to start recording. Please try again.",
     "recordingFailed": "Recording failed. Please try again.",
     "noFamilyGroup": "No active family group. Please create one first.",
-    "conversationWith": "Conversation with {{name}}"
+    "conversationWith": "Conversation with {{name}}",
+    "addNewPerson": "Someone new",
+    "addNewPersonHint": "Add a family member to record",
+    "newPersonTitle": "Who are you recording?",
+    "newPersonSubtitle": "Tell us a bit about the person so the AI can better understand the conversation.",
+    "newPersonFirstName": "First Name",
+    "newPersonFirstNamePlaceholder": "e.g. Maria",
+    "newPersonLastName": "Last Name (optional)",
+    "newPersonLastNamePlaceholder": "e.g. Garcia",
+    "newPersonRelationship": "Their relationship to you (optional)",
+    "newPersonRelGuide": "is the {{relationship}} of",
+    "connectedThrough": "Connected through which family member?",
+    "newPersonCreate": "Add & Start Recording",
+    "newPersonCreating": "Adding...",
+    "newPersonNameRequired": "Please enter the person's first name.",
+    "newPersonError": "Could not add this person. Please try again."
   },
   "stories": {
     "title": "Stories",
@@ -289,7 +322,8 @@
     "peopleInStory": "People in this story",
     "sourceInterview": "Source Interview",
     "premiumAudioPromo": "Upgrade to Premium to hear audio snippets from the real conversation in every story",
-    "generatedAt": "Generated at {{date}}"
+    "generatedAt": "Generated at {{date}}",
+    "shareStory": "Share Story"
   },
   "interview": {
     "notFound": "Interview not found",
@@ -298,7 +332,8 @@
     "keyTopics": "Key Topics",
     "transcript": "Transcript",
     "providerLanguage": "Provider: {{provider}} · Language: {{language}}",
-    "noTranscript": "No transcript available"
+    "noTranscript": "No transcript available",
+    "shareSummary": "Share Summary"
   },
   "person": {
     "notFound": "Person not found",
@@ -377,7 +412,8 @@
     "merge": "Merge",
     "merging": "Merging...",
     "mergeComplete": "Merge Complete",
-    "mergeCompleteMessage": "{{source}} has been merged into {{target}}."
+    "mergeCompleteMessage": "{{source}} has been merged into {{target}}.",
+    "shareBio": "Share Biography"
   },
   "relationships": {
     "parent": "Parent",
@@ -435,6 +471,13 @@
     "memoryBookError": "Could not generate your memory book. Please try again later.",
     "memoryBookRateLimited": "Please Wait",
     "memoryBookNoNewData": "No New Updates",
+    "readinessTitle": "Before You Export",
+    "readinessMessage": "Your memory book will be richer if you complete these first:",
+    "readinessGroupName": "Name your family group (it's still \"My Family\")",
+    "readinessBios": "Generate biographies ({{done}}/{{total}} people have one)",
+    "readinessConnections": "Confirm connections ({{done}}/{{total}} relationships verified)",
+    "readinessGoFix": "I'll Fix These",
+    "readinessContinue": "Export Anyway",
     "conversations": "Conversations",
     "noConversations": "No conversations recorded yet.",
     "untitledConversation": "Untitled Conversation",
@@ -493,7 +536,25 @@
     "downloadReadyMessage": "Your data export has been saved. Check your device's downloads folder.",
     "downloadFailed": "Export Failed",
     "downloadFailedMessage": "Could not export your data. Please try again.",
-    "noDataToExport": "No data to export yet. Record your first conversation to get started."
+    "noDataToExport": "No data to export yet. Record your first conversation to get started.",
+    "whatIfICancel": "What happens if I cancel?",
+    "cancelInfoTitle": "Your Memories Are Yours",
+    "cancelInfoGrace": "7-day grace period — full access continues, no features lost.",
+    "cancelInfoRead": "All your interviews, stories, and biographies stay readable forever. Nothing gets deleted.",
+    "cancelInfoExport": "30-day export window — download your memory book and data after cancelling.",
+    "cancelInfoCreate": "New recordings drop to 2 free sessions with 5-minute recording limits.",
+    "cancelInfoAI": "AI features (new biographies, summaries) require an active subscription.",
+    "cancelInfoFamily": "Family sharing pauses until you re-subscribe.",
+    "cancelInfoResub": "Re-subscribe anytime to pick up right where you left off.",
+    "cancelInfoDownload": "We recommend downloading your data before cancelling, just in case.",
+    "cancelInfoDownloadAction": "Download My Data Now",
+    "gracePeriodInfoTitle": "You're in your grace period",
+    "gracePeriodInfoDesc": "Full access continues until {{date}}. After that, you'll keep access to everything you've created, but new features will revert to the free tier.",
+    "lapsedInfoTitle": "Your subscription has ended",
+    "lapsedInfoDesc": "All your memories, stories, and biographies are still here. Upgrade to create new recordings and use AI features again.",
+    "exportGraceReminder": "Your export window closes {{date}}. Download your memory book before then.",
+    "billingIssueInfoTitle": "Payment issue detected",
+    "billingIssueInfoDesc": "Don't worry — your access continues while we retry your payment. If the issue persists, update your payment method in the App Store or Play Store."
   },
   "paywall": {
     "title": "Unlock the Full Canopy",
@@ -558,7 +619,10 @@
     "you": "You",
     "upgradeForMembers": "Upgrade to Premium to view and manage family members",
     "noFamilyGroup": "No Family Group",
-    "noFamilyGroupDesc": "Record your first conversation to create a family group."
+    "noFamilyGroupDesc": "Record your first conversation to create a family group.",
+    "inviteMembers": "Invite Family",
+    "inviteMembersDesc": "Share your family tree with relatives. Send an invite link so they can join your group and contribute their own stories.",
+    "inviteMembersAction": "Invite Family Members"
   },
   "about": {
     "tagline": "Every family has a story worth preserving.",

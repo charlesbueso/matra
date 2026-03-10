@@ -8,6 +8,19 @@
 // ── Subscription & Feature Gating ──
 
 export type SubscriptionTier = 'free' | 'premium';
+export type SubscriptionStatus = 'active' | 'expired' | 'cancelled' | 'grace_period' | 'billing_retry';
+
+/** Describes how a lapsed premium user should be treated. */
+export interface DowngradeInfo {
+  /** User was previously premium and is now on free tier. */
+  isLapsed: boolean;
+  /** True while in 7-day grace period — full premium access. */
+  inGracePeriod: boolean;
+  /** When the grace period expires (null if not applicable). */
+  gracePeriodEndsAt: string | null;
+  /** Lapsed users can still export until this date (30 days from expiration). */
+  exportAccessUntil: string | null;
+}
 
 export interface FeatureLimits {
   maxInterviews: number;
