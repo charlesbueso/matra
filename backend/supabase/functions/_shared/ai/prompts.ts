@@ -59,7 +59,7 @@ Analyze the provided transcript and extract:
    - currentLocation: string (optional — where they live now)
    - profession: string (optional — job, career, occupation)
    - isDeceased: boolean (optional)
-   - gender: "male" | "female" | null (optional — infer from contextual clues: gendered kinship terms like hermana/hermano, madre/padre, hijo/hija, gendered adjectives in Spanish like nacido/nacida, pronouns like he/she/él/ella, or culturally gendered names. Only set if confident, otherwise null)
+   - gender: "male" | "female" | null (IMPORTANT — actively infer gender from ALL available clues. Set this for EVERY person when possible. Clues include: gendered kinship terms (hermana→female, hermano→male, madre/mom/mother→female, padre/dad/father→male, hijo/son→male, hija/daughter→female, tío/uncle→male, tía/aunt→female, abuelo/grandfather→male, abuela/grandmother→female, esposo/husband→male, esposa/wife→female), gendered adjectives in Spanish (nacido→male, nacida→female, casado→male, casada→female), pronouns (he/him→male, she/her→female, él→male, ella→female), and culturally gendered names. Only set null if truly ambiguous.)
 
 Rules:
 - Be conservative with confidence scores. Only use 0.9+ when explicitly stated.
@@ -88,21 +88,52 @@ Rules:
   - "mi papá" = "my dad", "mi mamá" = "my mom", "mi hermano" = "my brother", etc.
   - "medio hermano" or "media hermana" = half sibling → use "half_sibling" relationship type.
   - "hermanastro" or "hermanastra" = step sibling → use "step_sibling" relationship type.
-  - CRITICAL for half-siblings: when the narrator specifies WHICH PARENT the half-sibling comes from (e.g., "medio hermano de parte de mi mamá", "half-brother on my mom's side"), you MUST extract a parent relationship between that parent and the half-sibling. Example: "tengo un medio hermano de parte de mi mamá que se llama Cristian" → create TWO relationships: (1) Cristian is half_sibling of [narrator], AND (2) [mother's name] is parent of Cristian.
+  - CRITICAL for half-siblings: when the narrator specifies WHICH PARENT the half-sibling comes from (e.g., "medio hermano de parte de mi mamá", "half-brother on my mom's side", "my dad's son from his second marriage"), you MUST extract a parent relationship between that parent and the half-sibling.
+    Examples:
+    * "tengo un medio hermano de parte de mi mamá que se llama Cristian" → create TWO relationships: (1) Cristian is half_sibling of [narrator], AND (2) [mother's name] is parent of Cristian.
+    * "my dad Michael had a son Ryan with his ex-wife Jennifer" or "my half-brother Ryan on my dad's side" → create: (1) Ryan is half_sibling of [narrator], AND (2) Michael is parent of Ryan.
+    * "medio hermano de parte de mi papá" → create: (1) half_sibling of [narrator], AND (2) [father's name] is parent of the half-sibling.
+    This parent link is ESSENTIAL for placing the half-sibling on the correct side of the family tree. Never skip it.
   - In-laws: suegro, suegra → use "parent_in_law" relationship type. nuero, nuera, yerno → use "child_in_law" relationship type. "cuñado", "cuñada" (brother/sister-in-law) → use "in_law" relationship type.
+  - English in-laws: "father-in-law", "mother-in-law" → use "parent_in_law". "son-in-law", "daughter-in-law" → use "child_in_law". "brother-in-law", "sister-in-law" → use "in_law".
+  - CRITICAL IN-LAW RULE: When the transcript EXPLICITLY uses an in-law term (suegro, suegra, cuñado, cuñada, father-in-law, mother-in-law, brother-in-law, sister-in-law), you MUST create the in-law relationship IN ADDITION to any parent/sibling links.
+    Examples:
+    * "Don Takeshi es el suegro de mi papá Rodrigo" → create BOTH: (1) Takeshi parent of Keiko, AND (2) Takeshi parent_in_law of Rodrigo
+    * "María Elena es su suegra" → create parent_in_law between María Elena and Rodrigo
+    * "Yuki es la cuñada de mi papá" → create BOTH: (1) Yuki sibling of Keiko, AND (2) Yuki in_law of Rodrigo
+    * "My father-in-law John" → create parent_in_law between John and the speaker's spouse
+    Do NOT skip the in-law relationship just because you already captured the underlying family structure.
   Treat all such kinship terms with the SAME confidence as their English equivalents.
 - Deduplicate people (e.g., "Grandma Rose" and "Rose" are likely the same person).
+- NAMES — do NOT include honorifics (Don, Doña, Señor, Señora, Mr., Mrs., Ms., Sir, etc.) in firstName or lastName. Strip them. Example: "Don Fernando Morales" → firstName: "Fernando", lastName: "Morales". "Doña Rosa Herrera" → firstName: "Rosa", lastName: "Herrera".
+- NICKNAMES: When someone is referred to by a nickname ("everyone called her Maggie", "todos le dicen Isa", "le dicen Pepe"), ALWAYS set the nickname field. The firstName should be the formal name, nickname should be the informal one.
+- DECEASED & PROFESSION: When someone is described as having died/passed away/"falleció"/"murió"/"en paz descanse", ALWAYS set isDeceased: true AND set deathDate if a year is given. When a profession/job/occupation is mentioned, ALWAYS set the profession field.
 - Dates should be in ISO 8601 format when possible.
 - If a year is mentioned without month/day, use ONLY the "YYYY" format (e.g., "1968"). Do NOT add "-01-01" or any month/day. "born in 1968" → birthDate: "1968", NOT "1968-01-01". "born in the year 97" or "nació en el 97" → birthDate: "1997".
-- When ages are given relative to today instead of birth years (e.g., "tiene seis años", "is ten years old"), calculate the approximate birth year from the current context (e.g., if the interview is recent and someone "tiene seis años", their birthDate is approximately the current year minus 6). Use "YYYY" format.
+- AGES TO BIRTH YEARS (CRITICAL — do NOT skip this): When ages are given instead of birth years, you MUST calculate an approximate birth year. The current year is 2026. Examples:
+  - "is four years old" or "tiene cuatro años" → birthDate: "2022"
+  - "has two years" or "tiene dos años" → birthDate: "2024"
+  - "is ten years old" or "tiene diez años" → birthDate: "2016"
+  - "tiene cinco años" → birthDate: "2021"
+  - "tiene tres años" → birthDate: "2023"
+  - "is twenty-two" or "tiene veintidós años" → birthDate: "2004"
+  Formula: birthDate = 2026 - age. ALWAYS set birthDate when an age is mentioned. Use "YYYY" format.
 - Make sure to include the narrator/subject in relationships — if the narrator says "my mom is Rosa", create a relationship between Rosa and the narrator.
 
 CRITICAL — suggestedPeople completeness:
 - EVERY person referenced in "relationships" (personA or personB) MUST also appear in "suggestedPeople". Do NOT reference a person in a relationship without adding them to suggestedPeople first.
 - When a person is mentioned but NOT named (e.g., "my older brother", "un hermano mayor", "a younger sister"), still add them to suggestedPeople using a descriptive firstName (e.g., firstName: "Hermano Mayor", or firstName: "Unnamed Older Brother") and a low confidence score. Use the SAME descriptive name in the corresponding relationship entries.
-- When someone's children are mentioned (e.g., "his children are named X and Y"), the relationship is parent→child between THAT person and the children — NOT between the narrator and those children. For example, if the narrator says "my half-brother David has children named Emma and Lucas", then David is the parent of Emma and Lucas, and David is step_sibling of the narrator. Emma and Lucas are NOT siblings of the narrator.
-- Pay careful attention to possessive chains: "his/her/their children" refers to the LAST mentioned person's children, not the narrator's.
+- When someone's children are mentioned (e.g., "his children are named X and Y"), the relationship is parent→child between THAT person and the children — NOT between the narrator and those children.
+  Examples:
+  * "my half-brother David has children named Emma and Lucas" → David is parent of Emma AND David is parent of Lucas. David is half_sibling of narrator. Emma/Lucas are NOT siblings of the narrator.
+  * "mi tía Rosa tiene dos hijos, Andrés y Valentina" → Rosa is parent of Andrés AND Rosa is parent of Valentina. Andrés and Valentina are cousins of the narrator.
+  * "my uncle has three kids" → uncle is parent of each kid.
+  ALWAYS create the parent→child link for the person whose children/kids/hijos are being described.
+- Pay careful attention to possessive chains: "his/her/their children", "sus hijos", "tienen dos hijos" refers to the LAST mentioned person's children, not the narrator's.
 - Do NOT confuse the narrator with other people who share the same first name. If the narrator is "John Test" and his father is "John William Smith", these are two DIFFERENT people. Always use full names to disambiguate.
+- SAME-NAME DISAMBIGUATION: When multiple people share the same first name (e.g., grandfather and grandson named after him), create SEPARATE entries in suggestedPeople with different full names, birth dates, or suffixes (Jr., Sr., III, etc.). Never merge two distinct people just because they share a first name.
+- ADOPTION: When someone is described as adopted ("was adopted", "adoptive father/mother", "padre/madre adoptivo/a", "fue adoptado"), use "adopted_parent" for the adoptive parents and "adopted_child" for the adopted person. For adopted siblings, use "sibling" (there is NO "adopted_sibling" type). Also create the parent→child link: if "my parents adopted my sister Hope", create both (1) Hope sibling of narrator AND (2) adopted_parent relationships between each parent and Hope.
+- FIGURATIVE LANGUAGE: Phrases like "is like a brother", "como un hermano", "is like family" are NOT actual relationships. Do NOT create sibling/family relationships from figurative comparisons. Only extract ACTUAL family relationships.
 
 Respond with a JSON object matching the schema above. No other text.`;
 

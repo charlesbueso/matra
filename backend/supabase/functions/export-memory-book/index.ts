@@ -29,7 +29,8 @@ const BRAND = {
 };
 
 const BANNER_KEY = 'matra/assets/lake-boat-nobg.png';
-const LOGOTYPE_KEY = 'matra/assets/logotype.png';
+const LOGOTYPE_KEY = 'matra/assets/logo-new-nobg.png';
+const MATRA_LOGOTYPE_KEY = 'matra/assets/matra-gold-logotype.png';
 
 const COOLDOWN_DAYS = 7;
 
@@ -317,30 +318,34 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
   ]);
   const fonts = { regular, bold, italic, boldItalic, sans, sansBold };
 
-  // Fetch and embed logo images (signed URLs for private bucket)
-  // PNG embedding is CPU-intensive; skip images larger than 500KB to avoid edge runtime CPU limits
-  // For best results, keep logo PNGs under ~600px wide
   const MAX_IMAGE_BYTES = 500_000;
   let bannerImage: any = null;
   let logotypeImage: any = null;
+  let matraLogotype: any = null;
   try {
-    const [bannerUrl, logotypeUrl] = await Promise.all([
+    const [bannerUrl, logotypeUrl, matraLogoUrl] = await Promise.all([
       getPresignedUrl(BANNER_KEY),
       getPresignedUrl(LOGOTYPE_KEY),
+      getPresignedUrl(MATRA_LOGOTYPE_KEY),
     ]);
-    const [bannerResp, logotypeResp] = await Promise.all([
+    const [bannerResp, logotypeResp, matraLogoResp] = await Promise.all([
       fetch(bannerUrl),
       fetch(logotypeUrl),
+      fetch(matraLogoUrl),
     ]);
-    const [bannerBytes, logotypeBytes] = await Promise.all([
+    const [bannerBytes, logotypeBytes, matraLogoBytes] = await Promise.all([
       bannerResp.ok ? bannerResp.arrayBuffer() : null,
       logotypeResp.ok ? logotypeResp.arrayBuffer() : null,
+      matraLogoResp.ok ? matraLogoResp.arrayBuffer() : null,
     ]);
     if (bannerBytes && bannerBytes.byteLength <= MAX_IMAGE_BYTES) {
       bannerImage = await pdf.embedPng(new Uint8Array(bannerBytes));
     }
     if (logotypeBytes && logotypeBytes.byteLength <= MAX_IMAGE_BYTES) {
       logotypeImage = await pdf.embedPng(new Uint8Array(logotypeBytes));
+    }
+    if (matraLogoBytes && matraLogoBytes.byteLength <= MAX_IMAGE_BYTES) {
+      matraLogotype = await pdf.embedPng(new Uint8Array(matraLogoBytes));
     }
   } catch (e) { console.warn('Image embed skipped:', e); }
 
@@ -499,7 +504,7 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
   // COVER PAGE
   // ═══════════════════════════════════════════
   const cover = pdf.addPage([pageWidth, pageHeight]);
-  cover.drawRectangle({ x: 0, y: 0, width: pageWidth, height: pageHeight, color: BRAND.green });
+  cover.drawRectangle({ x: 0, y: 0, width: pageWidth, height: pageHeight, color: BRAND.cream });
   // Outer gold border
   cover.drawRectangle({
     x: borderInset, y: borderInset,
@@ -541,14 +546,29 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
   const titleW = fonts.bold.widthOfTextAtSize(safeFamilyName, titleSize);
   cover.drawText(safeFamilyName, {
     x: (pageWidth - titleW) / 2, y: centerY + 50,
-    size: titleSize, font: fonts.bold, color: BRAND.cream,
+    size: titleSize, font: fonts.bold, color: BRAND.darkText,
   });
 
-  const subtitle = t('memoryBook', lang);
-  cover.drawText(subtitle, {
-    x: (pageWidth - fonts.italic.widthOfTextAtSize(subtitle, 20)) / 2,
-    y: centerY + 15, size: 20, font: fonts.italic, color: BRAND.gold,
+  // "Memory Book by [Matra logotype]" — single line
+  const byPrefix = lang === 'es' ? ' por ' : ' by ';
+  const subtitleText = t('memoryBook', lang) + byPrefix;
+  const subFontSize = 18;
+  const subTextW = fonts.italic.widthOfTextAtSize(subtitleText, subFontSize);
+  const matraLogoH = 40;
+  const matraLogoW = matraLogotype
+    ? (matraLogotype.width / matraLogotype.height) * matraLogoH
+    : 0;
+  const subtitleTotalW = subTextW + matraLogoW;
+  const subX = (pageWidth - subtitleTotalW) / 2;
+  const subY = centerY + 15;
+  cover.drawText(subtitleText, {
+    x: subX, y: subY, size: subFontSize, font: fonts.italic, color: BRAND.gold,
   });
+  if (matraLogotype) {
+    cover.drawImage(matraLogotype, {
+      x: subX + subTextW, y: subY - 12, width: matraLogoW, height: matraLogoH,
+    });
+  }
 
   cover.drawLine({
     start: { x: pageWidth / 2 - 80, y: centerY - 5 },
@@ -1321,7 +1341,7 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
   // BACK COVER
   // ═══════════════════════════════════════════
   const back = pdf.addPage([pageWidth, pageHeight]);
-  back.drawRectangle({ x: 0, y: 0, width: pageWidth, height: pageHeight, color: BRAND.green });
+  back.drawRectangle({ x: 0, y: 0, width: pageWidth, height: pageHeight, color: BRAND.cream });
   // Double border frame (matching cover)
   back.drawRectangle({
     x: borderInset, y: borderInset,
@@ -1352,7 +1372,7 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
   const tagline = t('tagline', lang);
   back.drawText(tagline, {
     x: (pageWidth - fonts.italic.widthOfTextAtSize(tagline, 13)) / 2,
-    y: pageHeight / 2 - 30, size: 13, font: fonts.italic, color: BRAND.cream,
+    y: pageHeight / 2 - 30, size: 13, font: fonts.italic, color: BRAND.darkText,
   });
 
   // Decorative ornament below tagline

@@ -48,7 +48,8 @@ async function getPresignedUrl(key, expiresIn = 3600) {
 
 // Keys for brand assets in DO Spaces
 const BANNER_KEY = 'matra/assets/lake-boat-nobg.png';
-const LOGOTYPE_KEY = 'matra/assets/logotype.png';
+const LOGOTYPE_KEY = 'matra/assets/logo-new-nobg.png';
+const MATRA_LOGOTYPE_KEY = 'matra/assets/matra-gold-logotype.png';
 // The ONE avatar that exists — will be reused for all people
 const SHARED_AVATAR_KEY = 'matra/avatars/d3419717-3ca9-4ae5-8e5d-6705c1b43be8_1772782064115.jpg';
 
@@ -280,27 +281,46 @@ async function generateMemoryBookPDF(data) {
   const MAX_IMAGE_BYTES = 500_000;
   let bannerImage = null;
   let logotypeImage = null;
+  let matraLogotype = null;
   const avatarImages = {};
 
   try {
     console.log('Fetching images from DigitalOcean Spaces...');
-    const [bannerUrl, logotypeUrl] = await Promise.all([
+    const [bannerUrl, logotypeUrl, matraLogoUrl] = await Promise.all([
       getPresignedUrl(BANNER_KEY),
       getPresignedUrl(LOGOTYPE_KEY),
+      getPresignedUrl(MATRA_LOGOTYPE_KEY),
     ]);
-    const [bannerResp, logotypeResp] = await Promise.all([
+    const [bannerResp, logotypeResp, matraLogoResp] = await Promise.all([
       fetch(bannerUrl),
       fetch(logotypeUrl),
+      fetch(matraLogoUrl),
     ]);
-    const [bannerBytes, logotypeBytes] = await Promise.all([
+    const [bannerBytes, logotypeBytes, matraLogoBytes] = await Promise.all([
       bannerResp.ok ? bannerResp.arrayBuffer() : null,
       logotypeResp.ok ? logotypeResp.arrayBuffer() : null,
+      matraLogoResp.ok ? matraLogoResp.arrayBuffer() : null,
     ]);
     if (bannerBytes && bannerBytes.byteLength <= MAX_IMAGE_BYTES) {
       bannerImage = await pdf.embedPng(new Uint8Array(bannerBytes));
     }
     if (logotypeBytes && logotypeBytes.byteLength <= MAX_IMAGE_BYTES) {
-      logotypeImage = await pdf.embedPng(new Uint8Array(logotypeBytes));
+      try {
+        logotypeImage = await pdf.embedPng(new Uint8Array(logotypeBytes));
+      } catch {
+        logotypeImage = await pdf.embedJpg(new Uint8Array(logotypeBytes));
+      }
+      console.log(`Logotype loaded (${(logotypeBytes.byteLength / 1024).toFixed(0)}KB)`);
+    } else {
+      console.warn('Logotype NOT loaded — resp ok:', logotypeResp.ok, 'size:', logotypeBytes?.byteLength);
+    }
+    if (matraLogoBytes && matraLogoBytes.byteLength <= MAX_IMAGE_BYTES) {
+      try {
+        matraLogotype = await pdf.embedPng(new Uint8Array(matraLogoBytes));
+      } catch {
+        matraLogotype = await pdf.embedJpg(new Uint8Array(matraLogoBytes));
+      }
+      console.log(`Matra logotype loaded (${(matraLogoBytes.byteLength / 1024).toFixed(0)}KB)`);
     }
   } catch (e) { console.warn('Brand image fetch skipped:', e.message); }
 
@@ -438,7 +458,7 @@ async function generateMemoryBookPDF(data) {
   // COVER PAGE
   // ═══════════════════════════════════════════
   const cover = pdf.addPage([pageWidth, pageHeight]);
-  cover.drawRectangle({ x: 0, y: 0, width: pageWidth, height: pageHeight, color: BRAND.green });
+  cover.drawRectangle({ x: 0, y: 0, width: pageWidth, height: pageHeight, color: BRAND.cream });
   cover.drawRectangle({
     x: borderInset, y: borderInset,
     width: pageWidth - borderInset * 2, height: pageHeight - borderInset * 2,
@@ -481,14 +501,28 @@ async function generateMemoryBookPDF(data) {
   const titleW = fonts.bold.widthOfTextAtSize(safeFamilyName, titleSize);
   cover.drawText(safeFamilyName, {
     x: (pageWidth - titleW) / 2, y: centerY + 50,
-    size: titleSize, font: fonts.bold, color: BRAND.cream,
+    size: titleSize, font: fonts.bold, color: BRAND.darkText,
   });
 
-  const subtitle = t('memoryBook');
-  cover.drawText(subtitle, {
-    x: (pageWidth - fonts.italic.widthOfTextAtSize(subtitle, 20)) / 2,
-    y: centerY + 15, size: 20, font: fonts.italic, color: BRAND.gold,
+  // "Memory Book by [Matra logotype]" — single line
+  const subtitleText = t('memoryBook') + ' by ';
+  const subFontSize = 18;
+  const subTextW = fonts.italic.widthOfTextAtSize(subtitleText, subFontSize);
+  const matraLogoH = 40;
+  const matraLogoW = matraLogotype
+    ? (matraLogotype.width / matraLogotype.height) * matraLogoH
+    : 0;
+  const subtitleTotalW = subTextW + matraLogoW;
+  const subX = (pageWidth - subtitleTotalW) / 2;
+  const subY = centerY + 15;
+  cover.drawText(subtitleText, {
+    x: subX, y: subY, size: subFontSize, font: fonts.italic, color: BRAND.gold,
   });
+  if (matraLogotype) {
+    cover.drawImage(matraLogotype, {
+      x: subX + subTextW, y: subY - 12, width: matraLogoW, height: matraLogoH,
+    });
+  }
 
   cover.drawLine({
     start: { x: pageWidth / 2 - 80, y: centerY - 5 },
@@ -1225,7 +1259,7 @@ async function generateMemoryBookPDF(data) {
   // BACK COVER
   // ═══════════════════════════════════════════
   const back = pdf.addPage([pageWidth, pageHeight]);
-  back.drawRectangle({ x: 0, y: 0, width: pageWidth, height: pageHeight, color: BRAND.green });
+  back.drawRectangle({ x: 0, y: 0, width: pageWidth, height: pageHeight, color: BRAND.cream });
   back.drawRectangle({
     x: borderInset, y: borderInset,
     width: pageWidth - borderInset * 2, height: pageHeight - borderInset * 2,
@@ -1260,7 +1294,7 @@ async function generateMemoryBookPDF(data) {
   const tagline = t('tagline');
   back.drawText(tagline, {
     x: (pageWidth - fonts.italic.widthOfTextAtSize(tagline, 13)) / 2,
-    y: pageHeight / 2 - 30, size: 13, font: fonts.italic, color: BRAND.cream,
+    y: pageHeight / 2 - 30, size: 13, font: fonts.italic, color: BRAND.darkText,
   });
 
   const backCX = pageWidth / 2;
