@@ -98,7 +98,8 @@ function t(key) { return PDF_STRINGS[key] || key; }
 
 const REL_LABELS = {
   parent: 'Parent', child: 'Child', spouse: 'Spouse', ex_spouse: 'Ex-Spouse',
-  sibling: 'Sibling', grandparent: 'Grandparent', grandchild: 'Grandchild',
+  sibling: 'Sibling', half_sibling: 'Half Sibling', step_sibling: 'Step Sibling',
+  grandparent: 'Grandparent', grandchild: 'Grandchild',
   uncle_aunt: 'Uncle/Aunt', nephew_niece: 'Nephew/Niece', cousin: 'Cousin',
   in_law: 'In-law', step_parent: 'Step Parent', step_child: 'Step Child',
   godparent: 'Godparent', godchild: 'Godchild',
@@ -106,159 +107,97 @@ const REL_LABELS = {
 };
 function getRelLabel(type) { return REL_LABELS[type] || type; }
 
+const INVERSE_REL = {
+  parent: 'child', child: 'parent',
+  grandparent: 'grandchild', grandchild: 'grandparent',
+  uncle_aunt: 'nephew_niece', nephew_niece: 'uncle_aunt',
+  step_parent: 'step_child', step_child: 'step_parent',
+  half_sibling: 'half_sibling', step_sibling: 'step_sibling',
+  adopted_parent: 'adopted_child', adopted_child: 'adopted_parent',
+  godparent: 'godchild', godchild: 'godparent',
+};
+
 // ══════════════════════════════════════════════════════
-// RICH MOCK DATA — edit this to test different scenarios
+// DATA SOURCE: Load from real audio test debug output
 // ══════════════════════════════════════════════════════
+const debugPath = path.join(__dirname, 'test-real-audio-debug.json');
+const rawDebug = JSON.parse(fs.readFileSync(debugPath, 'utf8'));
+
+// Placeholder biography generator
+const PLACEHOLDER_BIO = (name, birthPlace, birthDate) => {
+  const place = birthPlace || 'an unknown town';
+  const year = birthDate ? new Date(birthDate).getFullYear() : 'an earlier time';
+  return `${name} was born in ${place} in ${year}. From an early age, they showed a deep commitment to family and community. Their journey through life has been shaped by the relationships they built, the challenges they overcame, and the values they passed on to the next generation.\n\nThose who know ${name.split(' ')[0]} best describe them as someone whose presence brings warmth and stability to every gathering. Whether through small daily acts of kindness or larger moments of courage, they have left an indelible mark on everyone around them.\n\nTheir story continues to unfold, woven into the larger tapestry of the family — a testament to the power of love, resilience, and connection across generations.`;
+};
+
+// Transform real audio people into memory book format
+const realPeople = rawDebug.finalPeople.map((p, i) => {
+  const fullName = [p.first_name, p.last_name].filter(Boolean).join(' ');
+  // Give biographies to the first 6 people, summaries to the next few
+  let ai_biography = null;
+  let ai_summary = null;
+  if (i < 6) {
+    ai_biography = PLACEHOLDER_BIO(fullName, p.birth_place, p.birth_date);
+  } else if (i < 10) {
+    ai_summary = `${fullName} is a valued member of the Bueso family. Their warmth and dedication to loved ones has been a constant throughout the years.`;
+  }
+  return {
+    id: p.id,
+    first_name: p.first_name,
+    last_name: p.last_name,
+    birth_date: p.birth_date || null,
+    birth_place: p.birth_place || null,
+    current_location: p.current_location || null,
+    death_date: p.death_date || null,
+    avatar_url: SHARED_AVATAR_KEY,
+    ai_biography,
+    ai_summary,
+  };
+});
+
+// Transform stories
+const realStories = (rawDebug.finalStories || []).map((s, i) => ({
+  id: `s${i + 1}`,
+  title: s.title,
+  content: s.content,
+  event_date: s.event_date || null,
+  event_location: s.event_location || null,
+  ai_generated: true,
+}));
+
+// Transform interviews
+const realInterviews = (rawDebug.interviews || []).map((iv, i) => ({
+  id: iv.interviewId || `i${i + 1}`,
+  title: iv.label || `Interview ${i + 1}`,
+  ai_summary: iv.transcript || 'No summary available.',
+  ai_key_topics: [],
+  subject_person_id: rawDebug.finalPeople[0]?.id,
+  created_at: new Date().toISOString(),
+}));
+
+// Filter to only verified or high-confidence relationships, limit to avoid clutter
+const realRels = rawDebug.finalRelationships
+  .filter(r => r.verified || r.confidence >= 0.7)
+  .map(r => ({
+    person_a_id: r.person_a_id,
+    person_b_id: r.person_b_id,
+    relationship_type: r.relationship_type,
+    family_group_id: 'fg1',
+    verified: r.verified || false,
+  }));
+
 const MOCK = {
   familyGroup: {
-    name: "The Martinez Family",
-    description: "A warm and vibrant family rooted in the traditions of northern Mexico, spanning four generations across two countries. From the ranch lands of Chihuahua to the bustling streets of San Antonio, the Martinez family story is one of resilience, love, and deep connection to heritage.",
+    name: 'The Bueso Family',
+    description: 'A vibrant family spanning generations and continents, from Puerto Rico to Mexico City and beyond. The Bueso family story is one of adventure, connection, and the enduring bonds that tie loved ones together across borders and through time.',
   },
-  people: [
-    {
-      id: 'p1', first_name: 'Carlos', last_name: 'Martinez',
-      birth_date: '1958-03-15', birth_place: 'Chihuahua, Mexico',
-      current_location: 'San Antonio, TX', death_date: null,
-      avatar_url: SHARED_AVATAR_KEY,
-      ai_biography: 'Carlos Martinez was born on a small ranch outside Chihuahua, Mexico in the spring of 1958. The eldest of five children, Carlos learned early the values of hard work and family loyalty from his father, a cattle rancher, and his mother, a schoolteacher who insisted every child in the region deserved an education. By the age of twelve, Carlos could manage the ranch operations alongside his father, but his mother\'s influence sparked a different dream — he wanted to become an engineer.\n\nAt eighteen, Carlos crossed the border to attend the University of Texas at El Paso on a partial scholarship, working nights at a local restaurant to make ends meet. It was there, during a late shift, that he met Elena Gutierrez, a nursing student with a laugh that could fill any room. They married in 1982 in a small ceremony at San Fernando Cathedral in San Antonio, beginning a partnership that would last over four decades.\n\nCarlos built a successful career in civil engineering, contributing to the design of several bridges and highways across Texas. But those who know him best say his greatest engineering feat was building a family that stayed connected across borders and generations. Every Sunday, without exception, the Martinez home fills with the aroma of Elena\'s tamales and the sound of grandchildren playing in the yard.\n\nNow semi-retired, Carlos spends his mornings tending to a garden that mirrors the one his mother kept in Chihuahua. He volunteers with local organizations that help immigrant families navigate their first years in the United States, driven by the same belief his mother held — that every person deserves a chance to build something meaningful.',
-      ai_summary: null,
-    },
-    {
-      id: 'p2', first_name: 'Elena', last_name: 'Martinez',
-      birth_date: '1960-07-22', birth_place: 'San Antonio, TX',
-      current_location: 'San Antonio, TX', death_date: null,
-      avatar_url: SHARED_AVATAR_KEY,
-      ai_biography: 'Elena Gutierrez Martinez has been the heart of the Martinez family since the day she married Carlos in 1982. Born and raised in San Antonio\'s West Side, Elena grew up in a household where her grandmother\'s remedies and her mother\'s cooking were considered the best medicine for any ailment. She carried this nurturing spirit into her career as a registered nurse at Methodist Hospital, where she worked for over thirty years.\n\nElena is known for her ability to remember every birthday, every anniversary, and every preference of every family member. She keeps a handwritten notebook — now spanning three volumes — of family recipes, medical histories, and the little details that make each person feel seen. When her children were young, she organized weekly "story nights" where the family would share memories, a tradition that planted the seeds for the family\'s deep appreciation of their shared history.\n\nAfter retiring from nursing in 2020, Elena turned her attention to preserving the family\'s cultural heritage, learning traditional embroidery techniques from her mother and teaching them to her granddaughters.',
-      ai_summary: null,
-    },
-    {
-      id: 'p3', first_name: 'Miguel', last_name: 'Martinez',
-      birth_date: '1985-11-03', birth_place: 'San Antonio, TX',
-      current_location: 'Austin, TX', death_date: null,
-      avatar_url: SHARED_AVATAR_KEY,
-      ai_biography: null,
-      ai_summary: 'Miguel is the eldest son of Carlos and Elena. He works as a software developer in Austin and visits his parents every other weekend. Miguel is passionate about music and plays guitar in a local band that performs at community events. He is married to Sarah and they have two children, Lily and Diego.',
-    },
-    {
-      id: 'p4', first_name: 'Sofia', last_name: 'Martinez-Ruiz',
-      birth_date: '1988-04-17', birth_place: 'San Antonio, TX',
-      current_location: 'San Antonio, TX', death_date: null,
-      avatar_url: SHARED_AVATAR_KEY,
-      ai_biography: null,
-      ai_summary: 'Sofia is the youngest child of Carlos and Elena. She followed her mother\'s footsteps into healthcare and works as a pediatrician. Sofia married David Ruiz in 2015 and they have a daughter named Isabella.',
-    },
-    {
-      id: 'p5', first_name: 'Roberto', last_name: 'Martinez',
-      birth_date: '1930-01-08', birth_place: 'Chihuahua, Mexico',
-      current_location: null, death_date: '2005-09-12',
-      avatar_url: SHARED_AVATAR_KEY,
-      ai_biography: 'Roberto Martinez was a cattle rancher in the rugged terrain outside Chihuahua, Mexico. Known throughout the region as a man of few words but great generosity, Roberto built the family ranch from a modest plot of land into a thriving operation that supported not only his family but several neighboring families who worked alongside him. He married Maria Luisa, a schoolteacher from the nearby town, and together they raised five children with a blend of discipline and warmth that became the foundation of the Martinez family values.',
-      ai_summary: null,
-    },
-    {
-      id: 'p6', first_name: 'Maria Luisa', last_name: 'Martinez',
-      birth_date: '1933-06-20', birth_place: 'Delicias, Chihuahua',
-      current_location: 'Chihuahua, Mexico', death_date: null,
-      avatar_url: SHARED_AVATAR_KEY,
-      ai_biography: null,
-      ai_summary: 'Maria Luisa was a beloved schoolteacher who taught for over 40 years in rural Chihuahua. She is known for her incredible memory and can still recite poetry she learned as a young girl. At 92, she continues to live independently and tends to a small garden.',
-    },
-    {
-      id: 'p7', first_name: 'Sarah', last_name: 'Martinez',
-      birth_date: '1987-02-14', birth_place: 'Dallas, TX',
-      current_location: 'Austin, TX', death_date: null,
-      avatar_url: SHARED_AVATAR_KEY, ai_biography: null, ai_summary: null,
-    },
-    {
-      id: 'p8', first_name: 'David', last_name: 'Ruiz',
-      birth_date: '1986-08-30', birth_place: 'Houston, TX',
-      current_location: 'San Antonio, TX', death_date: null,
-      avatar_url: SHARED_AVATAR_KEY, ai_biography: null, ai_summary: null,
-    },
-  ],
-  relationships: [
-    { person_a_id: 'p1', person_b_id: 'p2', relationship_type: 'spouse', family_group_id: 'fg1', verified: true },
-    { person_a_id: 'p1', person_b_id: 'p3', relationship_type: 'parent', family_group_id: 'fg1', verified: true },
-    { person_a_id: 'p1', person_b_id: 'p4', relationship_type: 'parent', family_group_id: 'fg1', verified: true },
-    { person_a_id: 'p2', person_b_id: 'p3', relationship_type: 'parent', family_group_id: 'fg1', verified: true },
-    { person_a_id: 'p2', person_b_id: 'p4', relationship_type: 'parent', family_group_id: 'fg1', verified: true },
-    { person_a_id: 'p3', person_b_id: 'p4', relationship_type: 'sibling', family_group_id: 'fg1', verified: true },
-    { person_a_id: 'p5', person_b_id: 'p6', relationship_type: 'spouse', family_group_id: 'fg1', verified: true },
-    { person_a_id: 'p5', person_b_id: 'p1', relationship_type: 'parent', family_group_id: 'fg1', verified: true },
-    { person_a_id: 'p6', person_b_id: 'p1', relationship_type: 'parent', family_group_id: 'fg1', verified: true },
-    { person_a_id: 'p3', person_b_id: 'p7', relationship_type: 'spouse', family_group_id: 'fg1', verified: true },
-    { person_a_id: 'p4', person_b_id: 'p8', relationship_type: 'spouse', family_group_id: 'fg1', verified: true },
-    { person_a_id: 'p5', person_b_id: 'p3', relationship_type: 'grandparent', family_group_id: 'fg1', verified: false },
-    { person_a_id: 'p5', person_b_id: 'p4', relationship_type: 'grandparent', family_group_id: 'fg1', verified: false },
-    { person_a_id: 'p7', person_b_id: 'p1', relationship_type: 'in_law', family_group_id: 'fg1', verified: false },
-    { person_a_id: 'p8', person_b_id: 'p1', relationship_type: 'in_law', family_group_id: 'fg1', verified: false },
-  ],
-  stories: [
-    {
-      id: 's1',
-      title: 'The Night We Crossed the River',
-      content: 'It was the summer of 1976 when Carlos, barely eighteen, made the journey north that would change the trajectory of the Martinez family forever. His father Roberto drove him to the bus station in Chihuahua City before dawn, pressing a small leather pouch into his hands. Inside were two hundred dollars — nearly three months of ranch earnings — and a handwritten note from his mother: "Study hard. Make us proud. Come home when you can."\n\nThe bus ride to Juarez took eight hours through the desert. Carlos remembered watching the landscape shift from green ranch land to barren brown earth, the temperature rising with each mile. At the border, he clutched his student visa and the acceptance letter from UTEP, his palms sweating not from the heat but from the weight of leaving everything he knew.\n\nThat first night in El Paso, sleeping on a borrowed mattress in a shared apartment with three other students, Carlos could hear the sounds of two countries mixing — radio stations in Spanish drifting through the window alongside English conversations from the hallway. He wrote in his journal: "I am standing between two worlds. I will build a bridge."\n\nDecades later, that metaphor would prove prophetic — Carlos literally became an engineer who designed bridges, connecting communities across Texas just as he had connected his own family across the border.',
-      event_date: 'Summer 1976',
-      event_location: 'Chihuahua to El Paso',
-      ai_generated: false,
-    },
-    {
-      id: 's2',
-      title: 'Grandma\'s Tamale Recipe',
-      content: 'Every December, the Martinez kitchen transforms into a tamale factory. Elena learned the recipe from her grandmother, Abuela Rosa, who claimed the secret was in the masa — it had to be mixed by hand, never with a machine, and you had to sing while you worked.\n\nThe tradition starts the first Saturday of December. Elena rises before dawn to prepare the masa, soaking dried corn husks the night before. By mid-morning, the entire family arrives: Sofia brings the chiles, Miguel handles the meat preparation, and even the grandchildren have assigned roles — usually spreading masa on husks under Elena\'s watchful eye.\n\nThe recipe has never been written down completely. Elena keeps it partially documented in her family notebook, but she insists that certain steps can only be taught in person, hand over hand. "The recipe lives in the doing," she says. "You can\'t learn to make tamales from a book any more than you can learn to love from one."\n\nLast year, the family made over 300 tamales in a single day — enough to distribute to neighbors, Elena\'s former colleagues at the hospital, and the local church. It\'s become as much a community event as a family tradition.',
-      event_date: 'December (Annual)',
-      event_location: 'Martinez Family Home, San Antonio',
-      ai_generated: true,
-    },
-    {
-      id: 's3',
-      title: 'The Wedding at San Fernando Cathedral',
-      content: 'Carlos and Elena\'s wedding on June 12, 1982, was a modest affair by any standard, but those who attended still speak of it as one of the most beautiful ceremonies they\'ve ever witnessed. San Fernando Cathedral, the oldest cathedral in Texas, provided a backdrop that made the small gathering feel grand.\n\nElena wore her mother\'s wedding dress, altered by a seamstress in the neighborhood who refused payment, saying it was her gift to the couple. Carlos wore a suit borrowed from his cousin, slightly too large in the shoulders but impeccable in its pressed creases. Roberto and Maria Luisa made the long journey from Chihuahua, Roberto wearing his best boots and Maria Luisa carrying a rosary that had been in their family for three generations.\n\nThe reception was held in the backyard of Elena\'s parents\' home on the West Side. A local conjunto band played until midnight, and Elena\'s mother prepared enough food to feed twice the number of guests who attended. The highlight of the evening was when Roberto, a man not known for public displays of emotion, stood up and gave a toast in Spanish that brought the entire gathering to tears.',
-      event_date: 'June 12, 1982',
-      event_location: 'San Fernando Cathedral, San Antonio',
-      ai_generated: false,
-    },
-  ],
-  interviews: [
-    {
-      id: 'i1',
-      title: 'Memories of the Ranch',
-      ai_summary: 'Carlos shared vivid memories of growing up on his father\'s cattle ranch outside Chihuahua. He described the daily routines of ranch life — waking before dawn to feed the animals, riding horses through the foothills, and the community gatherings that brought neighboring families together. He spoke with particular warmth about his mother\'s insistence on education, describing how she would tutor him and his siblings by lamplight after the day\'s work was done. Carlos also recounted the bittersweet moment of leaving the ranch at eighteen, knowing that his departure was both his parents\' greatest hope and their deepest sorrow. The conversation revealed how profoundly those early years shaped his values of hard work, family loyalty, and giving back to the community.',
-      ai_key_topics: ['Ranch Life', 'Childhood Memories', 'Education', 'Family Values', 'Immigration', 'Rural Mexico', 'Mother\'s Influence'],
-      subject_person_id: 'p1',
-      created_at: '2025-11-15T14:30:00Z',
-    },
-    {
-      id: 'i2',
-      title: 'Elena\'s Nursing Years',
-      ai_summary: 'Elena reflected on her three decades as a registered nurse at Methodist Hospital in San Antonio. She described the challenges of balancing a demanding career with raising two children, crediting Carlos\'s unwavering support and her own mother\'s willingness to help with childcare. Elena shared stories of patients who left lasting impressions — a young mother she helped through a difficult delivery who later became a lifelong friend, and an elderly veteran whose stories of resilience inspired her own approach to caregiving. She also spoke about the evolution of nursing during her career, from paper charts to digital records, and how she adapted to each change while maintaining the human connection she believes is the essence of healthcare. Elena expressed no regrets about her career choice, saying that nursing taught her to see the extraordinary in ordinary moments.',
-      ai_key_topics: ['Nursing Career', 'Work-Life Balance', 'Patient Stories', 'Healthcare Evolution', 'Caregiving', 'Family Support'],
-      subject_person_id: 'p2',
-      created_at: '2025-12-01T10:00:00Z',
-    },
-    {
-      id: 'i3',
-      title: 'Growing Up Martinez',
-      ai_summary: 'Miguel and Sofia joined together for a conversation about their childhood in the Martinez household. They recalled the Sunday dinners that were non-negotiable family events, the summer trips to visit grandparents in Chihuahua, and the gentle rivalries that defined their sibling relationship. Miguel described learning guitar from a neighbor while Sofia practiced medicine on her stuffed animals. Both siblings emphasized how their parents created a home that celebrated both their Mexican heritage and their American identity, never treating the two as contradictory. Sofia shared a moving story about the moment she decided to become a doctor — watching her mother care for their ailing grandfather with both professional skill and boundless love.',
-      ai_key_topics: ['Sibling Bond', 'Cultural Identity', 'Sunday Dinners', 'Childhood', 'Heritage', 'Career Inspiration', 'Bicultural Life', 'Summer Trips'],
-      subject_person_id: 'p3',
-      created_at: '2026-01-20T16:45:00Z',
-    },
-  ],
-  storyPeople: [
-    { story_id: 's1', person_id: 'p1', role: 'subject' },
-    { story_id: 's1', person_id: 'p5', role: 'mentioned' },
-    { story_id: 's1', person_id: 'p6', role: 'mentioned' },
-    { story_id: 's2', person_id: 'p2', role: 'subject' },
-    { story_id: 's2', person_id: 'p3', role: 'mentioned' },
-    { story_id: 's2', person_id: 'p4', role: 'mentioned' },
-    { story_id: 's3', person_id: 'p1', role: 'subject' },
-    { story_id: 's3', person_id: 'p2', role: 'subject' },
-    { story_id: 's3', person_id: 'p5', role: 'mentioned' },
-    { story_id: 's3', person_id: 'p6', role: 'mentioned' },
-  ],
+  people: realPeople,
+  relationships: realRels,
+  stories: realStories,
+  interviews: realInterviews,
+  storyPeople: [],
   profileName: 'Carlos',
-  selfPersonId: 'p1',
+  selfPersonId: rawDebug.finalPeople[0]?.id || 'person-narrator-carlos',
   language: 'en',
 };
 
@@ -532,13 +471,13 @@ async function generateMemoryBookPDF(data) {
     cover.drawRectangle({ x, y: 0, width: 1.5, height: h, color: BRAND.green });
   }
 
-  // ── Logotype centered exactly at page center ──
+  // ── Logotype slightly above page center ──
   if (logotypeImage) {
-    const ltDim = logotypeImage.scale(0.5);
-    const ltW = Math.min(ltDim.width, 200);
+    const ltDim = logotypeImage.scale(0.4);
+    const ltW = Math.min(ltDim.width, 160);
     const ltH = ltW * (ltDim.height / ltDim.width);
     cover.drawImage(logotypeImage, {
-      x: (pageWidth - ltW) / 2, y: (pageHeight - ltH) / 2,
+      x: (pageWidth - ltW) / 2, y: (pageHeight - ltH) / 2 + 40,
       width: ltW, height: ltH,
     });
   }
@@ -710,21 +649,29 @@ async function generateMemoryBookPDF(data) {
       const personRels = data.relationships.filter(
         r => r.person_a_id === person.id || r.person_b_id === person.id
       );
-      const relTexts = personRels.length > 0
-        ? personRels.slice(0, 6).map(r => {
-            const otherId = r.person_a_id === person.id ? r.person_b_id : r.person_a_id;
-            const other = data.people.find(p => p.id === otherId);
-            const otherName = other ? [other.first_name, other.last_name].filter(Boolean).join(' ') : t('unknown');
-            return `${getRelLabel(r.relationship_type)}: ${otherName}`;
-          })
-        : [];
+      const relTexts = [];
+      const seenOthers = new Set();
+      for (const r of personRels) {
+        const iAmA = r.person_a_id === person.id;
+        const otherId = iAmA ? r.person_b_id : r.person_a_id;
+        if (seenOthers.has(otherId)) continue;
+        seenOthers.add(otherId);
+        const other = data.people.find(p => p.id === otherId);
+        const otherName = other ? [other.first_name, other.last_name].filter(Boolean).join(' ') : t('unknown');
+        // When I'm person_a, the type describes MY role → invert to get other's role
+        const displayType = iAmA ? (INVERSE_REL[r.relationship_type] || r.relationship_type) : r.relationship_type;
+        relTexts.push(`${getRelLabel(displayType)}: ${otherName}`);
+        if (relTexts.length >= 6) break;
+      }
 
       if (hasBio && avatar) {
         // ── TWO-COLUMN LAYOUT (bio + avatar) ──
+        const imageOnRight = personIndex % 2 === 1;
+        personIndex++;
         const blockTopY = y;
-        const imgX = margin;
+        const imgX = imageOnRight ? margin + contentWidth - AVATAR_SIZE : margin;
 
-        // LEFT COL: Avatar
+        // Avatar column
         page.drawRectangle({
           x: imgX - AVATAR_BORDER, y: blockTopY - AVATAR_SIZE - AVATAR_BORDER,
           width: AVATAR_SIZE + AVATAR_BORDER * 2, height: AVATAR_SIZE + AVATAR_BORDER * 2,
@@ -736,7 +683,7 @@ async function generateMemoryBookPDF(data) {
 
         let leftY = blockTopY - AVATAR_SIZE - AVATAR_BORDER - 20;
 
-        // LEFT COL: Detail tags below avatar
+        // Detail tags below avatar
         for (const detail of details) {
           const detRes = drawWrappedText(
             { page, y: leftY }, detail, imgX,
@@ -746,7 +693,7 @@ async function generateMemoryBookPDF(data) {
           page = detRes.page; leftY = detRes.y;
         }
 
-        // LEFT COL: Relationship tags
+        // Relationship tags below avatar
         if (relTexts.length > 0) {
           leftY -= 4;
           for (const relLine of relTexts) {
@@ -759,21 +706,20 @@ async function generateMemoryBookPDF(data) {
           }
         }
 
-        // RIGHT COL: Name
-        const rightColX = margin + AVATAR_SIZE + AVATAR_GAP;
-        const rightColWidth = contentWidth - AVATAR_SIZE - AVATAR_GAP;
+        // Text column: Name + Biography
+        const textColX = imageOnRight ? margin : margin + AVATAR_SIZE + AVATAR_GAP;
+        const textColWidth = contentWidth - AVATAR_SIZE - AVATAR_GAP;
         let rightY = blockTopY;
 
-        page.drawText(sanitize(fullName), { x: rightColX, y: rightY, size: 17, font: fonts.bold, color: BRAND.darkText });
+        page.drawText(sanitize(fullName), { x: textColX, y: rightY, size: 17, font: fonts.bold, color: BRAND.darkText });
         rightY -= 22;
 
-        // RIGHT COL: Biography
         const bioText = person.ai_biography || person.ai_summary;
         const bioFont = person.ai_biography ? fonts.regular : fonts.italic;
         const bioColor = person.ai_biography ? BRAND.darkText : BRAND.mutedText;
 
         const bioRes = drawWrappedText(
-          { page, y: rightY }, bioText, rightColX, bioFont, 10.5, bioColor, rightColWidth, 15,
+          { page, y: rightY }, bioText, textColX, bioFont, 10.5, bioColor, textColWidth, 15,
           (pg) => { drawFooter(pg, pageNum); pageNum++; }
         );
         page = bioRes.page; rightY = bioRes.y;
@@ -987,6 +933,16 @@ async function generateMemoryBookPDF(data) {
         if (!spouseOf.has(b)) spouseOf.set(b, new Set());
         spouseOf.get(a).add(b);
         spouseOf.get(b).add(a);
+      } else if (type === 'step_parent') {
+        if (!childrenOf.has(a)) childrenOf.set(a, []);
+        childrenOf.get(a).push(b);
+        if (!parentOf.has(b)) parentOf.set(b, []);
+        parentOf.get(b).push(a);
+      } else if (type === 'step_child') {
+        if (!childrenOf.has(b)) childrenOf.set(b, []);
+        childrenOf.get(b).push(a);
+        if (!parentOf.has(a)) parentOf.set(a, []);
+        parentOf.get(a).push(b);
       } else if (type === 'sibling' || type === 'half_sibling' || type === 'step_sibling') {
         if (!siblingOf.has(a)) siblingOf.set(a, new Set());
         if (!siblingOf.has(b)) siblingOf.set(b, new Set());
@@ -1041,8 +997,6 @@ async function generateMemoryBookPDF(data) {
     const availH = graphTopY - graphBottomY;
     const availW = graphRightX - graphLeftX;
 
-    const maxPerRow = Math.max(...sortedGens.map(g => genGroups.get(g).length));
-    const H_SPACING = Math.min(100, availW / Math.max(maxPerRow, 1));
     const V_SPACING = Math.min(110, availH / Math.max(sortedGens.length, 1));
 
     const positions = new Map();
@@ -1076,15 +1030,36 @@ async function generateMemoryBookPDF(data) {
         }
       }
 
-      const rowW = sorted.length * H_SPACING;
-      const startX = graphCenterX - rowW / 2 + H_SPACING / 2;
       const posY = graphTopY - gi * V_SPACING;
+      if (sorted.length === 1) {
+        positions.set(sorted[0], { x: graphCenterX, y: posY });
+        continue;
+      }
 
+      // Measure label widths to prevent overlap
+      const labelWidths = sorted.map(pid => {
+        const p = peopleById.get(pid);
+        const name = sanitize(p?.first_name || '');
+        return Math.max(fonts.sansBold.widthOfTextAtSize(name, 8.5), NODE_RADIUS * 2);
+      });
+
+      // Compute minimum gaps between adjacent nodes
+      const minGaps = [];
+      for (let i = 0; i < sorted.length - 1; i++) {
+        minGaps.push((labelWidths[i] + labelWidths[i + 1]) / 2 + 8);
+      }
+      const totalMinWidth = minGaps.reduce((a, b) => a + b, 0);
+
+      // Scale down if row is too wide for available space
+      const scale = totalMinWidth > availW ? availW / totalMinWidth : 1;
+      const totalWidth = totalMinWidth * scale;
+
+      // Center the row and place nodes
+      let curX = graphCenterX - totalWidth / 2;
       for (let xi = 0; xi < sorted.length; xi++) {
-        // Clamp X to stay within margins
-        const rawX = startX + xi * H_SPACING;
-        const clampedX = Math.max(graphLeftX, Math.min(graphRightX, rawX));
+        const clampedX = Math.max(graphLeftX, Math.min(graphRightX, curX));
         positions.set(sorted[xi], { x: clampedX, y: posY });
+        if (xi < sorted.length - 1) curX += minGaps[xi] * scale;
       }
     }
 
@@ -1106,15 +1081,6 @@ async function generateMemoryBookPDF(data) {
     }
 
     // ── Build relationship label lookup (relative to self) ──
-    // Invert type when self is person_a: "self is parent of X" → X is "child" to self
-    const INVERSE_REL = {
-      parent: 'child', child: 'parent',
-      grandparent: 'grandchild', grandchild: 'grandparent',
-      uncle_aunt: 'nephew_niece', nephew_niece: 'uncle_aunt',
-      step_parent: 'step_child', step_child: 'step_parent',
-      adopted_parent: 'adopted_child', adopted_child: 'adopted_parent',
-      godparent: 'godchild', godchild: 'godparent',
-    };
     const relToSelf = new Map();
     for (const rel of data.relationships) {
       if (rel.person_a_id === selfId) {
