@@ -28,9 +28,10 @@ const BRAND = {
   margin: 50,
 };
 
-const BANNER_KEY = 'matra/assets/new-lakeboat-nobg.png';
-const LOGOTYPE_KEY = 'matra/assets/logo-new-nobg.png';
-const MATRA_LOGOTYPE_KEY = 'matra/assets/matra-gold-logotype.png';
+const LOGOTYPE_KEY = 'matra/assets/logotype.png';
+const MATRA_LOGOTYPE_KEY = 'matra/assets/matra-gold-text.png';
+const MATRA_CREAM_KEY = 'matra/assets/matra-cream-text.png';
+const CHAIR_ICON_KEY = 'matra/assets/icon-chair-nobg.png';
 
 const COOLDOWN_DAYS = 7;
 
@@ -299,7 +300,6 @@ interface PageContext {
   y: number;
   pageNum: number;
   fonts: { regular: any; bold: any; italic: any; boldItalic: any; sans: any; sansBold: any };
-  bannerImage: any;
   logotypeImage: any;
 }
 
@@ -319,33 +319,40 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
   const fonts = { regular, bold, italic, boldItalic, sans, sansBold };
 
   const MAX_IMAGE_BYTES = 500_000;
-  let bannerImage: any = null;
   let logotypeImage: any = null;
   let matraLogotype: any = null;
+  let matraCreamLogotype: any = null;
+  let chairIconImage: any = null;
   try {
-    const [bannerUrl, logotypeUrl, matraLogoUrl] = await Promise.all([
-      getPresignedUrl(BANNER_KEY),
+    const [logotypeUrl, matraLogoUrl, matraCreamUrl, chairIconUrl] = await Promise.all([
       getPresignedUrl(LOGOTYPE_KEY),
       getPresignedUrl(MATRA_LOGOTYPE_KEY),
+      getPresignedUrl(MATRA_CREAM_KEY),
+      getPresignedUrl(CHAIR_ICON_KEY),
     ]);
-    const [bannerResp, logotypeResp, matraLogoResp] = await Promise.all([
-      fetch(bannerUrl),
+    const [logotypeResp, matraLogoResp, matraCreamResp, chairIconResp] = await Promise.all([
       fetch(logotypeUrl),
       fetch(matraLogoUrl),
+      fetch(matraCreamUrl),
+      fetch(chairIconUrl),
     ]);
-    const [bannerBytes, logotypeBytes, matraLogoBytes] = await Promise.all([
-      bannerResp.ok ? bannerResp.arrayBuffer() : null,
+    const [logotypeBytes, matraLogoBytes, matraCreamBytes, chairIconBytes] = await Promise.all([
       logotypeResp.ok ? logotypeResp.arrayBuffer() : null,
       matraLogoResp.ok ? matraLogoResp.arrayBuffer() : null,
+      matraCreamResp.ok ? matraCreamResp.arrayBuffer() : null,
+      chairIconResp.ok ? chairIconResp.arrayBuffer() : null,
     ]);
-    if (bannerBytes && bannerBytes.byteLength <= MAX_IMAGE_BYTES) {
-      bannerImage = await pdf.embedPng(new Uint8Array(bannerBytes));
-    }
     if (logotypeBytes && logotypeBytes.byteLength <= MAX_IMAGE_BYTES) {
       logotypeImage = await pdf.embedPng(new Uint8Array(logotypeBytes));
     }
     if (matraLogoBytes && matraLogoBytes.byteLength <= MAX_IMAGE_BYTES) {
       matraLogotype = await pdf.embedPng(new Uint8Array(matraLogoBytes));
+    }
+    if (matraCreamBytes && matraCreamBytes.byteLength <= MAX_IMAGE_BYTES) {
+      matraCreamLogotype = await pdf.embedPng(new Uint8Array(matraCreamBytes));
+    }
+    if (chairIconBytes && chairIconBytes.byteLength <= MAX_IMAGE_BYTES) {
+      chairIconImage = await pdf.embedPng(new Uint8Array(chairIconBytes));
     }
   } catch (e) { console.warn('Image embed skipped:', e); }
 
@@ -504,112 +511,98 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
   // COVER PAGE
   // ═══════════════════════════════════════════
   const cover = pdf.addPage([pageWidth, pageHeight]);
+
+  // ── Cream background ──
   cover.drawRectangle({ x: 0, y: 0, width: pageWidth, height: pageHeight, color: BRAND.cream });
-  // Outer gold border
-  cover.drawRectangle({
-    x: borderInset, y: borderInset,
-    width: pageWidth - borderInset * 2, height: pageHeight - borderInset * 2,
-    borderColor: BRAND.gold, borderWidth: 2,
-  });
-  // Inner gold border (double-frame effect)
-  cover.drawRectangle({
-    x: borderInset + 6, y: borderInset + 6,
-    width: pageWidth - borderInset * 2 - 12, height: pageHeight - borderInset * 2 - 12,
-    borderColor: BRAND.gold, borderWidth: 0.5,
-  });
-  // Corner ornaments (small gold squares at each corner)
-  const co = 4;
-  for (const cx of [borderInset - co / 2, pageWidth - borderInset - co / 2]) {
-    for (const cy of [borderInset - co / 2, pageHeight - borderInset - co / 2]) {
-      cover.drawRectangle({ x: cx, y: cy, width: co, height: co, color: BRAND.gold });
+
+  // ── Mountain ridgeline helpers ──
+  const _sr = (v: number) => { const s = Math.sin(v * 12.9898 + 78.233) * 43758.5453; return s - Math.floor(s); };
+  const _vn = (x: number, seed: number, sc: number) => {
+    const xi = Math.floor(x / sc), xf = (x / sc) - xi;
+    const sm = xf * xf * (3 - 2 * xf);
+    return _sr(xi + seed) + (_sr(xi + 1 + seed) - _sr(xi + seed)) * sm;
+  };
+  const mtnNoise = (x: number, seed: number, amp: number, pers: number, baseScale: number, oct: number) => {
+    let v = 0, a = amp, sc = baseScale;
+    for (let i = 0; i < oct; i++) { v += (_vn(x, seed + i * 1000, sc) * 2 - 1) * a; a *= pers; sc /= 2; }
+    return v;
+  };
+  const _prof = (pts: number[][], x: number) => {
+    const t = x / pageWidth;
+    if (t <= pts[0][0]) return pts[0][1] * pageHeight;
+    if (t >= pts[pts.length - 1][0]) return pts[pts.length - 1][1] * pageHeight;
+    for (let i = 0; i < pts.length - 1; i++) {
+      if (t >= pts[i][0] && t <= pts[i + 1][0]) {
+        const u = (t - pts[i][0]) / (pts[i + 1][0] - pts[i][0]);
+        const s = u * u * (3 - 2 * u);
+        return (pts[i][1] + (pts[i + 1][1] - pts[i][1]) * s) * pageHeight;
+      }
     }
+    return pts[pts.length - 1][1] * pageHeight;
+  };
+
+  // Gold mountain (back): peaks center-left, capped at 35%
+  const goldPts = [
+    [0.0, 0.03], [0.05, 0.08], [0.12, 0.15], [0.20, 0.22],
+    [0.28, 0.28], [0.35, 0.32], [0.42, 0.35], [0.50, 0.33],
+    [0.58, 0.28], [0.65, 0.22], [0.72, 0.17], [0.80, 0.12],
+    [0.88, 0.08], [0.95, 0.05], [1.0, 0.04],
+  ];
+  // Green mountain (front): rises dramatically on right, rougher, capped at 50%
+  const greenPts = [
+    [0.0, 0.10], [0.08, 0.12], [0.15, 0.10], [0.22, 0.11],
+    [0.30, 0.13], [0.38, 0.16], [0.45, 0.21], [0.52, 0.27],
+    [0.58, 0.32], [0.65, 0.37], [0.72, 0.41], [0.80, 0.44],
+    [0.88, 0.47], [0.95, 0.49], [1.0, 0.50],
+  ];
+
+  // Draw gold mountain (back layer)
+  for (let x = 0; x < pageWidth; x += 1) {
+    const h = Math.max(0, _prof(goldPts, x) + mtnNoise(x, 42, 14, 0.55, 55, 5));
+    cover.drawRectangle({ x, y: 0, width: 1.5, height: h, color: BRAND.gold });
+  }
+  // Draw green mountain (front layer, more raspy)
+  for (let x = 0; x < pageWidth; x += 1) {
+    const h = Math.max(0, _prof(greenPts, x) + mtnNoise(x, 137, 22, 0.65, 45, 6));
+    cover.drawRectangle({ x, y: 0, width: 1.5, height: h, color: BRAND.green });
   }
 
-  // ── Cover layout: vertically center all content within border ──
-  const usableTop = pageHeight - borderInset - 15;
-  const usableBottom = borderInset + 15;
-  const usableH = usableTop - usableBottom;
-  const centerY = usableBottom + usableH / 2;
-
-  // Logotype above family name
+  // ── Logotype centered exactly at page center ──
   if (logotypeImage) {
-    const ltDim = logotypeImage.scale(0.25);
+    const ltDim = logotypeImage.scale(0.5);
     const ltW = Math.min(ltDim.width, 200);
     const ltH = ltW * (ltDim.height / ltDim.width);
     cover.drawImage(logotypeImage, {
-      x: (pageWidth - ltW) / 2, y: centerY + 100, width: ltW, height: ltH,
+      x: (pageWidth - ltW) / 2, y: (pageHeight - ltH) / 2,
+      width: ltW, height: ltH,
     });
   }
 
+  // ── Bottom text (on the mountain area, cream colored, bold) ──
   const safeFamilyName = sanitize(familyName);
-  const titleSize = safeFamilyName.length > 25 ? 26 : 32;
-  const titleW = fonts.bold.widthOfTextAtSize(safeFamilyName, titleSize);
+  const btmSize = 10;
+  // Left: Family name
   cover.drawText(safeFamilyName, {
-    x: (pageWidth - titleW) / 2, y: centerY + 50,
-    size: titleSize, font: fonts.bold, color: BRAND.darkText,
+    x: margin, y: 25,
+    size: btmSize, font: fonts.sansBold, color: BRAND.cream,
   });
-
-  // "Memory Book by [Matra logotype]" — single line
-  const byPrefix = lang === 'es' ? ' por ' : ' by ';
-  const subtitleText = t('memoryBook', lang) + byPrefix;
-  const subFontSize = 18;
-  const subTextW = fonts.italic.widthOfTextAtSize(subtitleText, subFontSize);
-  const matraLogoH = 40;
-  const matraLogoW = matraLogotype
-    ? (matraLogotype.width / matraLogotype.height) * matraLogoH
+  // Right: "Memory Book by" + cream Matra image
+  const mbByPrefix = `${t('memoryBook', lang)} ${lang === 'es' ? 'por' : 'by'} `;
+  const mbByPrefixW = fonts.sansBold.widthOfTextAtSize(mbByPrefix, btmSize);
+  const matraCreamH = 10;
+  const matraCreamW = matraCreamLogotype
+    ? (matraCreamLogotype.width / matraCreamLogotype.height) * matraCreamH
     : 0;
-  const subtitleTotalW = subTextW + matraLogoW;
-  const subX = (pageWidth - subtitleTotalW) / 2;
-  const subY = centerY + 15;
-  cover.drawText(subtitleText, {
-    x: subX, y: subY, size: subFontSize, font: fonts.italic, color: BRAND.gold,
+  const mbTotalW = mbByPrefixW + matraCreamW;
+  const mbByX = pageWidth - margin - mbTotalW;
+  cover.drawText(mbByPrefix, {
+    x: mbByX, y: 25,
+    size: btmSize, font: fonts.sansBold, color: BRAND.cream,
   });
-  if (matraLogotype) {
-    cover.drawImage(matraLogotype, {
-      x: subX + subTextW, y: subY - 12, width: matraLogoW, height: matraLogoH,
-    });
-  }
-
-  cover.drawLine({
-    start: { x: pageWidth / 2 - 80, y: centerY - 5 },
-    end: { x: pageWidth / 2 - 10, y: centerY - 5 },
-    thickness: 0.8, color: BRAND.gold,
-  });
-  // Center diamond ornament
-  cover.drawRectangle({
-    x: pageWidth / 2 - 3, y: centerY - 8,
-    width: 6, height: 6,
-    color: BRAND.gold,
-  });
-  cover.drawLine({
-    start: { x: pageWidth / 2 + 10, y: centerY - 5 },
-    end: { x: pageWidth / 2 + 80, y: centerY - 5 },
-    thickness: 0.8, color: BRAND.gold,
-  });
-
-  const statsText = `${data.people.length} ${t('people', lang)} · ${data.stories.length} ${t('stories', lang)} · ${data.relationships.length} ${t('connections', lang)}`;
-  cover.drawText(statsText, {
-    x: (pageWidth - fonts.sans.widthOfTextAtSize(statsText, 10)) / 2,
-    y: centerY - 25, size: 10, font: fonts.sans, color: BRAND.gold,
-  });
-
-  cover.drawText(dateText, {
-    x: (pageWidth - fonts.sans.widthOfTextAtSize(dateText, 9)) / 2,
-    y: usableBottom + 10, size: 9, font: fonts.sans, color: BRAND.gold,
-  });
-
-  // Banner between stats and date on cover
-  if (bannerImage) {
-    const bannerMargin = 25;
-    const bannerW = pageWidth - borderInset * 2 - bannerMargin * 2;
-    const bannerNatW = bannerImage.width;
-    const bannerNatH = bannerImage.height;
-    const bannerH = bannerW * (bannerNatH / bannerNatW);
-    const availTop = centerY - 40;
-    const availBottom = usableBottom + 25;
-    const bannerY = availBottom + (availTop - availBottom - bannerH) / 2;
-    cover.drawImage(bannerImage, {
-      x: borderInset + bannerMargin, y: Math.max(bannerY, availBottom), width: bannerW, height: Math.min(bannerH, availTop - availBottom),
+  if (matraCreamLogotype) {
+    cover.drawImage(matraCreamLogotype, {
+      x: mbByX + mbByPrefixW, y: 24,
+      width: matraCreamW, height: matraCreamH,
     });
   }
 
@@ -717,6 +710,21 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
       size: 9.5, font: fonts.sans, color: BRAND.mutedText,
     });
   });
+
+  // ── Chair icon in bottom-right corner ──
+  if (chairIconImage) {
+    const chairSize = 300;
+    const chairDim = chairIconImage.scale(1);
+    const chairW = chairSize;
+    const chairH = chairSize * (chairDim.height / chairDim.width);
+    page.drawImage(chairIconImage, {
+      x: pageWidth - chairW - 10,
+      y: 70,
+      width: chairW,
+      height: chairH,
+    });
+  }
+
   drawFooter(page, pageNum);
 
   // ═══════════════════════════════════════════
@@ -1342,23 +1350,6 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
   // ═══════════════════════════════════════════
   const back = pdf.addPage([pageWidth, pageHeight]);
   back.drawRectangle({ x: 0, y: 0, width: pageWidth, height: pageHeight, color: BRAND.cream });
-  // Double border frame (matching cover)
-  back.drawRectangle({
-    x: borderInset, y: borderInset,
-    width: pageWidth - borderInset * 2, height: pageHeight - borderInset * 2,
-    borderColor: BRAND.gold, borderWidth: 2,
-  });
-  back.drawRectangle({
-    x: borderInset + 6, y: borderInset + 6,
-    width: pageWidth - borderInset * 2 - 12, height: pageHeight - borderInset * 2 - 12,
-    borderColor: BRAND.gold, borderWidth: 0.5,
-  });
-  // Corner ornaments
-  for (const cx of [borderInset - co / 2, pageWidth - borderInset - co / 2]) {
-    for (const cy of [borderInset - co / 2, pageHeight - borderInset - co / 2]) {
-      back.drawRectangle({ x: cx, y: cy, width: co, height: co, color: BRAND.gold });
-    }
-  }
 
   if (logotypeImage) {
     const ltDim = logotypeImage.scale(0.45);
@@ -1375,27 +1366,10 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
     y: pageHeight / 2 - 30, size: 13, font: fonts.italic, color: BRAND.darkText,
   });
 
-  // Decorative ornament below tagline
-  const backCX = pageWidth / 2;
-  back.drawLine({
-    start: { x: backCX - 60, y: pageHeight / 2 - 50 },
-    end: { x: backCX - 8, y: pageHeight / 2 - 50 },
-    thickness: 0.5, color: BRAND.gold,
-  });
-  back.drawRectangle({
-    x: backCX - 3, y: pageHeight / 2 - 53,
-    width: 6, height: 6, color: BRAND.gold,
-  });
-  back.drawLine({
-    start: { x: backCX + 8, y: pageHeight / 2 - 50 },
-    end: { x: backCX + 60, y: pageHeight / 2 - 50 },
-    thickness: 0.5, color: BRAND.gold,
-  });
-
   const genText = `${t('generatedOn', lang)} ${dateText}`;
   back.drawText(genText, {
     x: (pageWidth - fonts.sans.widthOfTextAtSize(genText, 8)) / 2,
-    y: borderInset + 30, size: 8, font: fonts.sans, color: BRAND.gold,
+    y: 40, size: 8, font: fonts.sans, color: BRAND.mutedText,
   });
 
   // Metadata

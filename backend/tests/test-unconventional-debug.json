@@ -1,0 +1,3985 @@
+{
+  "provider": "Groq (Llama 3.3 70B)",
+  "timestamp": "2026-03-11T07:09:12.733Z",
+  "totalTime": "32.9s",
+  "overallScore": "97.1%",
+  "scenarios": [
+    {
+      "name": "1. EN — Same-Sex Parents, Donor, Surrogate",
+      "passed": 16,
+      "failed": 0,
+      "warnings": 0,
+      "errors": [],
+      "warns": [],
+      "people": [
+        {
+          "id": "person-narrator",
+          "firstName": "Zoe",
+          "lastName": "Chen-Reeves",
+          "gender": "female",
+          "isNarrator": true,
+          "birthDate": "2006",
+          "birthPlace": "Portland, Oregon"
+        },
+        {
+          "id": "person-1",
+          "firstName": "Lisa",
+          "lastName": "Chen",
+          "birthDate": "1978",
+          "birthPlace": "San Francisco",
+          "profession": "pediatrician",
+          "gender": "female"
+        },
+        {
+          "id": "person-2",
+          "firstName": "Karen",
+          "lastName": "Reeves",
+          "birthDate": "1980",
+          "birthPlace": "Portland",
+          "profession": "software engineer",
+          "gender": "female"
+        },
+        {
+          "id": "person-3",
+          "firstName": "David",
+          "profession": "professor",
+          "gender": "male"
+        },
+        {
+          "id": "person-4",
+          "firstName": "Oliver",
+          "lastName": "Chen-Reeves",
+          "birthDate": "2010",
+          "gender": "male"
+        },
+        {
+          "id": "person-5",
+          "firstName": "Jess",
+          "gender": "female"
+        },
+        {
+          "id": "person-6",
+          "firstName": "Wei",
+          "lastName": "Chen",
+          "birthDate": "1948",
+          "birthPlace": "Shanghai",
+          "profession": "engineer",
+          "gender": "male"
+        },
+        {
+          "id": "person-7",
+          "firstName": "Mei-Ling",
+          "lastName": "Xu",
+          "birthDate": "1950",
+          "birthPlace": "Taipei",
+          "gender": "female"
+        },
+        {
+          "id": "person-8",
+          "firstName": "Patricia",
+          "lastName": "Reeves",
+          "birthDate": "1955",
+          "birthPlace": "Seattle",
+          "profession": "nurse",
+          "gender": "female"
+        }
+      ],
+      "relationships": [
+        {
+          "personAId": "person-1",
+          "personBId": "person-narrator",
+          "personAName": "Lisa Chen",
+          "personBName": "Zoe Chen-Reeves",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-narrator",
+          "personAName": "Karen Reeves",
+          "personBName": "Zoe Chen-Reeves",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-1",
+          "personBId": "person-2",
+          "personAName": "Lisa Chen",
+          "personBName": "Karen Reeves",
+          "type": "spouse",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-3",
+          "personBId": "person-narrator",
+          "personAName": "David",
+          "personBName": "Zoe Chen-Reeves",
+          "type": "other",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-4",
+          "personBId": "person-narrator",
+          "personAName": "Oliver Chen-Reeves",
+          "personBName": "Zoe Chen-Reeves",
+          "type": "sibling",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-1",
+          "personBId": "person-4",
+          "personAName": "Lisa Chen",
+          "personBName": "Oliver Chen-Reeves",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-4",
+          "personAName": "Karen Reeves",
+          "personBName": "Oliver Chen-Reeves",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-6",
+          "personBId": "person-1",
+          "personAName": "Wei Chen",
+          "personBName": "Lisa Chen",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-7",
+          "personBId": "person-1",
+          "personAName": "Mei-Ling Xu",
+          "personBName": "Lisa Chen",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-8",
+          "personBId": "person-2",
+          "personAName": "Patricia Reeves",
+          "personBName": "Karen Reeves",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-6",
+          "personBId": "person-7",
+          "type": "spouse",
+          "confidence": 0.85,
+          "personAName": "Wei Chen",
+          "personBName": "Mei-Ling Xu",
+          "inferred": true
+        },
+        {
+          "personAId": "person-6",
+          "personBId": "person-narrator",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Wei Chen",
+          "personBName": "Zoe Chen-Reeves",
+          "inferred": true
+        },
+        {
+          "personAId": "person-6",
+          "personBId": "person-4",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Wei Chen",
+          "personBName": "Oliver Chen-Reeves",
+          "inferred": true
+        },
+        {
+          "personAId": "person-7",
+          "personBId": "person-narrator",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Mei-Ling Xu",
+          "personBName": "Zoe Chen-Reeves",
+          "inferred": true
+        },
+        {
+          "personAId": "person-7",
+          "personBId": "person-4",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Mei-Ling Xu",
+          "personBName": "Oliver Chen-Reeves",
+          "inferred": true
+        },
+        {
+          "personAId": "person-8",
+          "personBId": "person-narrator",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Patricia Reeves",
+          "personBName": "Zoe Chen-Reeves",
+          "inferred": true
+        },
+        {
+          "personAId": "person-8",
+          "personBId": "person-4",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Patricia Reeves",
+          "personBName": "Oliver Chen-Reeves",
+          "inferred": true
+        }
+      ],
+      "rawExtraction": {
+        "_reasoning": "Narrator is Zoe Chen-Reeves. Lisa Chen and Karen Reeves are her mothers (parents). David is the sperm donor but not considered a parent. Oliver Chen-Reeves is Zoe's brother. Wei Chen and Mei-Ling Xu are grandparents on Lisa's side. Patricia Reeves is a grandparent on Karen's side. Create relationships between Zoe and her parents, between her parents and their parents, and between Zoe and her brother.",
+        "entities": [
+          {
+            "type": "person",
+            "value": "Zoe Chen-Reeves",
+            "confidence": 0.95,
+            "context": "I'm Zoe Chen-Reeves"
+          },
+          {
+            "type": "person",
+            "value": "Lisa Chen",
+            "confidence": 0.95,
+            "context": "My mom Lisa Chen"
+          },
+          {
+            "type": "person",
+            "value": "Karen Reeves",
+            "confidence": 0.95,
+            "context": "My other mom is Karen Reeves"
+          },
+          {
+            "type": "person",
+            "value": "David",
+            "confidence": 0.9,
+            "context": "They used a sperm donor named David"
+          },
+          {
+            "type": "person",
+            "value": "Oliver Chen-Reeves",
+            "confidence": 0.95,
+            "context": "My little brother Oliver Chen-Reeves"
+          },
+          {
+            "type": "person",
+            "value": "Jess",
+            "confidence": 0.9,
+            "context": "a woman named Jess carried him"
+          },
+          {
+            "type": "person",
+            "value": "Wei Chen",
+            "confidence": 0.95,
+            "context": "My grandparents on my mom Lisa's side are Wei Chen"
+          },
+          {
+            "type": "person",
+            "value": "Mei-Ling Xu",
+            "confidence": 0.95,
+            "context": "and Mei-Ling Xu"
+          },
+          {
+            "type": "person",
+            "value": "Patricia Reeves",
+            "confidence": 0.95,
+            "context": "I mostly know my grandma Patricia Reeves"
+          },
+          {
+            "type": "date",
+            "value": "2006",
+            "confidence": 0.95,
+            "context": "born in 2006"
+          },
+          {
+            "type": "location",
+            "value": "Portland, Oregon",
+            "confidence": 0.95,
+            "context": "born in Portland, Oregon"
+          },
+          {
+            "type": "date",
+            "value": "1978",
+            "confidence": 0.95,
+            "context": "My mom Lisa Chen was born in 1978"
+          },
+          {
+            "type": "location",
+            "value": "San Francisco",
+            "confidence": 0.95,
+            "context": "born in San Francisco"
+          },
+          {
+            "type": "date",
+            "value": "1980",
+            "confidence": 0.95,
+            "context": "My other mom is Karen Reeves, born in 1980"
+          },
+          {
+            "type": "date",
+            "value": "2012",
+            "confidence": 0.95,
+            "context": "They got married in 2012"
+          },
+          {
+            "type": "date",
+            "value": "2003",
+            "confidence": 0.9,
+            "context": "they've been together since like 2003"
+          },
+          {
+            "type": "date",
+            "value": "2010",
+            "confidence": 0.95,
+            "context": "My little brother Oliver Chen-Reeves was born in 2010"
+          },
+          {
+            "type": "date",
+            "value": "1948",
+            "confidence": 0.95,
+            "context": "Wei Chen, born in 1948"
+          },
+          {
+            "type": "location",
+            "value": "Shanghai",
+            "confidence": 0.95,
+            "context": "born in Shanghai"
+          },
+          {
+            "type": "date",
+            "value": "1950",
+            "confidence": 0.95,
+            "context": "Mei-Ling Xu, born in 1950"
+          },
+          {
+            "type": "location",
+            "value": "Taipei",
+            "confidence": 0.95,
+            "context": "born in Taipei"
+          },
+          {
+            "type": "date",
+            "value": "1955",
+            "confidence": 0.95,
+            "context": "Patricia Reeves, born in 1955"
+          },
+          {
+            "type": "location",
+            "value": "Seattle",
+            "confidence": 0.95,
+            "context": "born in Seattle"
+          }
+        ],
+        "relationships": [
+          {
+            "personA": "Lisa Chen",
+            "personB": "Zoe Chen-Reeves",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "My mom Lisa Chen"
+          },
+          {
+            "personA": "Karen Reeves",
+            "personB": "Zoe Chen-Reeves",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "My other mom is Karen Reeves"
+          },
+          {
+            "personA": "Lisa Chen",
+            "personB": "Karen Reeves",
+            "relationshipType": "spouse",
+            "confidence": 0.95,
+            "context": "They got married in 2012"
+          },
+          {
+            "personA": "David",
+            "personB": "Zoe Chen-Reeves",
+            "relationshipType": "other",
+            "confidence": 0.9,
+            "context": "They used a sperm donor named David"
+          },
+          {
+            "personA": "Oliver Chen-Reeves",
+            "personB": "Zoe Chen-Reeves",
+            "relationshipType": "sibling",
+            "confidence": 0.95,
+            "context": "My little brother Oliver Chen-Reeves"
+          },
+          {
+            "personA": "Lisa Chen",
+            "personB": "Oliver Chen-Reeves",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "Lisa is still Oliver's biological mother"
+          },
+          {
+            "personA": "Karen Reeves",
+            "personB": "Oliver Chen-Reeves",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "Karen is equally our parent though, she adopted both of us legally"
+          },
+          {
+            "personA": "Wei Chen",
+            "personB": "Lisa Chen",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "My grandparents on my mom Lisa's side are Wei Chen"
+          },
+          {
+            "personA": "Mei-Ling Xu",
+            "personB": "Lisa Chen",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "and Mei-Ling Xu"
+          },
+          {
+            "personA": "Patricia Reeves",
+            "personB": "Karen Reeves",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "I mostly know my grandma Patricia Reeves"
+          }
+        ],
+        "suggestedPeople": [
+          {
+            "firstName": "Zoe",
+            "lastName": "Chen-Reeves",
+            "gender": "female",
+            "birthDate": "2006",
+            "birthPlace": "Portland, Oregon"
+          },
+          {
+            "firstName": "Lisa",
+            "lastName": "Chen",
+            "gender": "female",
+            "birthDate": "1978",
+            "birthPlace": "San Francisco",
+            "profession": "pediatrician"
+          },
+          {
+            "firstName": "Karen",
+            "lastName": "Reeves",
+            "gender": "female",
+            "birthDate": "1980",
+            "birthPlace": "Portland",
+            "profession": "software engineer"
+          },
+          {
+            "firstName": "David",
+            "gender": "male",
+            "profession": "professor"
+          },
+          {
+            "firstName": "Oliver",
+            "lastName": "Chen-Reeves",
+            "gender": "male",
+            "birthDate": "2010"
+          },
+          {
+            "firstName": "Jess",
+            "gender": "female"
+          },
+          {
+            "firstName": "Wei",
+            "lastName": "Chen",
+            "gender": "male",
+            "birthDate": "1948",
+            "birthPlace": "Shanghai",
+            "profession": "engineer"
+          },
+          {
+            "firstName": "Mei-Ling",
+            "lastName": "Xu",
+            "gender": "female",
+            "birthDate": "1950",
+            "birthPlace": "Taipei"
+          },
+          {
+            "firstName": "Patricia",
+            "lastName": "Reeves",
+            "gender": "female",
+            "birthDate": "1955",
+            "birthPlace": "Seattle",
+            "profession": "nurse"
+          }
+        ]
+      }
+    },
+    {
+      "name": "2. ES — Madre Soltera, Padre Ausente, Criada por Abuelos",
+      "passed": 16,
+      "failed": 0,
+      "warnings": 0,
+      "errors": [],
+      "warns": [],
+      "people": [
+        {
+          "id": "person-narrator",
+          "firstName": "Valentina",
+          "lastName": "Ríos",
+          "gender": "female",
+          "isNarrator": true,
+          "birthDate": "2003",
+          "birthPlace": "Quito"
+        },
+        {
+          "id": "person-1",
+          "firstName": "Lucía",
+          "lastName": "Ríos",
+          "birthDate": "1985",
+          "profession": "mesera",
+          "gender": "female"
+        },
+        {
+          "id": "person-2",
+          "firstName": "Marcos",
+          "birthPlace": "Guayaquil",
+          "gender": "male"
+        },
+        {
+          "id": "person-3",
+          "firstName": "Carmen",
+          "lastName": "Ríos",
+          "birthDate": "1955",
+          "profession": "costurera",
+          "gender": "female"
+        },
+        {
+          "id": "person-4",
+          "firstName": "Raúl",
+          "lastName": "Ríos",
+          "birthDate": "1953",
+          "deathDate": "2021",
+          "profession": "carpintero",
+          "gender": "male"
+        },
+        {
+          "id": "person-5",
+          "firstName": "Ernesto",
+          "lastName": "Ríos",
+          "birthDate": "1982",
+          "profession": "mecánico",
+          "gender": "male"
+        },
+        {
+          "id": "person-6",
+          "firstName": "Patricia",
+          "birthDate": "1983",
+          "gender": "female"
+        },
+        {
+          "id": "person-7",
+          "firstName": "Matías",
+          "birthDate": "2008",
+          "gender": "male"
+        },
+        {
+          "id": "person-8",
+          "firstName": "Luciana",
+          "birthDate": "2011",
+          "gender": "female"
+        }
+      ],
+      "relationships": [
+        {
+          "personAId": "person-1",
+          "personBId": "person-narrator",
+          "personAName": "Lucía Ríos",
+          "personBName": "Valentina Ríos",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-narrator",
+          "personAName": "Marcos",
+          "personBName": "Valentina Ríos",
+          "type": "parent",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-3",
+          "personBId": "person-narrator",
+          "personAName": "Carmen Ríos",
+          "personBName": "Valentina Ríos",
+          "type": "grandparent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-4",
+          "personBId": "person-narrator",
+          "personAName": "Raúl Ríos",
+          "personBName": "Valentina Ríos",
+          "type": "grandparent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-5",
+          "personBId": "person-narrator",
+          "personAName": "Ernesto Ríos",
+          "personBName": "Valentina Ríos",
+          "type": "uncle_aunt",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-5",
+          "personBId": "person-1",
+          "personAName": "Ernesto Ríos",
+          "personBName": "Lucía Ríos",
+          "type": "sibling",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-6",
+          "personBId": "person-5",
+          "personAName": "Patricia",
+          "personBName": "Ernesto Ríos",
+          "type": "spouse",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-7",
+          "personBId": "person-5",
+          "personAName": "Matías",
+          "personBName": "Ernesto Ríos",
+          "type": "child",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-8",
+          "personBId": "person-5",
+          "personAName": "Luciana",
+          "personBName": "Ernesto Ríos",
+          "type": "child",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-7",
+          "personBId": "person-8",
+          "type": "sibling",
+          "confidence": 0.85,
+          "personAName": "Matías",
+          "personBName": "Luciana",
+          "inferred": true
+        },
+        {
+          "personAId": "person-1",
+          "personBId": "person-2",
+          "type": "spouse",
+          "confidence": 0.85,
+          "personAName": "Lucía Ríos",
+          "personBName": "Marcos",
+          "inferred": true
+        },
+        {
+          "personAId": "person-1",
+          "personBId": "person-7",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Lucía Ríos",
+          "personBName": "Matías",
+          "inferred": true
+        },
+        {
+          "personAId": "person-1",
+          "personBId": "person-8",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Lucía Ríos",
+          "personBName": "Luciana",
+          "inferred": true
+        }
+      ],
+      "rawExtraction": {
+        "_reasoning": "La narradora es Valentina Ríos. Su mamá es Lucía Ríos, nacida en 1985. El papá biológico de Valentina es Marcos, pero no se considera su papá porque nunca estuvo presente. Los abuelos de Valentina son Carmen Ríos y Raúl Ríos, quienes la criaron. El tío Ernesto Ríos, hermano de Lucía, ha sido como un padre para Valentina. Ernesto está casado con Patricia y tienen dos hijos: Matías y Luciana.",
+        "entities": [
+          {
+            "type": "person",
+            "value": "Valentina Ríos",
+            "confidence": 0.95,
+            "context": "Me llamo Valentina Ríos"
+          },
+          {
+            "type": "person",
+            "value": "Lucía Ríos",
+            "confidence": 0.95,
+            "context": "Mi mamá es Lucía Ríos"
+          },
+          {
+            "type": "person",
+            "value": "Marcos",
+            "confidence": 0.9,
+            "context": "Mi papá biológico se llama Marcos"
+          },
+          {
+            "type": "person",
+            "value": "Carmen Ríos",
+            "confidence": 0.95,
+            "context": "Mi abuela Carmen Ríos"
+          },
+          {
+            "type": "person",
+            "value": "Raúl Ríos",
+            "confidence": 0.95,
+            "context": "Mi abuelo Raúl Ríos"
+          },
+          {
+            "type": "person",
+            "value": "Ernesto Ríos",
+            "confidence": 0.95,
+            "context": "Mi tío Ernesto Ríos"
+          },
+          {
+            "type": "person",
+            "value": "Patricia",
+            "confidence": 0.95,
+            "context": "El tío Ernesto está casado con Patricia"
+          },
+          {
+            "type": "person",
+            "value": "Matías",
+            "confidence": 0.9,
+            "context": "Tienen dos hijos: mi primo Matías"
+          },
+          {
+            "type": "person",
+            "value": "Luciana",
+            "confidence": 0.9,
+            "context": "y mi prima Luciana"
+          },
+          {
+            "type": "date",
+            "value": "2003",
+            "confidence": 0.95,
+            "context": "nací en el 2003"
+          },
+          {
+            "type": "date",
+            "value": "1985",
+            "confidence": 0.95,
+            "context": "nacida en 1985"
+          },
+          {
+            "type": "date",
+            "value": "1955",
+            "confidence": 0.95,
+            "context": "nacida en 1955"
+          },
+          {
+            "type": "date",
+            "value": "1953",
+            "confidence": 0.95,
+            "context": "nacido en 1953"
+          },
+          {
+            "type": "date",
+            "value": "2021",
+            "confidence": 0.95,
+            "context": "falleció en 2021"
+          },
+          {
+            "type": "date",
+            "value": "1982",
+            "confidence": 0.95,
+            "context": "nacido en 1982"
+          },
+          {
+            "type": "date",
+            "value": "1983",
+            "confidence": 0.95,
+            "context": "nacida en 1983"
+          },
+          {
+            "type": "date",
+            "value": "2008",
+            "confidence": 0.9,
+            "context": "nació en 2008"
+          },
+          {
+            "type": "date",
+            "value": "2011",
+            "confidence": 0.9,
+            "context": "nacida en 2011"
+          },
+          {
+            "type": "location",
+            "value": "Quito",
+            "confidence": 0.95,
+            "context": "nací en Quito"
+          },
+          {
+            "type": "location",
+            "value": "Guayaquil",
+            "confidence": 0.9,
+            "context": "era de Guayaquil"
+          }
+        ],
+        "relationships": [
+          {
+            "personA": "Lucía Ríos",
+            "personB": "Valentina Ríos",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "Mi mamá es Lucía Ríos"
+          },
+          {
+            "personA": "Marcos",
+            "personB": "Valentina Ríos",
+            "relationshipType": "parent",
+            "confidence": 0.9,
+            "context": "Mi papá biológico se llama Marcos"
+          },
+          {
+            "personA": "Carmen Ríos",
+            "personB": "Valentina Ríos",
+            "relationshipType": "grandparent",
+            "confidence": 0.95,
+            "context": "Mi abuela Carmen Ríos"
+          },
+          {
+            "personA": "Raúl Ríos",
+            "personB": "Valentina Ríos",
+            "relationshipType": "grandparent",
+            "confidence": 0.95,
+            "context": "Mi abuelo Raúl Ríos"
+          },
+          {
+            "personA": "Ernesto Ríos",
+            "personB": "Valentina Ríos",
+            "relationshipType": "uncle_aunt",
+            "confidence": 0.95,
+            "context": "Mi tío Ernesto Ríos"
+          },
+          {
+            "personA": "Ernesto Ríos",
+            "personB": "Lucía Ríos",
+            "relationshipType": "sibling",
+            "confidence": 0.95,
+            "context": "Mi tío Ernesto Ríos, hermano de mi mamá"
+          },
+          {
+            "personA": "Patricia",
+            "personB": "Ernesto Ríos",
+            "relationshipType": "spouse",
+            "confidence": 0.95,
+            "context": "El tío Ernesto está casado con Patricia"
+          },
+          {
+            "personA": "Matías",
+            "personB": "Ernesto Ríos",
+            "relationshipType": "child",
+            "confidence": 0.9,
+            "context": "Tienen dos hijos: mi primo Matías"
+          },
+          {
+            "personA": "Luciana",
+            "personB": "Ernesto Ríos",
+            "relationshipType": "child",
+            "confidence": 0.9,
+            "context": "y mi prima Luciana"
+          }
+        ],
+        "suggestedPeople": [
+          {
+            "firstName": "Valentina",
+            "lastName": "Ríos",
+            "gender": "female",
+            "birthDate": "2003",
+            "birthPlace": "Quito"
+          },
+          {
+            "firstName": "Lucía",
+            "lastName": "Ríos",
+            "gender": "female",
+            "birthDate": "1985",
+            "profession": "mesera"
+          },
+          {
+            "firstName": "Marcos",
+            "gender": "male",
+            "birthPlace": "Guayaquil"
+          },
+          {
+            "firstName": "Carmen",
+            "lastName": "Ríos",
+            "gender": "female",
+            "birthDate": "1955",
+            "profession": "costurera"
+          },
+          {
+            "firstName": "Raúl",
+            "lastName": "Ríos",
+            "gender": "male",
+            "birthDate": "1953",
+            "deathDate": "2021",
+            "profession": "carpintero"
+          },
+          {
+            "firstName": "Ernesto",
+            "lastName": "Ríos",
+            "gender": "male",
+            "birthDate": "1982",
+            "profession": "mecánico"
+          },
+          {
+            "firstName": "Patricia",
+            "gender": "female",
+            "birthDate": "1983"
+          },
+          {
+            "firstName": "Matías",
+            "gender": "male",
+            "birthDate": "2008"
+          },
+          {
+            "firstName": "Luciana",
+            "gender": "female",
+            "birthDate": "2011"
+          }
+        ]
+      }
+    },
+    {
+      "name": "3. EN — Rambling, Self-Correcting, Chaotic Transcript",
+      "passed": 16,
+      "failed": 0,
+      "warnings": 2,
+      "errors": [],
+      "warns": [
+        "[Nicknames] Thomas should have nickname \"Old Tom\" or \"Tom\"",
+        "[Nicknames] Margaret should have nickname \"Maggie\""
+      ],
+      "people": [
+        {
+          "id": "person-narrator",
+          "firstName": "Jake",
+          "lastName": "Morrison",
+          "gender": "male",
+          "isNarrator": true,
+          "birthDate": "1995"
+        },
+        {
+          "id": "person-1",
+          "firstName": "William",
+          "lastName": "Morrison",
+          "birthDate": "1965",
+          "profession": "mechanic",
+          "gender": "male"
+        },
+        {
+          "id": "person-2",
+          "firstName": "Diana",
+          "lastName": "Morrison",
+          "birthDate": "1968",
+          "profession": "elementary school teacher",
+          "gender": "female"
+        },
+        {
+          "id": "person-3",
+          "firstName": "Rebecca",
+          "lastName": "Morrison",
+          "birthDate": "1998",
+          "gender": "female"
+        },
+        {
+          "id": "person-4",
+          "firstName": "Thomas",
+          "lastName": "Morrison",
+          "birthDate": "1935",
+          "deathDate": "2015",
+          "profession": "trucker",
+          "isDeceased": true,
+          "gender": "male"
+        },
+        {
+          "id": "person-5",
+          "firstName": "Helen",
+          "lastName": "Parker",
+          "birthDate": "1942",
+          "gender": "female"
+        },
+        {
+          "id": "person-6",
+          "firstName": "Bob",
+          "lastName": "Parker",
+          "birthDate": "1940",
+          "deathDate": "2010",
+          "profession": "rancher",
+          "isDeceased": true,
+          "gender": "male"
+        },
+        {
+          "id": "person-7",
+          "firstName": "Margaret",
+          "lastName": "Morrison",
+          "birthDate": "1938",
+          "gender": "female"
+        }
+      ],
+      "relationships": [
+        {
+          "personAId": "person-1",
+          "personBId": "person-narrator",
+          "personAName": "William Morrison",
+          "personBName": "Jake Morrison",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-narrator",
+          "personAName": "Diana Morrison",
+          "personBName": "Jake Morrison",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-3",
+          "personBId": "person-narrator",
+          "personAName": "Rebecca Morrison",
+          "personBName": "Jake Morrison",
+          "type": "sibling",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-4",
+          "personBId": "person-narrator",
+          "personAName": "Thomas Morrison",
+          "personBName": "Jake Morrison",
+          "type": "grandparent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-4",
+          "personBId": "person-1",
+          "personAName": "Thomas Morrison",
+          "personBName": "William Morrison",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-1",
+          "personBId": "person-narrator",
+          "personAName": "William Morrison",
+          "personBName": "Jake Morrison",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-5",
+          "personBId": "person-narrator",
+          "personAName": "Helen Parker",
+          "personBName": "Jake Morrison",
+          "type": "grandparent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-5",
+          "personBId": "person-2",
+          "personAName": "Helen Parker",
+          "personBName": "Diana Morrison",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-narrator",
+          "personAName": "Diana Morrison",
+          "personBName": "Jake Morrison",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-6",
+          "personBId": "person-narrator",
+          "personAName": "Bob Parker",
+          "personBName": "Jake Morrison",
+          "type": "grandparent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-6",
+          "personBId": "person-2",
+          "personAName": "Bob Parker",
+          "personBName": "Diana Morrison",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-7",
+          "personBId": "person-narrator",
+          "personAName": "Margaret Morrison",
+          "personBName": "Jake Morrison",
+          "type": "grandparent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-7",
+          "personBId": "person-1",
+          "personAName": "Margaret Morrison",
+          "personBName": "William Morrison",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-1",
+          "personBId": "person-3",
+          "type": "parent",
+          "confidence": 0.85,
+          "personAName": "William Morrison",
+          "personBName": "Rebecca Morrison",
+          "inferred": true
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-3",
+          "type": "parent",
+          "confidence": 0.85,
+          "personAName": "Diana Morrison",
+          "personBName": "Rebecca Morrison",
+          "inferred": true
+        },
+        {
+          "personAId": "person-1",
+          "personBId": "person-2",
+          "type": "spouse",
+          "confidence": 0.85,
+          "personAName": "William Morrison",
+          "personBName": "Diana Morrison",
+          "inferred": true
+        },
+        {
+          "personAId": "person-4",
+          "personBId": "person-7",
+          "type": "spouse",
+          "confidence": 0.85,
+          "personAName": "Thomas Morrison",
+          "personBName": "Margaret Morrison",
+          "inferred": true
+        },
+        {
+          "personAId": "person-5",
+          "personBId": "person-6",
+          "type": "spouse",
+          "confidence": 0.85,
+          "personAName": "Helen Parker",
+          "personBName": "Bob Parker",
+          "inferred": true
+        },
+        {
+          "personAId": "person-4",
+          "personBId": "person-3",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Thomas Morrison",
+          "personBName": "Rebecca Morrison",
+          "inferred": true
+        },
+        {
+          "personAId": "person-5",
+          "personBId": "person-3",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Helen Parker",
+          "personBName": "Rebecca Morrison",
+          "inferred": true
+        },
+        {
+          "personAId": "person-6",
+          "personBId": "person-3",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Bob Parker",
+          "personBName": "Rebecca Morrison",
+          "inferred": true
+        },
+        {
+          "personAId": "person-7",
+          "personBId": "person-3",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Margaret Morrison",
+          "personBName": "Rebecca Morrison",
+          "inferred": true
+        }
+      ],
+      "rawExtraction": {
+        "_reasoning": "Narrator is Jake Morrison. William (Bill) is his father. Diana (maiden name Parker) is his mother. Rebecca is his sister. Thomas (Old Tom) is his paternal grandfather. Helen is his maternal grandmother. Bob is his maternal grandfather. Margaret (Maggie) is his paternal grandmother.",
+        "entities": [
+          {
+            "type": "person",
+            "value": "Jake Morrison",
+            "confidence": 0.95,
+            "context": "I'm Jake Morrison"
+          },
+          {
+            "type": "person",
+            "value": "William Morrison",
+            "confidence": 0.95,
+            "context": "my dad is William Morrison"
+          },
+          {
+            "type": "person",
+            "value": "Diana Morrison",
+            "confidence": 0.95,
+            "context": "my mom is Diana Morrison"
+          },
+          {
+            "type": "person",
+            "value": "Rebecca Morrison",
+            "confidence": 0.95,
+            "context": "my sister is Rebecca"
+          },
+          {
+            "type": "person",
+            "value": "Thomas Morrison",
+            "confidence": 0.95,
+            "context": "my grandpa We called him Old Tom but his real name was Thomas Morrison"
+          },
+          {
+            "type": "person",
+            "value": "Helen Parker",
+            "confidence": 0.95,
+            "context": "my grandma on my mom's side is Helen Parker"
+          },
+          {
+            "type": "person",
+            "value": "Bob Parker",
+            "confidence": 0.95,
+            "context": "my grandpa Bob Parker"
+          },
+          {
+            "type": "person",
+            "value": "Margaret Morrison",
+            "confidence": 0.95,
+            "context": "my dad's mom so my other grandma is Margaret Morrison"
+          },
+          {
+            "type": "date",
+            "value": "1995",
+            "confidence": 0.95,
+            "context": "Born in ninety-five"
+          },
+          {
+            "type": "location",
+            "value": "Denver",
+            "confidence": 0.95,
+            "context": "Born in Denver"
+          },
+          {
+            "type": "location",
+            "value": "Colorado",
+            "confidence": 0.95,
+            "context": "Colorado"
+          },
+          {
+            "type": "date",
+            "value": "1965",
+            "confidence": 0.95,
+            "context": "He was born in sixty-five"
+          },
+          {
+            "type": "date",
+            "value": "1968",
+            "confidence": 0.95,
+            "context": "She was born in sixty-eight"
+          },
+          {
+            "type": "date",
+            "value": "1998",
+            "confidence": 0.95,
+            "context": "Rebecca Morrison born in ninety-eight"
+          },
+          {
+            "type": "date",
+            "value": "1935",
+            "confidence": 0.9,
+            "context": "He was born in like 1935 or something"
+          },
+          {
+            "type": "date",
+            "value": "2015",
+            "confidence": 0.95,
+            "context": "He died in 2015"
+          },
+          {
+            "type": "date",
+            "value": "1942",
+            "confidence": 0.9,
+            "context": "My grandma on my mom's side is Helen Parker she was born in like forty-two"
+          },
+          {
+            "type": "date",
+            "value": "1940",
+            "confidence": 0.95,
+            "context": "my grandpa Bob Parker he was born in 1940"
+          },
+          {
+            "type": "date",
+            "value": "2010",
+            "confidence": 0.95,
+            "context": "he passed away back in 2010"
+          },
+          {
+            "type": "date",
+            "value": "1938",
+            "confidence": 0.95,
+            "context": "She was born in 1938"
+          }
+        ],
+        "relationships": [
+          {
+            "personA": "William Morrison",
+            "personB": "Jake Morrison",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "my dad is William Morrison"
+          },
+          {
+            "personA": "Diana Morrison",
+            "personB": "Jake Morrison",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "my mom is Diana Morrison"
+          },
+          {
+            "personA": "Rebecca Morrison",
+            "personB": "Jake Morrison",
+            "relationshipType": "sibling",
+            "confidence": 0.95,
+            "context": "my sister is Rebecca"
+          },
+          {
+            "personA": "Thomas Morrison",
+            "personB": "Jake Morrison",
+            "relationshipType": "grandparent",
+            "confidence": 0.95,
+            "context": "my grandpa We called him Old Tom but his real name was Thomas Morrison"
+          },
+          {
+            "personA": "Thomas Morrison",
+            "personB": "William Morrison",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "my grandpa We called him Old Tom but his real name was Thomas Morrison"
+          },
+          {
+            "personA": "William Morrison",
+            "personB": "Jake Morrison",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "my dad is William Morrison"
+          },
+          {
+            "personA": "Helen Parker",
+            "personB": "Jake Morrison",
+            "relationshipType": "grandparent",
+            "confidence": 0.95,
+            "context": "my grandma on my mom's side is Helen Parker"
+          },
+          {
+            "personA": "Helen Parker",
+            "personB": "Diana Morrison",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "my grandma on my mom's side is Helen Parker"
+          },
+          {
+            "personA": "Diana Morrison",
+            "personB": "Jake Morrison",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "my mom is Diana Morrison"
+          },
+          {
+            "personA": "Bob Parker",
+            "personB": "Jake Morrison",
+            "relationshipType": "grandparent",
+            "confidence": 0.95,
+            "context": "my grandpa Bob Parker"
+          },
+          {
+            "personA": "Bob Parker",
+            "personB": "Diana Morrison",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "my grandpa Bob Parker"
+          },
+          {
+            "personA": "Margaret Morrison",
+            "personB": "Jake Morrison",
+            "relationshipType": "grandparent",
+            "confidence": 0.95,
+            "context": "my dad's mom so my other grandma is Margaret Morrison"
+          },
+          {
+            "personA": "Margaret Morrison",
+            "personB": "William Morrison",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "my dad's mom so my other grandma is Margaret Morrison"
+          }
+        ],
+        "suggestedPeople": [
+          {
+            "firstName": "Jake",
+            "lastName": "Morrison",
+            "gender": "male",
+            "birthDate": "1995"
+          },
+          {
+            "firstName": "William",
+            "lastName": "Morrison",
+            "gender": "male",
+            "birthDate": "1965",
+            "profession": "mechanic"
+          },
+          {
+            "firstName": "Diana",
+            "lastName": "Morrison",
+            "maidenName": "Parker",
+            "gender": "female",
+            "birthDate": "1968",
+            "profession": "elementary school teacher"
+          },
+          {
+            "firstName": "Rebecca",
+            "lastName": "Morrison",
+            "gender": "female",
+            "birthDate": "1998"
+          },
+          {
+            "firstName": "Thomas",
+            "lastName": "Morrison",
+            "gender": "male",
+            "birthDate": "1935",
+            "deathDate": "2015",
+            "isDeceased": true,
+            "profession": "trucker"
+          },
+          {
+            "firstName": "Helen",
+            "lastName": "Parker",
+            "gender": "female",
+            "birthDate": "1942"
+          },
+          {
+            "firstName": "Bob",
+            "lastName": "Parker",
+            "gender": "male",
+            "birthDate": "1940",
+            "deathDate": "2010",
+            "isDeceased": true,
+            "profession": "rancher"
+          },
+          {
+            "firstName": "Margaret",
+            "lastName": "Morrison",
+            "gender": "female",
+            "birthDate": "1938"
+          }
+        ]
+      }
+    },
+    {
+      "name": "4. ES/EN — Spanglish Code-Switching",
+      "passed": 16,
+      "failed": 0,
+      "warnings": 0,
+      "errors": [],
+      "warns": [],
+      "people": [
+        {
+          "id": "person-narrator",
+          "firstName": "Diego",
+          "lastName": "Fernández",
+          "gender": "male",
+          "isNarrator": true,
+          "birthDate": "2001",
+          "birthPlace": "Houston, Texas"
+        },
+        {
+          "id": "person-1",
+          "firstName": "Roberto",
+          "lastName": "Fernández",
+          "birthDate": "1970",
+          "birthPlace": "Monterrey, Mexico",
+          "profession": "contractor",
+          "gender": "male"
+        },
+        {
+          "id": "person-2",
+          "firstName": "Jennifer",
+          "lastName": "Walsh",
+          "nickname": "Jenny",
+          "birthDate": "1973",
+          "birthPlace": "Houston, Texas",
+          "profession": "real estate agent",
+          "gender": "female"
+        },
+        {
+          "id": "person-3",
+          "firstName": "Tyler",
+          "lastName": "Walsh",
+          "birthDate": "1995",
+          "gender": "male"
+        },
+        {
+          "id": "person-4",
+          "firstName": "Sofía",
+          "lastName": "Fernández",
+          "birthDate": "2004",
+          "gender": "female"
+        },
+        {
+          "id": "person-5",
+          "firstName": "Rosa",
+          "lastName": "Hernández",
+          "birthDate": "1942",
+          "birthPlace": "Monterrey, Mexico",
+          "gender": "female"
+        },
+        {
+          "id": "person-6",
+          "firstName": "Susan",
+          "lastName": "Walsh",
+          "birthDate": "1947",
+          "birthPlace": "Austin",
+          "gender": "female"
+        }
+      ],
+      "relationships": [
+        {
+          "personAId": "person-1",
+          "personBId": "person-narrator",
+          "personAName": "Roberto Fernández",
+          "personBName": "Diego Fernández",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-narrator",
+          "personAName": "Jennifer Walsh",
+          "personBName": "Diego Fernández",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-3",
+          "personBId": "person-narrator",
+          "personAName": "Tyler Walsh",
+          "personBName": "Diego Fernández",
+          "type": "half_sibling",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-3",
+          "personAName": "Jennifer Walsh",
+          "personBName": "Tyler Walsh",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-4",
+          "personBId": "person-narrator",
+          "personAName": "Sofía Fernández",
+          "personBName": "Diego Fernández",
+          "type": "sibling",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-1",
+          "personBId": "person-4",
+          "personAName": "Roberto Fernández",
+          "personBName": "Sofía Fernández",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-4",
+          "personAName": "Jennifer Walsh",
+          "personBName": "Sofía Fernández",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-5",
+          "personBId": "person-narrator",
+          "personAName": "Rosa Hernández",
+          "personBName": "Diego Fernández",
+          "type": "grandparent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-5",
+          "personBId": "person-1",
+          "personAName": "Rosa Hernández",
+          "personBName": "Roberto Fernández",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-6",
+          "personBId": "person-narrator",
+          "personAName": "Susan Walsh",
+          "personBName": "Diego Fernández",
+          "type": "grandparent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-6",
+          "personBId": "person-2",
+          "personAName": "Susan Walsh",
+          "personBName": "Jennifer Walsh",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-3",
+          "personBId": "person-4",
+          "type": "half_sibling",
+          "confidence": 0.85,
+          "personAName": "Tyler Walsh",
+          "personBName": "Sofía Fernández",
+          "inferred": true
+        },
+        {
+          "personAId": "person-1",
+          "personBId": "person-2",
+          "type": "spouse",
+          "confidence": 0.85,
+          "personAName": "Roberto Fernández",
+          "personBName": "Jennifer Walsh",
+          "inferred": true
+        },
+        {
+          "personAId": "person-5",
+          "personBId": "person-4",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Rosa Hernández",
+          "personBName": "Sofía Fernández",
+          "inferred": true
+        },
+        {
+          "personAId": "person-6",
+          "personBId": "person-3",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Susan Walsh",
+          "personBName": "Tyler Walsh",
+          "inferred": true
+        },
+        {
+          "personAId": "person-6",
+          "personBId": "person-4",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Susan Walsh",
+          "personBName": "Sofía Fernández",
+          "inferred": true
+        }
+      ],
+      "rawExtraction": {
+        "_reasoning": "Narrator is Diego Fernández. Roberto is his father (parent of Diego). Jennifer is his mother (parent of Diego). Tyler is half-brother of Diego via Jennifer. Sofía is full sister of Diego. Abuela Rosa is grandmother of Diego via Roberto. Grandma Sue is grandmother of Diego via Jennifer.",
+        "entities": [
+          {
+            "type": "person",
+            "value": "Diego Fernández",
+            "confidence": 0.95,
+            "context": "So yeah, I'm Diego Fernández."
+          },
+          {
+            "type": "person",
+            "value": "Roberto Fernández",
+            "confidence": 0.95,
+            "context": "My dad, mi papá, es Roberto Fernández"
+          },
+          {
+            "type": "person",
+            "value": "Jennifer Walsh",
+            "confidence": 0.95,
+            "context": "My mom is Jennifer Walsh"
+          },
+          {
+            "type": "person",
+            "value": "Tyler Walsh",
+            "confidence": 0.95,
+            "context": "My mom has a son from that first marriage — Tyler Walsh"
+          },
+          {
+            "type": "person",
+            "value": "Sofía Fernández",
+            "confidence": 0.95,
+            "context": "Tengo una hermana, Sofía Fernández"
+          },
+          {
+            "type": "person",
+            "value": "Rosa Hernández",
+            "confidence": 0.95,
+            "context": "mi abuela Rosa Hernández"
+          },
+          {
+            "type": "person",
+            "value": "Susan Walsh",
+            "confidence": 0.95,
+            "context": "my mom's mom, my grandma Susan Walsh"
+          },
+          {
+            "type": "date",
+            "value": "2001",
+            "confidence": 0.95,
+            "context": "Born in 2001 in Houston, Texas"
+          },
+          {
+            "type": "date",
+            "value": "1970",
+            "confidence": 0.95,
+            "context": "he was born in seventy in Monterrey, Mexico"
+          },
+          {
+            "type": "date",
+            "value": "1973",
+            "confidence": 0.95,
+            "context": "she was born here in Houston in seventy-three"
+          },
+          {
+            "type": "date",
+            "value": "1995",
+            "confidence": 0.95,
+            "context": "Tyler Walsh, born in ninety-five"
+          },
+          {
+            "type": "date",
+            "value": "2004",
+            "confidence": 0.95,
+            "context": "Sofía Fernández, she was born in 2004"
+          },
+          {
+            "type": "date",
+            "value": "1942",
+            "confidence": 0.95,
+            "context": "mi abuela Rosa Hernández, she was born in 1942 en Monterrey"
+          },
+          {
+            "type": "date",
+            "value": "1947",
+            "confidence": 0.95,
+            "context": "my mom's mom, my grandma Susan Walsh, born in forty-seven in Austin"
+          },
+          {
+            "type": "location",
+            "value": "Houston, Texas",
+            "confidence": 0.95,
+            "context": "Born in 2001 in Houston, Texas"
+          },
+          {
+            "type": "location",
+            "value": "Monterrey, Mexico",
+            "confidence": 0.95,
+            "context": "he was born in seventy in Monterrey, Mexico"
+          },
+          {
+            "type": "location",
+            "value": "Austin",
+            "confidence": 0.95,
+            "context": "my mom's mom, my grandma Susan Walsh, born in forty-seven in Austin"
+          }
+        ],
+        "relationships": [
+          {
+            "personA": "Roberto Fernández",
+            "personB": "Diego Fernández",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "My dad, mi papá, es Roberto Fernández"
+          },
+          {
+            "personA": "Jennifer Walsh",
+            "personB": "Diego Fernández",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "My mom is Jennifer Walsh"
+          },
+          {
+            "personA": "Tyler Walsh",
+            "personB": "Diego Fernández",
+            "relationshipType": "half_sibling",
+            "confidence": 0.95,
+            "context": "My mom has a son from that first marriage — Tyler Walsh"
+          },
+          {
+            "personA": "Jennifer Walsh",
+            "personB": "Tyler Walsh",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "My mom has a son from that first marriage — Tyler Walsh"
+          },
+          {
+            "personA": "Sofía Fernández",
+            "personB": "Diego Fernández",
+            "relationshipType": "sibling",
+            "confidence": 0.95,
+            "context": "Tengo una hermana, Sofía Fernández"
+          },
+          {
+            "personA": "Roberto Fernández",
+            "personB": "Sofía Fernández",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "Tengo una hermana, Sofía Fernández"
+          },
+          {
+            "personA": "Jennifer Walsh",
+            "personB": "Sofía Fernández",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "Tengo una hermana, Sofía Fernández"
+          },
+          {
+            "personA": "Rosa Hernández",
+            "personB": "Diego Fernández",
+            "relationshipType": "grandparent",
+            "confidence": 0.95,
+            "context": "mi abuela Rosa Hernández"
+          },
+          {
+            "personA": "Rosa Hernández",
+            "personB": "Roberto Fernández",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "mi abuela Rosa Hernández"
+          },
+          {
+            "personA": "Susan Walsh",
+            "personB": "Diego Fernández",
+            "relationshipType": "grandparent",
+            "confidence": 0.95,
+            "context": "my mom's mom, my grandma Susan Walsh"
+          },
+          {
+            "personA": "Susan Walsh",
+            "personB": "Jennifer Walsh",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "my mom's mom, my grandma Susan Walsh"
+          }
+        ],
+        "suggestedPeople": [
+          {
+            "firstName": "Diego",
+            "lastName": "Fernández",
+            "gender": "male",
+            "birthDate": "2001",
+            "birthPlace": "Houston, Texas"
+          },
+          {
+            "firstName": "Roberto",
+            "lastName": "Fernández",
+            "gender": "male",
+            "birthDate": "1970",
+            "birthPlace": "Monterrey, Mexico",
+            "profession": "contractor"
+          },
+          {
+            "firstName": "Jennifer",
+            "lastName": "Walsh",
+            "nickname": "Jenny",
+            "gender": "female",
+            "birthDate": "1973",
+            "birthPlace": "Houston, Texas",
+            "profession": "real estate agent"
+          },
+          {
+            "firstName": "Tyler",
+            "lastName": "Walsh",
+            "gender": "male",
+            "birthDate": "1995"
+          },
+          {
+            "firstName": "Sofía",
+            "lastName": "Fernández",
+            "gender": "female",
+            "birthDate": "2004"
+          },
+          {
+            "firstName": "Rosa",
+            "lastName": "Hernández",
+            "gender": "female",
+            "birthDate": "1942",
+            "birthPlace": "Monterrey, Mexico"
+          },
+          {
+            "firstName": "Susan",
+            "lastName": "Walsh",
+            "gender": "female",
+            "birthDate": "1947",
+            "birthPlace": "Austin"
+          }
+        ]
+      }
+    },
+    {
+      "name": "5. EN — Triple-Divorce Blended Chaos",
+      "passed": 21,
+      "failed": 0,
+      "warnings": 1,
+      "errors": [],
+      "warns": [
+        "[Dad's Remarriage] Priya → step_parent of Mia"
+      ],
+      "people": [
+        {
+          "id": "person-narrator",
+          "firstName": "Mia",
+          "lastName": "Torres",
+          "gender": "female",
+          "isNarrator": true,
+          "birthDate": "2005",
+          "birthPlace": "Phoenix, Arizona"
+        },
+        {
+          "id": "person-1",
+          "firstName": "Marco",
+          "lastName": "Torres",
+          "birthDate": "1978",
+          "birthPlace": "Phoenix",
+          "profession": "electrician",
+          "gender": "male"
+        },
+        {
+          "id": "person-2",
+          "firstName": "Andrea",
+          "lastName": "Torres",
+          "birthDate": "1980",
+          "birthPlace": "Tucson",
+          "profession": "HR",
+          "gender": "female"
+        },
+        {
+          "id": "person-3",
+          "firstName": "Chris",
+          "lastName": "Baker",
+          "gender": "male"
+        },
+        {
+          "id": "person-4",
+          "firstName": "Ethan",
+          "lastName": "Baker",
+          "birthDate": "2001",
+          "gender": "male"
+        },
+        {
+          "id": "person-5",
+          "firstName": "Steve",
+          "lastName": "Park",
+          "gender": "male"
+        },
+        {
+          "id": "person-6",
+          "firstName": "Derek",
+          "lastName": "Williams",
+          "gender": "male"
+        },
+        {
+          "id": "person-7",
+          "firstName": "Lily",
+          "lastName": "Williams",
+          "birthDate": "2010",
+          "gender": "female"
+        },
+        {
+          "id": "person-8",
+          "firstName": "Priya",
+          "lastName": "Patel",
+          "birthDate": "1982",
+          "birthPlace": "India",
+          "profession": "dentist",
+          "gender": "female"
+        },
+        {
+          "id": "person-9",
+          "firstName": "Ravi",
+          "lastName": "Patel",
+          "birthDate": "2003",
+          "gender": "male"
+        }
+      ],
+      "relationships": [
+        {
+          "personAId": "person-1",
+          "personBId": "person-narrator",
+          "personAName": "Marco Torres",
+          "personBName": "Mia Torres",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-narrator",
+          "personAName": "Andrea Torres",
+          "personBName": "Mia Torres",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-1",
+          "personBId": "person-2",
+          "personAName": "Marco Torres",
+          "personBName": "Andrea Torres",
+          "type": "ex_spouse",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-3",
+          "personAName": "Andrea Torres",
+          "personBName": "Chris Baker",
+          "type": "ex_spouse",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-3",
+          "personBId": "person-4",
+          "personAName": "Chris Baker",
+          "personBName": "Ethan Baker",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-4",
+          "personAName": "Andrea Torres",
+          "personBName": "Ethan Baker",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-4",
+          "personBId": "person-narrator",
+          "personAName": "Ethan Baker",
+          "personBName": "Mia Torres",
+          "type": "half_sibling",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-5",
+          "personAName": "Andrea Torres",
+          "personBName": "Steve Park",
+          "type": "ex_spouse",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-6",
+          "personAName": "Andrea Torres",
+          "personBName": "Derek Williams",
+          "type": "spouse",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-6",
+          "personBId": "person-7",
+          "personAName": "Derek Williams",
+          "personBName": "Lily Williams",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-7",
+          "personBId": "person-narrator",
+          "personAName": "Lily Williams",
+          "personBName": "Mia Torres",
+          "type": "step_sibling",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-1",
+          "personBId": "person-8",
+          "personAName": "Marco Torres",
+          "personBName": "Priya Patel",
+          "type": "spouse",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-8",
+          "personBId": "person-9",
+          "personAName": "Priya Patel",
+          "personBName": "Ravi Patel",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-9",
+          "personBId": "person-narrator",
+          "personAName": "Ravi Patel",
+          "personBName": "Mia Torres",
+          "type": "step_sibling",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-1",
+          "personBId": "person-2",
+          "type": "spouse",
+          "confidence": 0.85,
+          "personAName": "Marco Torres",
+          "personBName": "Andrea Torres",
+          "inferred": true
+        },
+        {
+          "personAId": "person-3",
+          "personBId": "person-2",
+          "type": "spouse",
+          "confidence": 0.85,
+          "personAName": "Chris Baker",
+          "personBName": "Andrea Torres",
+          "inferred": true
+        }
+      ],
+      "rawExtraction": {
+        "_reasoning": "Narrator is Mia Torres. Marco is her father (parent). Andrea is her mother (parent). Marco and Andrea are ex-spouses. Andrea married Chris Baker (spouse), had Ethan (half-brother of Mia). Andrea and Chris are ex-spouses. Andrea then married Steve Park (step-parent), but they divorced. Andrea is now married to Derek Williams (spouse), who has a daughter Lily (step-sister). Marco is married to Priya Patel (step-parent), who has a son Ravi (like a brother to Mia). Must create intermediate links and relationships between Mia and her family members.",
+        "entities": [
+          {
+            "type": "person",
+            "value": "Mia Torres",
+            "confidence": 0.95,
+            "context": "I'm Mia Torres"
+          },
+          {
+            "type": "person",
+            "value": "Marco Torres",
+            "confidence": 0.95,
+            "context": "My dad is Marco Torres"
+          },
+          {
+            "type": "person",
+            "value": "Andrea Torres",
+            "confidence": 0.95,
+            "context": "My mom is Andrea Torres"
+          },
+          {
+            "type": "person",
+            "value": "Chris Baker",
+            "confidence": 0.9,
+            "context": "My mom married Chris Baker"
+          },
+          {
+            "type": "person",
+            "value": "Ethan Baker",
+            "confidence": 0.95,
+            "context": "my half-brother Ethan Baker"
+          },
+          {
+            "type": "person",
+            "value": "Steve Park",
+            "confidence": 0.9,
+            "context": "Then she married Steve Park"
+          },
+          {
+            "type": "person",
+            "value": "Derek Williams",
+            "confidence": 0.95,
+            "context": "Now my mom is with Derek Williams"
+          },
+          {
+            "type": "person",
+            "value": "Lily Williams",
+            "confidence": 0.95,
+            "context": "Derek has a daughter named Lily Williams"
+          },
+          {
+            "type": "person",
+            "value": "Priya Patel",
+            "confidence": 0.95,
+            "context": "He's married to Priya Patel"
+          },
+          {
+            "type": "person",
+            "value": "Ravi Patel",
+            "confidence": 0.95,
+            "context": "Priya has a son from before she married my dad — Ravi Patel"
+          },
+          {
+            "type": "date",
+            "value": "2005",
+            "confidence": 0.95,
+            "context": "I'm Mia Torres, born in 2005"
+          },
+          {
+            "type": "date",
+            "value": "1978",
+            "confidence": 0.95,
+            "context": "My dad is Marco Torres, born in 1978"
+          },
+          {
+            "type": "date",
+            "value": "1980",
+            "confidence": 0.95,
+            "context": "My mom is Andrea Torres — she was born in 1980"
+          },
+          {
+            "type": "date",
+            "value": "2001",
+            "confidence": 0.95,
+            "context": "my half-brother Ethan Baker, born in 2001"
+          },
+          {
+            "type": "date",
+            "value": "2010",
+            "confidence": 0.95,
+            "context": "Derek has a daughter named Lily Williams, she was born in 2010"
+          },
+          {
+            "type": "date",
+            "value": "1982",
+            "confidence": 0.95,
+            "context": "He's married to Priya Patel, born in 1982"
+          },
+          {
+            "type": "date",
+            "value": "2003",
+            "confidence": 0.95,
+            "context": "Priya has a son from before she married my dad — Ravi Patel, born in 2003"
+          },
+          {
+            "type": "date",
+            "value": "2019",
+            "confidence": 0.95,
+            "context": "Now my mom is with Derek Williams. They got married in 2019"
+          },
+          {
+            "type": "location",
+            "value": "Phoenix",
+            "confidence": 0.95,
+            "context": "I'm Mia Torres, born in 2005 in Phoenix, Arizona"
+          },
+          {
+            "type": "location",
+            "value": "Tucson",
+            "confidence": 0.95,
+            "context": "My mom is Andrea Torres — she was born in 1980 in Tucson"
+          },
+          {
+            "type": "location",
+            "value": "Ohio",
+            "confidence": 0.9,
+            "context": "Chris was from Ohio"
+          },
+          {
+            "type": "location",
+            "value": "India",
+            "confidence": 0.95,
+            "context": "Priya is from India originally"
+          },
+          {
+            "type": "event",
+            "value": "divorced",
+            "confidence": 0.95,
+            "context": "My mom and dad were married first, had me, then divorced when I was three"
+          },
+          {
+            "type": "event",
+            "value": "married",
+            "confidence": 0.95,
+            "context": "My mom married Chris Baker"
+          },
+          {
+            "type": "event",
+            "value": "divorced",
+            "confidence": 0.9,
+            "context": "My mom and Chris eventually divorced too"
+          },
+          {
+            "type": "event",
+            "value": "married",
+            "confidence": 0.9,
+            "context": "Then she married Steve Park"
+          },
+          {
+            "type": "event",
+            "value": "divorced",
+            "confidence": 0.9,
+            "context": "Steve was just my stepdad for a while. I don't really count him as family anymore"
+          },
+          {
+            "type": "event",
+            "value": "married",
+            "confidence": 0.95,
+            "context": "Now my mom is with Derek Williams. They got married in 2019"
+          },
+          {
+            "type": "event",
+            "value": "married",
+            "confidence": 0.95,
+            "context": "He's married to Priya Patel"
+          }
+        ],
+        "relationships": [
+          {
+            "personA": "Marco Torres",
+            "personB": "Mia Torres",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "My dad is Marco Torres"
+          },
+          {
+            "personA": "Andrea Torres",
+            "personB": "Mia Torres",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "My mom is Andrea Torres"
+          },
+          {
+            "personA": "Marco Torres",
+            "personB": "Andrea Torres",
+            "relationshipType": "ex_spouse",
+            "confidence": 0.95,
+            "context": "My mom and dad were married first, had me, then divorced when I was three"
+          },
+          {
+            "personA": "Andrea Torres",
+            "personB": "Chris Baker",
+            "relationshipType": "ex_spouse",
+            "confidence": 0.9,
+            "context": "My mom married Chris Baker"
+          },
+          {
+            "personA": "Chris Baker",
+            "personB": "Ethan Baker",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "my half-brother Ethan Baker"
+          },
+          {
+            "personA": "Andrea Torres",
+            "personB": "Ethan Baker",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "my half-brother Ethan Baker"
+          },
+          {
+            "personA": "Ethan Baker",
+            "personB": "Mia Torres",
+            "relationshipType": "half_sibling",
+            "confidence": 0.95,
+            "context": "my half-brother Ethan Baker"
+          },
+          {
+            "personA": "Andrea Torres",
+            "personB": "Steve Park",
+            "relationshipType": "ex_spouse",
+            "confidence": 0.9,
+            "context": "Then she married Steve Park"
+          },
+          {
+            "personA": "Andrea Torres",
+            "personB": "Derek Williams",
+            "relationshipType": "spouse",
+            "confidence": 0.95,
+            "context": "Now my mom is with Derek Williams. They got married in 2019"
+          },
+          {
+            "personA": "Derek Williams",
+            "personB": "Lily Williams",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "Derek has a daughter named Lily Williams"
+          },
+          {
+            "personA": "Lily Williams",
+            "personB": "Mia Torres",
+            "relationshipType": "step_sibling",
+            "confidence": 0.9,
+            "context": "Lily is technically my stepsister I guess?"
+          },
+          {
+            "personA": "Marco Torres",
+            "personB": "Priya Patel",
+            "relationshipType": "spouse",
+            "confidence": 0.95,
+            "context": "He's married to Priya Patel"
+          },
+          {
+            "personA": "Priya Patel",
+            "personB": "Ravi Patel",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "Priya has a son from before she married my dad — Ravi Patel"
+          },
+          {
+            "personA": "Ravi Patel",
+            "personB": "Mia Torres",
+            "relationshipType": "step_sibling",
+            "confidence": 0.9,
+            "context": "Ravi is not my brother but we grew up in the same house so he's like family to me"
+          }
+        ],
+        "suggestedPeople": [
+          {
+            "firstName": "Mia",
+            "lastName": "Torres",
+            "gender": "female",
+            "birthDate": "2005",
+            "birthPlace": "Phoenix, Arizona"
+          },
+          {
+            "firstName": "Marco",
+            "lastName": "Torres",
+            "gender": "male",
+            "birthDate": "1978",
+            "birthPlace": "Phoenix",
+            "profession": "electrician"
+          },
+          {
+            "firstName": "Andrea",
+            "lastName": "Torres",
+            "gender": "female",
+            "birthDate": "1980",
+            "birthPlace": "Tucson",
+            "profession": "HR"
+          },
+          {
+            "firstName": "Chris",
+            "lastName": "Baker",
+            "gender": "male"
+          },
+          {
+            "firstName": "Ethan",
+            "lastName": "Baker",
+            "gender": "male",
+            "birthDate": "2001"
+          },
+          {
+            "firstName": "Steve",
+            "lastName": "Park",
+            "gender": "male"
+          },
+          {
+            "firstName": "Derek",
+            "lastName": "Williams",
+            "gender": "male"
+          },
+          {
+            "firstName": "Lily",
+            "lastName": "Williams",
+            "gender": "female",
+            "birthDate": "2010"
+          },
+          {
+            "firstName": "Priya",
+            "lastName": "Patel",
+            "gender": "female",
+            "birthDate": "1982",
+            "birthPlace": "India",
+            "profession": "dentist"
+          },
+          {
+            "firstName": "Ravi",
+            "lastName": "Patel",
+            "gender": "male",
+            "birthDate": "2003"
+          }
+        ]
+      }
+    },
+    {
+      "name": "6. EN — Foster Care, Bio vs Legal Family",
+      "passed": 13,
+      "failed": 0,
+      "warnings": 0,
+      "errors": [],
+      "warns": [],
+      "people": [
+        {
+          "id": "person-narrator",
+          "firstName": "Marcus",
+          "lastName": "Johnson",
+          "gender": "male",
+          "isNarrator": true,
+          "birthDate": "2004",
+          "birthPlace": "Atlanta"
+        },
+        {
+          "id": "person-1",
+          "firstName": "Tanya",
+          "lastName": "Johnson",
+          "birthDate": "1985",
+          "gender": "female"
+        },
+        {
+          "id": "person-2",
+          "firstName": "David",
+          "lastName": "Santos",
+          "birthDate": "1970",
+          "profession": "high school teacher",
+          "gender": "male"
+        },
+        {
+          "id": "person-3",
+          "firstName": "Maria",
+          "lastName": "Santos",
+          "birthDate": "1972",
+          "profession": "nurse",
+          "gender": "female"
+        },
+        {
+          "id": "person-4",
+          "firstName": "Luis",
+          "lastName": "Santos",
+          "birthDate": "2000",
+          "gender": "male"
+        },
+        {
+          "id": "person-5",
+          "firstName": "Ms.",
+          "lastName": "Robinson",
+          "gender": null
+        },
+        {
+          "id": "person-6",
+          "firstName": "Jorge",
+          "lastName": "Santos",
+          "birthDate": "1942",
+          "gender": "male"
+        },
+        {
+          "id": "person-7",
+          "firstName": "Elena",
+          "lastName": "Vega",
+          "birthDate": "1945",
+          "gender": "female"
+        }
+      ],
+      "relationships": [
+        {
+          "personAId": "person-1",
+          "personBId": "person-narrator",
+          "personAName": "Tanya Johnson",
+          "personBName": "Marcus Johnson",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-narrator",
+          "personAName": "David Santos",
+          "personBName": "Marcus Johnson",
+          "type": "adopted_parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-3",
+          "personBId": "person-narrator",
+          "personAName": "Maria Santos",
+          "personBName": "Marcus Johnson",
+          "type": "adopted_parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-4",
+          "personBId": "person-narrator",
+          "personAName": "Luis Santos",
+          "personBName": "Marcus Johnson",
+          "type": "sibling",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-6",
+          "personBId": "person-narrator",
+          "personAName": "Jorge Santos",
+          "personBName": "Marcus Johnson",
+          "type": "grandparent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-7",
+          "personBId": "person-narrator",
+          "personAName": "Elena Vega",
+          "personBName": "Marcus Johnson",
+          "type": "grandparent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-6",
+          "personBId": "person-3",
+          "personAName": "Jorge Santos",
+          "personBName": "Maria Santos",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-7",
+          "personBId": "person-3",
+          "personAName": "Elena Vega",
+          "personBName": "Maria Santos",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-1",
+          "personBId": "person-4",
+          "type": "parent",
+          "confidence": 0.85,
+          "personAName": "Tanya Johnson",
+          "personBName": "Luis Santos",
+          "inferred": true
+        },
+        {
+          "personAId": "person-6",
+          "personBId": "person-7",
+          "type": "spouse",
+          "confidence": 0.85,
+          "personAName": "Jorge Santos",
+          "personBName": "Elena Vega",
+          "inferred": true
+        }
+      ],
+      "rawExtraction": {
+        "_reasoning": "Narrator is Marcus Johnson. Tanya Johnson is biological mother. David and Maria Santos are adoptive parents. Luis Santos is adoptive brother. Jorge Santos and Elena Vega are grandparents through Maria. Must create relationships between Marcus and his biological and adoptive family members.",
+        "entities": [
+          {
+            "type": "person",
+            "value": "Marcus Johnson",
+            "confidence": 0.95,
+            "context": "my name is Marcus Johnson"
+          },
+          {
+            "type": "person",
+            "value": "Tanya Johnson",
+            "confidence": 0.95,
+            "context": "my biological mom is Tanya Johnson"
+          },
+          {
+            "type": "person",
+            "value": "David Santos",
+            "confidence": 0.95,
+            "context": "I was placed with David and Maria Santos"
+          },
+          {
+            "type": "person",
+            "value": "Maria Santos",
+            "confidence": 0.95,
+            "context": "I was placed with David and Maria Santos"
+          },
+          {
+            "type": "person",
+            "value": "Luis Santos",
+            "confidence": 0.95,
+            "context": "they already had a son, Luis Santos"
+          },
+          {
+            "type": "person",
+            "value": "Ms. Robinson",
+            "confidence": 0.9,
+            "context": "my caseworker Ms. Robinson"
+          },
+          {
+            "type": "person",
+            "value": "Jorge Santos",
+            "confidence": 0.95,
+            "context": "Maria's parents, my grandparents — I call them Abuela and Abuelo — are Jorge Santos"
+          },
+          {
+            "type": "person",
+            "value": "Elena Vega",
+            "confidence": 0.95,
+            "context": "Maria's parents, my grandparents — I call them Abuela and Abuelo — are Jorge Santos and Elena Vega"
+          },
+          {
+            "type": "date",
+            "value": "2004",
+            "confidence": 0.95,
+            "context": "I was born in 2004"
+          },
+          {
+            "type": "date",
+            "value": "1985",
+            "confidence": 0.95,
+            "context": "my biological mom is Tanya Johnson, she was born in 1985"
+          },
+          {
+            "type": "date",
+            "value": "1970",
+            "confidence": 0.95,
+            "context": "David was born in 1970"
+          },
+          {
+            "type": "date",
+            "value": "1972",
+            "confidence": 0.95,
+            "context": "Maria was born in 1972"
+          },
+          {
+            "type": "date",
+            "value": "2000",
+            "confidence": 0.95,
+            "context": "Luis Santos, born in 2000"
+          },
+          {
+            "type": "date",
+            "value": "1942",
+            "confidence": 0.95,
+            "context": "Jorge Santos, born in 1942"
+          },
+          {
+            "type": "date",
+            "value": "1945",
+            "confidence": 0.95,
+            "context": "Elena Vega, born in 1945"
+          },
+          {
+            "type": "location",
+            "value": "Atlanta",
+            "confidence": 0.95,
+            "context": "I was born in 2004 in Atlanta"
+          }
+        ],
+        "relationships": [
+          {
+            "personA": "Tanya Johnson",
+            "personB": "Marcus Johnson",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "my biological mom is Tanya Johnson"
+          },
+          {
+            "personA": "David Santos",
+            "personB": "Marcus Johnson",
+            "relationshipType": "adopted_parent",
+            "confidence": 0.95,
+            "context": "David and Maria officially adopted me"
+          },
+          {
+            "personA": "Maria Santos",
+            "personB": "Marcus Johnson",
+            "relationshipType": "adopted_parent",
+            "confidence": 0.95,
+            "context": "David and Maria officially adopted me"
+          },
+          {
+            "personA": "Luis Santos",
+            "personB": "Marcus Johnson",
+            "relationshipType": "sibling",
+            "confidence": 0.95,
+            "context": "Luis immediately became my big brother"
+          },
+          {
+            "personA": "Jorge Santos",
+            "personB": "Marcus Johnson",
+            "relationshipType": "grandparent",
+            "confidence": 0.95,
+            "context": "Maria's parents, my grandparents — I call them Abuela and Abuelo — are Jorge Santos"
+          },
+          {
+            "personA": "Elena Vega",
+            "personB": "Marcus Johnson",
+            "relationshipType": "grandparent",
+            "confidence": 0.95,
+            "context": "Maria's parents, my grandparents — I call them Abuela and Abuelo — are Jorge Santos and Elena Vega"
+          },
+          {
+            "personA": "Jorge Santos",
+            "personB": "Maria Santos",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "Maria's parents, my grandparents — I call them Abuela and Abuelo — are Jorge Santos"
+          },
+          {
+            "personA": "Elena Vega",
+            "personB": "Maria Santos",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "Maria's parents, my grandparents — I call them Abuela and Abuelo — are Jorge Santos and Elena Vega"
+          }
+        ],
+        "suggestedPeople": [
+          {
+            "firstName": "Marcus",
+            "lastName": "Johnson",
+            "gender": "male",
+            "birthDate": "2004",
+            "birthPlace": "Atlanta"
+          },
+          {
+            "firstName": "Tanya",
+            "lastName": "Johnson",
+            "gender": "female",
+            "birthDate": "1985"
+          },
+          {
+            "firstName": "David",
+            "lastName": "Santos",
+            "gender": "male",
+            "birthDate": "1970",
+            "profession": "high school teacher"
+          },
+          {
+            "firstName": "Maria",
+            "lastName": "Santos",
+            "gender": "female",
+            "birthDate": "1972",
+            "profession": "nurse"
+          },
+          {
+            "firstName": "Luis",
+            "lastName": "Santos",
+            "gender": "male",
+            "birthDate": "2000"
+          },
+          {
+            "firstName": "Ms.",
+            "lastName": "Robinson",
+            "gender": null
+          },
+          {
+            "firstName": "Jorge",
+            "lastName": "Santos",
+            "gender": "male",
+            "birthDate": "1942"
+          },
+          {
+            "firstName": "Elena",
+            "lastName": "Vega",
+            "gender": "female",
+            "birthDate": "1945"
+          }
+        ]
+      }
+    },
+    {
+      "name": "7. ES — Slang-Heavy Mexican Spanish (jefa, carnal, morro)",
+      "passed": 18,
+      "failed": 0,
+      "warnings": 1,
+      "errors": [],
+      "warns": [
+        "[Uncle & Partner] Prefer explicit sibling(Alberto↔Tomás) over implicit uncle_aunt(Alberto→Kevin)"
+      ],
+      "people": [
+        {
+          "id": "person-narrator",
+          "firstName": "Kevin",
+          "lastName": "Ramírez",
+          "gender": "male",
+          "isNarrator": true,
+          "birthDate": "2002"
+        },
+        {
+          "id": "person-1",
+          "firstName": "Patricia",
+          "lastName": "Ramírez",
+          "birthDate": "1975",
+          "gender": "female"
+        },
+        {
+          "id": "person-2",
+          "firstName": "Tomás",
+          "lastName": "Ramírez",
+          "birthDate": "1972",
+          "gender": "male"
+        },
+        {
+          "id": "person-3",
+          "firstName": "Ángel",
+          "lastName": "Ramírez",
+          "birthDate": "1999",
+          "gender": "male"
+        },
+        {
+          "id": "person-4",
+          "firstName": "Guadalupe",
+          "lastName": "Ramírez",
+          "nickname": "Lupita",
+          "birthDate": "2006",
+          "gender": "female"
+        },
+        {
+          "id": "person-5",
+          "firstName": "Concepción",
+          "lastName": "Ramírez",
+          "nickname": "Doña Concha",
+          "birthDate": "1945",
+          "gender": "female"
+        },
+        {
+          "id": "person-6",
+          "firstName": "Alberto",
+          "lastName": "Ramírez",
+          "nickname": "Tío Beto",
+          "birthDate": "1978",
+          "gender": "male"
+        },
+        {
+          "id": "person-7",
+          "firstName": "Laura",
+          "nickname": "Güera Laura",
+          "birthDate": "1980",
+          "gender": "female"
+        },
+        {
+          "id": "person-8",
+          "firstName": "Brandon",
+          "birthDate": "2010",
+          "gender": "male"
+        },
+        {
+          "id": "person-9",
+          "firstName": "Esperanza",
+          "gender": "female"
+        }
+      ],
+      "relationships": [
+        {
+          "personAId": "person-1",
+          "personBId": "person-narrator",
+          "personAName": "Patricia Ramírez",
+          "personBName": "Kevin Ramírez",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-narrator",
+          "personAName": "Tomás Ramírez",
+          "personBName": "Kevin Ramírez",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-3",
+          "personBId": "person-narrator",
+          "personAName": "Ángel Ramírez",
+          "personBName": "Kevin Ramírez",
+          "type": "sibling",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-4",
+          "personBId": "person-narrator",
+          "personAName": "Guadalupe Ramírez",
+          "personBName": "Kevin Ramírez",
+          "type": "sibling",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-5",
+          "personBId": "person-narrator",
+          "personAName": "Concepción Ramírez",
+          "personBName": "Kevin Ramírez",
+          "type": "grandparent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-6",
+          "personBId": "person-narrator",
+          "personAName": "Alberto Ramírez",
+          "personBName": "Kevin Ramírez",
+          "type": "uncle_aunt",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-6",
+          "personBId": "person-7",
+          "personAName": "Alberto Ramírez",
+          "personBName": "Laura",
+          "type": "spouse",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-6",
+          "personBId": "person-8",
+          "personAName": "Alberto Ramírez",
+          "personBName": "Brandon",
+          "type": "parent",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-9",
+          "personBId": "person-narrator",
+          "personAName": "Esperanza",
+          "personBName": "Kevin Ramírez",
+          "type": "grandparent",
+          "confidence": 0.8,
+          "inferred": false
+        },
+        {
+          "personAId": "person-1",
+          "personBId": "person-3",
+          "type": "parent",
+          "confidence": 0.85,
+          "personAName": "Patricia Ramírez",
+          "personBName": "Ángel Ramírez",
+          "inferred": true
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-3",
+          "type": "parent",
+          "confidence": 0.85,
+          "personAName": "Tomás Ramírez",
+          "personBName": "Ángel Ramírez",
+          "inferred": true
+        },
+        {
+          "personAId": "person-1",
+          "personBId": "person-4",
+          "type": "parent",
+          "confidence": 0.85,
+          "personAName": "Patricia Ramírez",
+          "personBName": "Guadalupe Ramírez",
+          "inferred": true
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-4",
+          "type": "parent",
+          "confidence": 0.85,
+          "personAName": "Tomás Ramírez",
+          "personBName": "Guadalupe Ramírez",
+          "inferred": true
+        },
+        {
+          "personAId": "person-3",
+          "personBId": "person-4",
+          "type": "sibling",
+          "confidence": 0.85,
+          "personAName": "Ángel Ramírez",
+          "personBName": "Guadalupe Ramírez",
+          "inferred": true
+        },
+        {
+          "personAId": "person-1",
+          "personBId": "person-2",
+          "type": "spouse",
+          "confidence": 0.85,
+          "personAName": "Patricia Ramírez",
+          "personBName": "Tomás Ramírez",
+          "inferred": true
+        }
+      ],
+      "rawExtraction": {
+        "_reasoning": "El narrador es Kevin Ramírez. Su jefa es Patricia Ramírez y su jefe es Tomás Ramírez. Ángel Ramírez es su hermano mayor. Guadalupe Ramírez es su hermana menor. Concepción Ramírez es su abuela materna. Alberto Ramírez es su tío paterno. Laura es la pareja de Alberto Ramírez. Brandon es el hijo de Alberto Ramírez y Laura. Esperanza es la abuela materna de Kevin Ramírez.",
+        "entities": [
+          {
+            "type": "person",
+            "value": "Kevin Ramírez",
+            "confidence": 0.95,
+            "context": "Soy Kevin Ramírez, nací en el 2002 en Guadalajara."
+          },
+          {
+            "type": "person",
+            "value": "Patricia Ramírez",
+            "confidence": 0.95,
+            "context": "Mi jefa es Patricia Ramírez, nació en el setenta y cinco."
+          },
+          {
+            "type": "person",
+            "value": "Tomás Ramírez",
+            "confidence": 0.95,
+            "context": "Y mi jefe es Tomás Ramírez, nació en el setenta y dos."
+          },
+          {
+            "type": "person",
+            "value": "Ángel Ramírez",
+            "confidence": 0.95,
+            "context": "Mi carnal Ángel Ramírez nació en el noventa y nueve."
+          },
+          {
+            "type": "person",
+            "value": "Guadalupe Ramírez",
+            "confidence": 0.95,
+            "context": "También tengo a mi hermana la Lupita, bueno, su nombre es Guadalupe Ramírez, nació en el 2006."
+          },
+          {
+            "type": "person",
+            "value": "Concepción Ramírez",
+            "confidence": 0.95,
+            "context": "Mi abuela, la Doña Concha — bueno, se llama Concepción Ramírez — nació en el cuarenta y cinco."
+          },
+          {
+            "type": "person",
+            "value": "Alberto Ramírez",
+            "confidence": 0.95,
+            "context": "Mi tío Beto, bueno, Alberto Ramírez, nació en el setenta y ocho."
+          },
+          {
+            "type": "person",
+            "value": "Laura",
+            "confidence": 0.9,
+            "context": "El tío Beto es soldador y está juntado con la Güera Laura, ella nació en el ochenta."
+          },
+          {
+            "type": "person",
+            "value": "Brandon",
+            "confidence": 0.9,
+            "context": "Tienen un morro que se llama Brandon, nació en el 2010."
+          },
+          {
+            "type": "person",
+            "value": "Esperanza",
+            "confidence": 0.8,
+            "context": "La familia de mi jefa no la conozco mucho. Solo sé que mi abuela materna se llama Esperanza, pero no sé su apellido ni cuándo nació."
+          }
+        ],
+        "relationships": [
+          {
+            "personA": "Patricia Ramírez",
+            "personB": "Kevin Ramírez",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "Mi jefa es Patricia Ramírez"
+          },
+          {
+            "personA": "Tomás Ramírez",
+            "personB": "Kevin Ramírez",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "Y mi jefe es Tomás Ramírez"
+          },
+          {
+            "personA": "Ángel Ramírez",
+            "personB": "Kevin Ramírez",
+            "relationshipType": "sibling",
+            "confidence": 0.95,
+            "context": "Mi carnal Ángel Ramírez nació en el noventa y nueve."
+          },
+          {
+            "personA": "Guadalupe Ramírez",
+            "personB": "Kevin Ramírez",
+            "relationshipType": "sibling",
+            "confidence": 0.95,
+            "context": "También tengo a mi hermana la Lupita, bueno, su nombre es Guadalupe Ramírez, nació en el 2006."
+          },
+          {
+            "personA": "Concepción Ramírez",
+            "personB": "Kevin Ramírez",
+            "relationshipType": "grandparent",
+            "confidence": 0.95,
+            "context": "Mi abuela, la Doña Concha — bueno, se llama Concepción Ramírez — nació en el cuarenta y cinco."
+          },
+          {
+            "personA": "Alberto Ramírez",
+            "personB": "Kevin Ramírez",
+            "relationshipType": "uncle_aunt",
+            "confidence": 0.95,
+            "context": "Mi tío Beto, bueno, Alberto Ramírez, nació en el setenta y ocho."
+          },
+          {
+            "personA": "Alberto Ramírez",
+            "personB": "Laura",
+            "relationshipType": "spouse",
+            "confidence": 0.9,
+            "context": "El tío Beto es soldador y está juntado con la Güera Laura, ella nació en el ochenta."
+          },
+          {
+            "personA": "Alberto Ramírez",
+            "personB": "Brandon",
+            "relationshipType": "parent",
+            "confidence": 0.9,
+            "context": "Tienen un morro que se llama Brandon, nació en el 2010."
+          },
+          {
+            "personA": "Esperanza",
+            "personB": "Kevin Ramírez",
+            "relationshipType": "grandparent",
+            "confidence": 0.8,
+            "context": "La familia de mi jefa no la conozco mucho. Solo sé que mi abuela materna se llama Esperanza, pero no sé su apellido ni cuándo nació."
+          }
+        ],
+        "suggestedPeople": [
+          {
+            "firstName": "Kevin",
+            "lastName": "Ramírez",
+            "gender": "male",
+            "birthDate": "2002"
+          },
+          {
+            "firstName": "Patricia",
+            "lastName": "Ramírez",
+            "gender": "female",
+            "birthDate": "1975"
+          },
+          {
+            "firstName": "Tomás",
+            "lastName": "Ramírez",
+            "gender": "male",
+            "birthDate": "1972"
+          },
+          {
+            "firstName": "Ángel",
+            "lastName": "Ramírez",
+            "gender": "male",
+            "birthDate": "1999"
+          },
+          {
+            "firstName": "Guadalupe",
+            "lastName": "Ramírez",
+            "gender": "female",
+            "birthDate": "2006",
+            "nickname": "Lupita"
+          },
+          {
+            "firstName": "Concepción",
+            "lastName": "Ramírez",
+            "gender": "female",
+            "birthDate": "1945",
+            "nickname": "Doña Concha"
+          },
+          {
+            "firstName": "Alberto",
+            "lastName": "Ramírez",
+            "gender": "male",
+            "birthDate": "1978",
+            "nickname": "Tío Beto"
+          },
+          {
+            "firstName": "Laura",
+            "gender": "female",
+            "birthDate": "1980",
+            "nickname": "Güera Laura"
+          },
+          {
+            "firstName": "Brandon",
+            "gender": "male",
+            "birthDate": "2010"
+          },
+          {
+            "firstName": "Esperanza",
+            "gender": "female"
+          }
+        ]
+      }
+    },
+    {
+      "name": "8. EN — Non-Linear Storytelling, Time Jumps, Unreliable Narrator",
+      "passed": 20,
+      "failed": 0,
+      "warnings": 0,
+      "errors": [],
+      "warns": [],
+      "people": [
+        {
+          "id": "person-narrator",
+          "firstName": "Aisha",
+          "lastName": "Mohammed",
+          "gender": "female",
+          "isNarrator": true,
+          "birthDate": "1997",
+          "birthPlace": "London"
+        },
+        {
+          "id": "person-1",
+          "firstName": "Hassan",
+          "lastName": "Mohammed",
+          "birthDate": "1960",
+          "birthPlace": "Mogadishu",
+          "profession": "taxi driver",
+          "gender": "male"
+        },
+        {
+          "id": "person-2",
+          "firstName": "Fatima",
+          "lastName": "Ali",
+          "birthDate": "1965",
+          "birthPlace": "Nairobi",
+          "profession": "teaching assistant",
+          "gender": "female"
+        },
+        {
+          "id": "person-3",
+          "firstName": "Khadija",
+          "nickname": "Ayeeyo",
+          "birthDate": "1935",
+          "deathDate": "2019",
+          "birthPlace": "Somalia",
+          "isDeceased": true,
+          "gender": "female"
+        },
+        {
+          "id": "person-4",
+          "firstName": "Omar",
+          "lastName": "Mohammed",
+          "birthDate": "1994",
+          "profession": "accountant",
+          "gender": "male"
+        },
+        {
+          "id": "person-5",
+          "firstName": "Amina",
+          "lastName": "Mohammed",
+          "birthDate": "2000",
+          "profession": "nursing student",
+          "gender": "female"
+        },
+        {
+          "id": "person-6",
+          "firstName": "Halima",
+          "lastName": "Ali",
+          "birthDate": "1970",
+          "birthPlace": "Nairobi",
+          "gender": "female"
+        },
+        {
+          "id": "person-7",
+          "firstName": "Zahra",
+          "lastName": "",
+          "birthDate": "1996",
+          "gender": "female"
+        },
+        {
+          "id": "person-8",
+          "firstName": "Safiya",
+          "lastName": "",
+          "birthDate": "2023",
+          "gender": "female"
+        }
+      ],
+      "relationships": [
+        {
+          "personAId": "person-1",
+          "personBId": "person-narrator",
+          "personAName": "Hassan Mohammed",
+          "personBName": "Aisha Mohammed",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-narrator",
+          "personAName": "Fatima Ali",
+          "personBName": "Aisha Mohammed",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-3",
+          "personBId": "person-narrator",
+          "personAName": "Khadija",
+          "personBName": "Aisha Mohammed",
+          "type": "grandparent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-3",
+          "personBId": "person-2",
+          "personAName": "Khadija",
+          "personBName": "Fatima Ali",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-4",
+          "personBId": "person-narrator",
+          "personAName": "Omar Mohammed",
+          "personBName": "Aisha Mohammed",
+          "type": "sibling",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-5",
+          "personBId": "person-narrator",
+          "personAName": "Amina Mohammed",
+          "personBName": "Aisha Mohammed",
+          "type": "sibling",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-6",
+          "personBId": "person-narrator",
+          "personAName": "Halima Ali",
+          "personBName": "Aisha Mohammed",
+          "type": "uncle_aunt",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-6",
+          "personBId": "person-2",
+          "personAName": "Halima Ali",
+          "personBName": "Fatima Ali",
+          "type": "sibling",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-7",
+          "personBId": "person-4",
+          "personAName": "Zahra",
+          "personBName": "Omar Mohammed",
+          "type": "spouse",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-4",
+          "personBId": "person-7",
+          "personAName": "Omar Mohammed",
+          "personBName": "Zahra",
+          "type": "spouse",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-4",
+          "personBId": "person-8",
+          "personAName": "Omar Mohammed",
+          "personBName": "Safiya",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-7",
+          "personBId": "person-8",
+          "personAName": "Zahra",
+          "personBName": "Safiya",
+          "type": "parent",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-8",
+          "personBId": "person-narrator",
+          "personAName": "Safiya",
+          "personBName": "Aisha Mohammed",
+          "type": "niece_nephew",
+          "confidence": 0.95,
+          "inferred": false
+        },
+        {
+          "personAId": "person-1",
+          "personBId": "person-4",
+          "type": "parent",
+          "confidence": 0.85,
+          "personAName": "Hassan Mohammed",
+          "personBName": "Omar Mohammed",
+          "inferred": true
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-4",
+          "type": "parent",
+          "confidence": 0.85,
+          "personAName": "Fatima Ali",
+          "personBName": "Omar Mohammed",
+          "inferred": true
+        },
+        {
+          "personAId": "person-1",
+          "personBId": "person-5",
+          "type": "parent",
+          "confidence": 0.85,
+          "personAName": "Hassan Mohammed",
+          "personBName": "Amina Mohammed",
+          "inferred": true
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-5",
+          "type": "parent",
+          "confidence": 0.85,
+          "personAName": "Fatima Ali",
+          "personBName": "Amina Mohammed",
+          "inferred": true
+        },
+        {
+          "personAId": "person-3",
+          "personBId": "person-6",
+          "type": "parent",
+          "confidence": 0.85,
+          "personAName": "Khadija",
+          "personBName": "Halima Ali",
+          "inferred": true
+        },
+        {
+          "personAId": "person-4",
+          "personBId": "person-5",
+          "type": "sibling",
+          "confidence": 0.85,
+          "personAName": "Omar Mohammed",
+          "personBName": "Amina Mohammed",
+          "inferred": true
+        },
+        {
+          "personAId": "person-1",
+          "personBId": "person-2",
+          "type": "spouse",
+          "confidence": 0.85,
+          "personAName": "Hassan Mohammed",
+          "personBName": "Fatima Ali",
+          "inferred": true
+        },
+        {
+          "personAId": "person-1",
+          "personBId": "person-8",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Hassan Mohammed",
+          "personBName": "Safiya",
+          "inferred": true
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-8",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Fatima Ali",
+          "personBName": "Safiya",
+          "inferred": true
+        },
+        {
+          "personAId": "person-3",
+          "personBId": "person-4",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Khadija",
+          "personBName": "Omar Mohammed",
+          "inferred": true
+        },
+        {
+          "personAId": "person-3",
+          "personBId": "person-5",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Khadija",
+          "personBName": "Amina Mohammed",
+          "inferred": true
+        },
+        {
+          "personAId": "person-3",
+          "personBId": "person-8",
+          "type": "great_grandparent",
+          "confidence": 0.85,
+          "personAName": "Khadija",
+          "personBName": "Safiya",
+          "inferred": true
+        },
+        {
+          "personAId": "person-narrator",
+          "personBId": "person-8",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Aisha Mohammed",
+          "personBName": "Safiya",
+          "inferred": true
+        },
+        {
+          "personAId": "person-5",
+          "personBId": "person-8",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Amina Mohammed",
+          "personBName": "Safiya",
+          "inferred": true
+        },
+        {
+          "personAId": "person-6",
+          "personBId": "person-4",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Halima Ali",
+          "personBName": "Omar Mohammed",
+          "inferred": true
+        },
+        {
+          "personAId": "person-6",
+          "personBId": "person-5",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Halima Ali",
+          "personBName": "Amina Mohammed",
+          "inferred": true
+        }
+      ],
+      "rawExtraction": {
+        "_reasoning": "Narrator Aisha Mohammed is the central figure. Her parents are Hassan Mohammed and Fatima Ali. Ayeeyo (Khadija) is Fatima's mother, making her Aisha's grandmother. Aisha has siblings Omar and Amina. Halima Ali is Aisha's maternal aunt. Omar is married to Zahra, and they have a daughter, Safiya. The family has a mix of Somali and Kenyan cultures in London.",
+        "entities": [
+          {
+            "type": "person",
+            "value": "Aisha Mohammed",
+            "confidence": 0.95,
+            "context": "I'm Aisha Mohammed, born in 1997 in London."
+          },
+          {
+            "type": "person",
+            "value": "Hassan Mohammed",
+            "confidence": 0.95,
+            "context": "My dad, Hassan Mohammed, he's from Mogadishu, Somalia."
+          },
+          {
+            "type": "person",
+            "value": "Fatima Ali",
+            "confidence": 0.95,
+            "context": "My mom is Fatima Ali, she's from Nairobi, Kenya."
+          },
+          {
+            "type": "person",
+            "value": "Ayeeyo (Khadija)",
+            "confidence": 0.95,
+            "context": "Ayeeyo — that's what we call grandma in Somali — her real name was Khadija."
+          },
+          {
+            "type": "person",
+            "value": "Omar",
+            "confidence": 0.95,
+            "context": "I have a brother, Omar."
+          },
+          {
+            "type": "person",
+            "value": "Amina",
+            "confidence": 0.95,
+            "context": "And my little sister Amina was born in 2000."
+          },
+          {
+            "type": "person",
+            "value": "Halima Ali",
+            "confidence": 0.95,
+            "context": "my mom's sister, my habaryar Halima."
+          },
+          {
+            "type": "person",
+            "value": "Zahra",
+            "confidence": 0.95,
+            "context": "Omar is married! His wife is Zahra, born in 1996."
+          },
+          {
+            "type": "person",
+            "value": "Safiya",
+            "confidence": 0.95,
+            "context": "They have a little girl named Safiya, she's three years old."
+          },
+          {
+            "type": "date",
+            "value": "1935",
+            "confidence": 0.95,
+            "context": "Ayeeyo was born in 1935 in Somalia."
+          },
+          {
+            "type": "date",
+            "value": "1960",
+            "confidence": 0.95,
+            "context": "My dad, Hassan Mohammed, he's from Mogadishu, Somalia. Born in 1960."
+          },
+          {
+            "type": "date",
+            "value": "1965",
+            "confidence": 0.95,
+            "context": "My mom is Fatima Ali, she's from Nairobi, Kenya. Born in 1965."
+          },
+          {
+            "type": "date",
+            "value": "1994",
+            "confidence": 0.95,
+            "context": "I have a brother, Omar. He was born in ninety-four."
+          },
+          {
+            "type": "date",
+            "value": "1996",
+            "confidence": 0.95,
+            "context": "Omar is married! His wife is Zahra, born in 1996."
+          },
+          {
+            "type": "date",
+            "value": "1997",
+            "confidence": 0.95,
+            "context": "I'm Aisha Mohammed, born in 1997 in London."
+          },
+          {
+            "type": "date",
+            "value": "2000",
+            "confidence": 0.95,
+            "context": "And my little sister Amina was born in 2000."
+          },
+          {
+            "type": "date",
+            "value": "2019",
+            "confidence": 0.95,
+            "context": "Ayeeyo passed away in 2019"
+          },
+          {
+            "type": "location",
+            "value": "Somalia",
+            "confidence": 0.95,
+            "context": "Ayeeyo was born in 1935 in Somalia."
+          },
+          {
+            "type": "location",
+            "value": "Mogadishu",
+            "confidence": 0.95,
+            "context": "My dad, Hassan Mohammed, he's from Mogadishu, Somalia."
+          },
+          {
+            "type": "location",
+            "value": "Nairobi",
+            "confidence": 0.95,
+            "context": "My mom is Fatima Ali, she's from Nairobi, Kenya."
+          },
+          {
+            "type": "location",
+            "value": "Kenya",
+            "confidence": 0.95,
+            "context": "My mom is Fatima Ali, she's from Nairobi, Kenya."
+          },
+          {
+            "type": "location",
+            "value": "London",
+            "confidence": 0.95,
+            "context": "I'm Aisha Mohammed, born in 1997 in London."
+          },
+          {
+            "type": "event",
+            "value": "Ayeeyo's death",
+            "confidence": 0.95,
+            "context": "Ayeeyo passed away in 2019"
+          }
+        ],
+        "relationships": [
+          {
+            "personA": "Hassan Mohammed",
+            "personB": "Aisha Mohammed",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "My dad, Hassan Mohammed"
+          },
+          {
+            "personA": "Fatima Ali",
+            "personB": "Aisha Mohammed",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "My mom is Fatima Ali"
+          },
+          {
+            "personA": "Khadija (Ayeeyo)",
+            "personB": "Aisha Mohammed",
+            "relationshipType": "grandparent",
+            "confidence": 0.95,
+            "context": "Ayeeyo — that's what we call grandma in Somali — her real name was Khadija"
+          },
+          {
+            "personA": "Khadija (Ayeeyo)",
+            "personB": "Fatima Ali",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "Ayeeyo was my mom's mother"
+          },
+          {
+            "personA": "Omar",
+            "personB": "Aisha Mohammed",
+            "relationshipType": "sibling",
+            "confidence": 0.95,
+            "context": "I have a brother, Omar"
+          },
+          {
+            "personA": "Amina",
+            "personB": "Aisha Mohammed",
+            "relationshipType": "sibling",
+            "confidence": 0.95,
+            "context": "And my little sister Amina was born in 2000"
+          },
+          {
+            "personA": "Halima Ali",
+            "personB": "Aisha Mohammed",
+            "relationshipType": "uncle_aunt",
+            "confidence": 0.95,
+            "context": "my mom's sister, my habaryar Halima"
+          },
+          {
+            "personA": "Halima Ali",
+            "personB": "Fatima Ali",
+            "relationshipType": "sibling",
+            "confidence": 0.95,
+            "context": "my mom's sister, my habaryar Halima"
+          },
+          {
+            "personA": "Zahra",
+            "personB": "Omar",
+            "relationshipType": "spouse",
+            "confidence": 0.95,
+            "context": "Omar is married! His wife is Zahra, born in 1996"
+          },
+          {
+            "personA": "Omar",
+            "personB": "Zahra",
+            "relationshipType": "spouse",
+            "confidence": 0.95,
+            "context": "Omar is married! His wife is Zahra, born in 1996"
+          },
+          {
+            "personA": "Omar",
+            "personB": "Safiya",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "They have a little girl named Safiya, she's three years old"
+          },
+          {
+            "personA": "Zahra",
+            "personB": "Safiya",
+            "relationshipType": "parent",
+            "confidence": 0.95,
+            "context": "They have a little girl named Safiya, she's three years old"
+          },
+          {
+            "personA": "Safiya",
+            "personB": "Aisha Mohammed",
+            "relationshipType": "niece_nephew",
+            "confidence": 0.95,
+            "context": "Safiya is the cutest thing ever, she calls me 'Aunt Aisha'"
+          }
+        ],
+        "suggestedPeople": [
+          {
+            "firstName": "Aisha",
+            "lastName": "Mohammed",
+            "gender": "female",
+            "birthDate": "1997",
+            "birthPlace": "London"
+          },
+          {
+            "firstName": "Hassan",
+            "lastName": "Mohammed",
+            "gender": "male",
+            "birthDate": "1960",
+            "birthPlace": "Mogadishu",
+            "profession": "taxi driver"
+          },
+          {
+            "firstName": "Fatima",
+            "lastName": "Ali",
+            "gender": "female",
+            "birthDate": "1965",
+            "birthPlace": "Nairobi",
+            "profession": "teaching assistant"
+          },
+          {
+            "firstName": "Khadija",
+            "nickname": "Ayeeyo",
+            "gender": "female",
+            "birthDate": "1935",
+            "birthPlace": "Somalia",
+            "isDeceased": true,
+            "deathDate": "2019"
+          },
+          {
+            "firstName": "Omar",
+            "lastName": "Mohammed",
+            "gender": "male",
+            "birthDate": "1994",
+            "profession": "accountant"
+          },
+          {
+            "firstName": "Amina",
+            "lastName": "Mohammed",
+            "gender": "female",
+            "birthDate": "2000",
+            "profession": "nursing student"
+          },
+          {
+            "firstName": "Halima",
+            "lastName": "Ali",
+            "gender": "female",
+            "birthDate": "1970",
+            "birthPlace": "Nairobi"
+          },
+          {
+            "firstName": "Zahra",
+            "lastName": "",
+            "gender": "female",
+            "birthDate": "1996"
+          },
+          {
+            "firstName": "Safiya",
+            "lastName": "",
+            "gender": "female",
+            "birthDate": "2023"
+          }
+        ]
+      }
+    }
+  ]
+}

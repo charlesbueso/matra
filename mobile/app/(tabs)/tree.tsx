@@ -104,6 +104,13 @@ function layoutNodes(
     }
   }
 
+  // directParentOf tracks only 1-generation parent relationships (parent, step_parent, adopted_parent)
+  // Used for sibling propagation — grandparent+ entries must NOT be propagated through siblings.
+  const directParentOf = new Map<string, string[]>();
+  for (const [childId, parents] of parentOf) {
+    directParentOf.set(childId, [...parents]);
+  }
+
   // Build multi-generation ancestor maps for proper vertical placement
   // These track relationships that skip generations (grandparent = 2, great = 3, etc.)
   const ancestorOf = new Map<string, { descendantId: string; gap: number }[]>();
@@ -158,12 +165,13 @@ function layoutNodes(
 
   // Propagate parent relationships through full siblings only (not step siblings):
   // If A is sibling of B and B has parents, A should also be a child of those parents
+  // Only propagate direct (1-gen) parents — grandparent+ entries must not spread through siblings.
   let changed = true;
   while (changed) {
     changed = false;
     for (const [personId, sibs] of fullSiblingOf) {
       for (const sibId of sibs) {
-        const sibParents = parentOf.get(sibId) || [];
+        const sibParents = directParentOf.get(sibId) || [];
         for (const parentId of sibParents) {
           // Add parentId as parent of personId if not already
           if (!parentOf.has(personId)) parentOf.set(personId, []);
@@ -174,6 +182,11 @@ function layoutNodes(
               childrenOf.get(parentId)!.push(personId);
             }
             changed = true;
+          }
+          // Also update directParentOf for further propagation
+          if (!directParentOf.has(personId)) directParentOf.set(personId, []);
+          if (!directParentOf.get(personId)!.includes(parentId)) {
+            directParentOf.get(personId)!.push(parentId);
           }
         }
       }
@@ -319,6 +332,150 @@ function layoutNodes(
 
   // Helper: build units (couples, multi-spouse, or singles) from a list of person IDs.
   // Multi-spouse: if a person has 2+ spouses in the row, create a 3-person unit
+  // Reorder a row containing the self person so layout is:
+  // [narrator's siblings + their spouses] [self + spouses] [current spouse's siblings + their spouses] [remaining]
+  function reorderSelfGen(ids: string[]): string[] {
+    if (!selfPersonId || !ids.includes(selfPersonId)) return ids;
+
+    const selfSpouses = spouseOf.get(selfPersonId);
+    const selfAllSpousesInRow = selfSpouses
+      ? [...selfSpouses].filter((s) => ids.includes(s))
+      : [];
+    const selfCurrentSpouseInRow = selfAllSpousesInRow.find(
+      (s) => !exSpousePairs.has([selfPersonId, s].sort().join('|'))
+    ) || null;
+
+    const assigned = new Set([selfPersonId, ...selfAllSpousesInRow]);
+
+    const narratorSide: string[] = [];
+    const mySibs = siblingOf.get(selfPersonId)
+      ? [...siblingOf.get(selfPersonId)!].filter((s) => ids.includes(s) && !assigned.has(s))
+      : [];
+    for (const sib of mySibs) {
+      assigned.add(sib);
+      const sibSp = spouseOf.get(sib);
+      const sibSpousesInRow: string[] = [];
+      if (sibSp) {
+        for (const sp of sibSp) {
+          if (ids.includes(sp) && !assigned.has(sp)) {
+            assigned.add(sp);
+            sibSpousesInRow.push(sp);
+          }
+        }
+      }
+      narratorSide.push(...sibSpousesInRow, sib);
+    }
+
+    const spouseSide: string[] = [];
+    if (selfCurrentSpouseInRow) {
+      const spSibs = siblingOf.get(selfCurrentSpouseInRow)
+        ? [...siblingOf.get(selfCurrentSpouseInRow)!].filter((s) => ids.includes(s) && !assigned.has(s))
+        : [];
+      for (const sib of spSibs) {
+        assigned.add(sib);
+        const sibSp = spouseOf.get(sib);
+        const sibSpousesInRow: string[] = [];
+        if (sibSp) {
+          for (const sp of sibSp) {
+            if (ids.includes(sp) && !assigned.has(sp)) {
+              assigned.add(sp);
+              sibSpousesInRow.push(sp);
+            }
+          }
+        }
+        spouseSide.push(sib, ...sibSpousesInRow);
+      }
+    }
+
+    // Extended family: unassigned people whose parent is a sibling of narrator's parent → put on narrator side (left)
+    const narParents = parentOf.get(selfPersonId!) || [];
+    const parentSideExtended: string[] = [];
+    for (const uid of ids) {
+      if (assigned.has(uid)) continue;
+      const uParents = parentOf.get(uid) || [];
+      let onNarSide = false;
+      for (const up of uParents) {
+        const upSibs = siblingOf.get(up);
+        if (upSibs) {
+          for (const np of narParents) {
+            if (upSibs.has(np)) { onNarSide = true; break; }
+          }
+        }
+        if (onNarSide) break;
+      }
+      if (onNarSide) {
+        assigned.add(uid);
+        const uSp = spouseOf.get(uid);
+        if (uSp) {
+          for (const sp of uSp) {
+            if (ids.includes(sp) && !assigned.has(sp)) { assigned.add(sp); parentSideExtended.push(sp); }
+          }
+        }
+        parentSideExtended.push(uid);
+      }
+    }
+
+    const remaining = ids.filter((id) => !assigned.has(id));
+    return [...parentSideExtended, ...narratorSide, selfPersonId, ...selfAllSpousesInRow, ...spouseSide, ...remaining];
+  }
+
+  // Pre-compute self-gen ordering for ancestor row positioning
+  const selfGen = selfPersonId ? generation.get(selfPersonId) : null;
+  let selfGenOrder: Map<string, number> | null = null;
+  if (selfPersonId && selfGen != null) {
+    const selfGenRow = genGroups.get(selfGen);
+    if (selfGenRow) {
+      const ordered = reorderSelfGen(selfGenRow);
+      selfGenOrder = new Map();
+      ordered.forEach((id, idx) => selfGenOrder!.set(id, idx));
+    }
+  }
+
+  // Find minimum self-gen descendant index for a person (for ancestor row ordering)
+  function getMinSelfGenDescIdx(personId: string): number {
+    if (!selfGenOrder) return Infinity;
+    if (selfGenOrder.has(personId)) return selfGenOrder.get(personId)!;
+    const visited = new Set([personId]);
+    const queue = [personId];
+    let minIdx = Infinity;
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      const kids = childrenOf.get(current) || [];
+      for (const c of kids) {
+        if (visited.has(c)) continue;
+        visited.add(c);
+        if (selfGenOrder.has(c)) {
+          minIdx = Math.min(minIdx, selfGenOrder.get(c)!);
+        } else {
+          queue.push(c);
+        }
+      }
+    }
+    return minIdx;
+  }
+
+  function getMaxSelfGenDescIdx(personId: string): number {
+    if (!selfGenOrder) return -Infinity;
+    if (selfGenOrder.has(personId)) return selfGenOrder.get(personId)!;
+    const visited = new Set([personId]);
+    const queue = [personId];
+    let maxIdx = -Infinity;
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      const kids = childrenOf.get(current) || [];
+      for (const c of kids) {
+        if (visited.has(c)) continue;
+        visited.add(c);
+        if (selfGenOrder.has(c)) {
+          maxIdx = Math.max(maxIdx, selfGenOrder.get(c)!);
+        } else {
+          queue.push(c);
+        }
+      }
+    }
+    return maxIdx;
+  }
+
   // [spouse1, person, spouse2] with width = 2 * COUPLE_GAP.
   function buildUnits(ids: string[]) {
     const placed = new Set<string>();
@@ -360,17 +517,38 @@ function layoutNodes(
         const spouseInRow = spousesInRow[0];
         placed.add(personId);
         placed.add(spouseInRow);
-        // Order couple so the member with siblings in the row is on the right
-        const personHasSib = siblingOf.get(personId)?.size
-          ? [...siblingOf.get(personId)!].some((s) => ids.includes(s))
-          : false;
-        const spouseHasSib = siblingOf.get(spouseInRow)?.size
-          ? [...siblingOf.get(spouseInRow)!].some((s) => ids.includes(s))
-          : false;
-        if (personHasSib && !spouseHasSib) {
-          units.push({ ids: [spouseInRow, personId], width: COUPLE_GAP });
+        // Self person's couple: self closer to siblings, spouse at edge
+        if (personId === selfPersonId || spouseInRow === selfPersonId) {
+          const self = personId === selfPersonId ? personId : spouseInRow;
+          const sp = personId === selfPersonId ? spouseInRow : personId;
+          units.push({ ids: [self, sp], width: COUPLE_GAP });
         } else {
-          units.push({ ids: [personId, spouseInRow], width: COUPLE_GAP });
+          // Order couple so the member with siblings in the row is on the right
+          const personHasSib = siblingOf.get(personId)?.size
+            ? [...siblingOf.get(personId)!].some((s) => ids.includes(s))
+            : false;
+          const spouseHasSib = siblingOf.get(spouseInRow)?.size
+            ? [...siblingOf.get(spouseInRow)!].some((s) => ids.includes(s))
+            : false;
+          if (personHasSib && spouseHasSib) {
+            // Both have siblings — put the one whose parents are more to the LEFT on the left side
+            const pParents = parentOf.get(personId) || [];
+            const sParents = parentOf.get(spouseInRow) || [];
+            const pPx = pParents.length > 0 ? Math.min(...pParents.map((p) => positions.get(p)?.x ?? Infinity)) : Infinity;
+            const sPx = sParents.length > 0 ? Math.min(...sParents.map((p) => positions.get(p)?.x ?? Infinity)) : Infinity;
+            units.push(pPx <= sPx ? { ids: [personId, spouseInRow], width: COUPLE_GAP } : { ids: [spouseInRow, personId], width: COUPLE_GAP });
+          } else if (personHasSib && !spouseHasSib) {
+            // Person has sibling — determine which side sibling is on
+            const pSibs = [...siblingOf.get(personId)!].filter((s) => ids.includes(s));
+            const sibMinIdx = Math.min(...pSibs.map((s) => ids.indexOf(s)));
+            units.push(sibMinIdx < ids.indexOf(personId) ? { ids: [personId, spouseInRow], width: COUPLE_GAP } : { ids: [spouseInRow, personId], width: COUPLE_GAP });
+          } else if (!personHasSib && spouseHasSib) {
+            const sSibs = [...siblingOf.get(spouseInRow)!].filter((s) => ids.includes(s));
+            const sibMinIdx = Math.min(...sSibs.map((s) => ids.indexOf(s)));
+            units.push(sibMinIdx < ids.indexOf(spouseInRow) ? { ids: [spouseInRow, personId], width: COUPLE_GAP } : { ids: [personId, spouseInRow], width: COUPLE_GAP });
+          } else {
+            units.push({ ids: [personId, spouseInRow], width: COUPLE_GAP });
+          }
         }
       } else {
         placed.add(personId);
@@ -390,7 +568,16 @@ function layoutNodes(
 
     if (gi === 0) {
       // Root generation — just center
-      const units = buildUnits(row);
+      let orderedRow = reorderSelfGen(row);
+      // For ancestor rows (self not in this gen), sort by descendant self-gen position
+      if (selfGenOrder && !row.includes(selfPersonId!)) {
+        orderedRow = [...row].sort((a, b) => {
+          const minA = getMinSelfGenDescIdx(a), minB = getMinSelfGenDescIdx(b);
+          if (minA !== minB) return minA - minB;
+          return getMaxSelfGenDescIdx(b) - getMaxSelfGenDescIdx(a);
+        });
+      }
+      const units = buildUnits(orderedRow);
       const totalWidth = units.reduce((sum, u) => sum + u.width, 0) +
         (units.length - 1) * HORIZONTAL_SPACING;
       maxRowWidth = Math.max(maxRowWidth, totalWidth);
@@ -402,6 +589,43 @@ function layoutNodes(
         }
         x += unit.width + HORIZONTAL_SPACING;
       }
+      continue;
+    }
+
+    // Special handling for the self person's generation:
+    // Merge all parent groups into one row with side-aware ordering
+    if (selfPersonId && row.includes(selfPersonId)) {
+      const orderedRow = reorderSelfGen(row);
+      const rowUnits = buildUnits(orderedRow);
+
+      const allParentXs: number[] = [];
+      for (const childId of orderedRow) {
+        const parents = parentOf.get(childId) || [];
+        for (const pid of parents) {
+          const pp = positions.get(pid);
+          if (pp) allParentXs.push(pp.x);
+        }
+      }
+      const centerX = allParentXs.length > 0
+        ? (Math.min(...allParentXs) + Math.max(...allParentXs)) / 2
+        : PADDING + SCREEN_WIDTH / 2;
+
+      const totalWidth = rowUnits.reduce((sum, u) => sum + u.width, 0) +
+        (rowUnits.length - 1) * HORIZONTAL_SPACING;
+
+      let rx = centerX - totalWidth / 2;
+      if (rx < PADDING) rx = PADDING;
+
+      let rowWidth = 0;
+      for (const unit of rowUnits) {
+        for (let i = 0; i < unit.ids.length; i++) {
+          positions.set(unit.ids[i], { x: rx + i * COUPLE_GAP, y });
+        }
+        rowWidth = Math.max(rowWidth, rx + unit.width);
+        rx += unit.width + HORIZONTAL_SPACING;
+      }
+
+      maxRowWidth = Math.max(maxRowWidth, rowWidth + PADDING);
       continue;
     }
 
@@ -470,8 +694,20 @@ function layoutNodes(
       if (!placed) remainingOrphans.push(orphanId);
     }
 
+    const multiGroup = parentUnitMap.size > 1;
+
     // Sort parent groups by their x position (left to right)
+    const isAncestorGen = selfGen != null && gen < selfGen;
     const sortedParentKeys = [...parentUnitMap.keys()].sort((a, b) => {
+      if (isAncestorGen && selfGenOrder) {
+        const aDescIdx = Math.min(...parentUnitMap.get(a)!.map((c) => getMinSelfGenDescIdx(c)));
+        const bDescIdx = Math.min(...parentUnitMap.get(b)!.map((c) => getMinSelfGenDescIdx(c)));
+        if (aDescIdx !== bDescIdx) return aDescIdx - bDescIdx;
+        // Tiebreaker: greater family reach goes left
+        const aMax = Math.max(...parentUnitMap.get(a)!.map((c) => getMaxSelfGenDescIdx(c)));
+        const bMax = Math.max(...parentUnitMap.get(b)!.map((c) => getMaxSelfGenDescIdx(c)));
+        if (aMax !== bMax) return bMax - aMax;
+      }
       const aIds = a.split('|');
       const bIds = b.split('|');
       const aX = Math.min(...aIds.map((id) => positions.get(id)?.x ?? 0));
@@ -492,40 +728,112 @@ function layoutNodes(
     interface PlacedUnit { ids: string[]; width: number; x: number }
     const groupPlacements: PlacedUnit[][] = [];
 
-    for (const key of sortedParentKeys) {
-      const groupChildren = parentUnitMap.get(key)!;
-      const groupUnits = buildUnits(groupChildren);
-
-      // Find the center x of the parent unit
-      const parentIds = key.split('|');
-      const parentXs = parentIds.map((id) => positions.get(id)?.x ?? 0);
-      const parentCenterX = parentXs.reduce((a, b) => a + b, 0) / parentXs.length;
-
-      // Compute total width of this group
-      const groupTotalWidth = groupUnits.reduce((sum, u) => sum + u.width, 0) +
-        (groupUnits.length - 1) * HORIZONTAL_SPACING;
-
-      // Center the group under the parent
-      let gx = parentCenterX - groupTotalWidth / 2;
-      const placed: PlacedUnit[] = [];
-      for (const unit of groupUnits) {
-        placed.push({ ids: unit.ids, width: unit.width, x: gx });
-        gx += unit.width + HORIZONTAL_SPACING;
+    if (isAncestorGen && selfGenOrder && remainingOrphans.length > 0) {
+      // For ancestor gens with orphans, interleave at correct position by descendant self-gen index
+      const orphanUnits = buildUnits(remainingOrphans);
+      const allGroupItems: { type: string; key: string | null; unit: { ids: string[]; width: number } | null; descIdx: number }[] = sortedParentKeys.map((key) => ({
+        type: 'keyed', key, unit: null,
+        descIdx: Math.min(...parentUnitMap.get(key)!.map((c) => getMinSelfGenDescIdx(c)))
+      }));
+      for (const unit of orphanUnits) {
+        allGroupItems.push({
+          type: 'orphan', key: null, unit,
+          descIdx: Math.min(...unit.ids.map((id) => getMinSelfGenDescIdx(id)))
+        });
       }
-      groupPlacements.push(placed);
+      allGroupItems.sort((a, b) => a.descIdx - b.descIdx);
+
+      for (const item of allGroupItems) {
+        if (item.type === 'keyed') {
+          const groupChildren = parentUnitMap.get(item.key!)!;
+          const groupUnits = buildUnits(groupChildren);
+          const parentIds = item.key!.split('|');
+          const parentXs = parentIds.map((id) => positions.get(id)?.x ?? 0);
+          const parentCenterX = parentXs.reduce((a, b) => a + b, 0) / parentXs.length;
+          const groupTotalWidth = groupUnits.reduce((sum, u) => sum + u.width, 0) +
+            (groupUnits.length - 1) * HORIZONTAL_SPACING;
+          let gx = parentCenterX - groupTotalWidth / 2;
+          const placed: PlacedUnit[] = [];
+          for (const unit of groupUnits) {
+            placed.push({ ids: unit.ids, width: unit.width, x: gx });
+            gx += unit.width + HORIZONTAL_SPACING;
+          }
+          groupPlacements.push(placed);
+        } else {
+          groupPlacements.push([{ ids: item.unit!.ids, width: item.unit!.width, x: PADDING }]);
+        }
+      }
+    } else {
+      for (const key of sortedParentKeys) {
+        const groupChildren = parentUnitMap.get(key)!;
+        const groupUnits = buildUnits(groupChildren);
+
+        // Find the center x of the parent unit
+        const parentIds = key.split('|');
+        const parentXs = parentIds.map((id) => positions.get(id)?.x ?? 0);
+        const parentCenterX = parentXs.reduce((a, b) => a + b, 0) / parentXs.length;
+
+        // Compute total width of this group
+        const groupTotalWidth = groupUnits.reduce((sum, u) => sum + u.width, 0) +
+          (groupUnits.length - 1) * HORIZONTAL_SPACING;
+
+        // Center the group under the parent
+        let gx = parentCenterX - groupTotalWidth / 2;
+        const placed: PlacedUnit[] = [];
+        for (const unit of groupUnits) {
+          placed.push({ ids: unit.ids, width: unit.width, x: gx });
+          gx += unit.width + HORIZONTAL_SPACING;
+        }
+        groupPlacements.push(placed);
+      }
+
+      // Also handle remaining orphans as their own group
+      if (remainingOrphans.length > 0) {
+        const orphanUnits = buildUnits(remainingOrphans);
+        // Place orphans starting after the last group
+        let ox = PADDING;
+        const placed: PlacedUnit[] = [];
+        for (const unit of orphanUnits) {
+          placed.push({ ids: unit.ids, width: unit.width, x: ox });
+          ox += unit.width + HORIZONTAL_SPACING;
+        }
+        groupPlacements.push(placed);
+      }
     }
 
-    // Also handle remaining orphans as their own group
-    if (remainingOrphans.length > 0) {
-      const orphanUnits = buildUnits(remainingOrphans);
-      // Place orphans starting after the last group
-      let ox = PADDING;
-      const placed: PlacedUnit[] = [];
-      for (const unit of orphanUnits) {
-        placed.push({ ids: unit.ids, width: unit.width, x: ox });
-        ox += unit.width + HORIZONTAL_SPACING;
+    // Reorder children within each group: cross-group spouses go to the matching edge
+    if (sortedParentKeys.length > 1) {
+      const allGroupMembers = new Map<string, string>();
+      for (const key of sortedParentKeys) {
+        for (const cid of parentUnitMap.get(key)!) allGroupMembers.set(cid, key);
       }
-      groupPlacements.push(placed);
+      const keyOrder = new Map<string, number>();
+      sortedParentKeys.forEach((k, i) => keyOrder.set(k, i));
+      for (const key of sortedParentKeys) {
+        const children = parentUnitMap.get(key)!;
+        if (children.length < 2) continue;
+        const ki = keyOrder.get(key)!;
+        const rightEdge: string[] = [];
+        const leftEdge: string[] = [];
+        const middle: string[] = [];
+        for (const cid of children) {
+          const sp = spouseOf.get(cid);
+          let goRight = false, goLeft = false;
+          if (sp) {
+            for (const s of sp) {
+              const sKey = allGroupMembers.get(s);
+              if (sKey && sKey !== key) {
+                if (keyOrder.get(sKey)! > ki) goRight = true;
+                else goLeft = true;
+              }
+            }
+          }
+          if (goRight) rightEdge.push(cid);
+          else if (goLeft) leftEdge.push(cid);
+          else middle.push(cid);
+        }
+        parentUnitMap.set(key, [...leftEdge, ...middle, ...rightEdge]);
+      }
     }
 
     // Resolve overlaps group-by-group (preserving group order, never interleaving).
@@ -542,7 +850,19 @@ function layoutNodes(
       const prevGroup = groupPlacements[g - 1];
       const prevLast = prevGroup[prevGroup.length - 1];
       const prevRightEdge = prevLast.x + prevLast.width;
-      const minX = prevRightEdge + HORIZONTAL_SPACING;
+      // Use COUPLE_GAP between groups connected by cross-group spouse
+      let crossSpouse = false;
+      for (const pid of prevLast.ids) {
+        const sp = spouseOf.get(pid);
+        if (sp) {
+          for (const s of group[0].ids) {
+            if (sp.has(s)) { crossSpouse = true; break; }
+          }
+        }
+        if (crossSpouse) break;
+      }
+      const gap = crossSpouse ? COUPLE_GAP : HORIZONTAL_SPACING;
+      const minX = prevRightEdge + gap;
       if (group[0].x < minX) {
         const shift = minX - group[0].x;
         for (const pu of group) pu.x += shift;
@@ -583,8 +903,27 @@ function layoutNodes(
   // Bottom-up re-centering: after all generations are placed (and single parents
   // shifted to center above their children), propagate shifts upward so that
   // grandparents re-center above their (now shifted) children.
+  // Track which generations have multiple parent groups (for skipping re-centering/post-deconfliction)
+  const multiGroupGens = new Set<number>();
+  for (const gen of sortedGens) {
+    const row = genGroups.get(gen)!;
+    // Check if this gen was placed with multiple parent groups
+    const parentKeys = new Set<string>();
+    for (const childId of row) {
+      const parents = parentOf.get(childId) || [];
+      const posParent = parents.find((p) => positions.has(p));
+      if (posParent) {
+        const sp = spouseOf.get(posParent);
+        const sid = sp ? [...sp].find((s) => positions.has(s)) : null;
+        parentKeys.add(sid ? [posParent, sid].sort().join('|') : posParent);
+      }
+    }
+    if (parentKeys.size > 1) multiGroupGens.add(gen);
+  }
+
   for (let gi = sortedGens.length - 2; gi >= 0; gi--) {
     const gen = sortedGens[gi];
+    if (multiGroupGens.has(gen)) continue;
     const row = genGroups.get(gen)!;
     for (const personId of row) {
       const kids = childrenOf.get(personId);
@@ -616,6 +955,89 @@ function layoutNodes(
     }
   }
 
+  // Post-layout overlap deconfliction: after re-centering, some nodes in the same
+  // row may overlap. Sort each row by x and push apart any that are too close.
+  const MIN_NODE_DISTANCE = NODE_RADIUS * 2 + 20; // minimum center-to-center gap
+  for (const gen of sortedGens) {
+    const row = genGroups.get(gen)!;
+    const rowNodes = row
+      .map((id) => ({ id, pos: positions.get(id)! }))
+      .filter((n) => n.pos)
+      .sort((a, b) => a.pos.x - b.pos.x);
+    for (let i = 1; i < rowNodes.length; i++) {
+      const gap = rowNodes[i].pos.x - rowNodes[i - 1].pos.x;
+      if (gap < MIN_NODE_DISTANCE) {
+        const push = MIN_NODE_DISTANCE - gap;
+        // Push this node and all subsequent nodes in the row to the right
+        for (let j = i; j < rowNodes.length; j++) {
+          rowNodes[j].pos.x += push;
+        }
+      }
+    }
+  }
+
+  // After re-centering and deconfliction, fix ancestor gen couple ordering
+  // Re-centering + deconfliction can interleave narrator-side and spouse-side couples
+  if (selfGenOrder) {
+    for (const gen of sortedGens) {
+      if (selfGen == null || gen >= selfGen) continue;
+      if (multiGroupGens.has(gen)) continue;
+      const row = genGroups.get(gen)!;
+      const placed = new Set<string>();
+      const coupleUnits: { ids: string[]; descIdx: number; desiredCenter?: number; width?: number }[] = [];
+      for (const personId of row) {
+        if (placed.has(personId)) continue;
+        placed.add(personId);
+        const sp = spouseOf.get(personId);
+        const spouseInRow = sp ? [...sp].find((s) => row.includes(s) && !placed.has(s)) : null;
+        if (spouseInRow) {
+          placed.add(spouseInRow);
+          coupleUnits.push({ ids: [personId, spouseInRow], descIdx: Math.min(getMinSelfGenDescIdx(personId), getMinSelfGenDescIdx(spouseInRow)) });
+        } else {
+          coupleUnits.push({ ids: [personId], descIdx: getMinSelfGenDescIdx(personId) });
+        }
+      }
+      if (coupleUnits.length < 2) continue;
+
+      coupleUnits.sort((a, b) => {
+        if (a.descIdx !== b.descIdx) return a.descIdx - b.descIdx;
+        const aMax = Math.max(...a.ids.map((id) => getMaxSelfGenDescIdx(id)));
+        const bMax = Math.max(...b.ids.map((id) => getMaxSelfGenDescIdx(id)));
+        return bMax - aMax;
+      });
+
+      for (const unit of coupleUnits) {
+        const allKidXs: number[] = [];
+        for (const id of unit.ids) {
+          const kids = childrenOf.get(id) || [];
+          for (const k of kids) {
+            const kp = positions.get(k);
+            if (kp) allKidXs.push(kp.x);
+          }
+        }
+        unit.desiredCenter = allKidXs.length > 0
+          ? (Math.min(...allKidXs) + Math.max(...allKidXs)) / 2
+          : positions.get(unit.ids[0])!.x + ((unit.ids.length - 1) * COUPLE_GAP) / 2;
+        unit.width = (unit.ids.length - 1) * COUPLE_GAP;
+      }
+
+      for (let i = 0; i < coupleUnits.length; i++) {
+        const unit = coupleUnits[i];
+        let leftX = unit.desiredCenter! - unit.width! / 2;
+        if (leftX < PADDING) leftX = PADDING;
+        if (i > 0) {
+          const prev = coupleUnits[i - 1];
+          const prevRightX = positions.get(prev.ids[prev.ids.length - 1])!.x;
+          const minX = prevRightX + HORIZONTAL_SPACING;
+          if (leftX < minX) leftX = minX;
+        }
+        for (let j = 0; j < unit.ids.length; j++) {
+          positions.get(unit.ids[j])!.x = leftX + j * COUPLE_GAP;
+        }
+      }
+    }
+  }
+
   // Compute graph dimensions from actual positioned nodes (not pre-centering estimates)
   let actualMaxX = 0;
   let actualMaxY = 0;
@@ -627,84 +1049,69 @@ function layoutNodes(
   const graphWidth = Math.max(actualMaxX + PADDING * 3, maxRowWidth + PADDING * 2, SCREEN_WIDTH * 1.5);
   const graphHeight = Math.max(actualMaxY + PADDING * 3, PADDING * 2 + genRange * VERTICAL_SPACING, SCREEN_HEIGHT);
 
-  // Compute role labels relative to the self person
+  // Compute role labels via BFS from self — path-based labels
   // Each person's label describes their relationship TO the user
   if (selfPersonId) {
-    // Inverse map: when self is personA with type X, what is personB's label?
     const inverseLabel: Record<string, string> = {
-      parent: 'Child',
-      child: 'Parent',
-      spouse: 'Spouse',
-      ex_spouse: 'Ex-Spouse',
-      sibling: 'Sibling',
-      step_sibling: 'Step Sibling',
-      half_sibling: 'Half Sibling',
-      grandparent: 'Grandchild',
-      grandchild: 'Grandparent',
-      great_grandparent: 'Great Grandchild',
-      great_grandchild: 'Great Grandparent',
-      great_great_grandparent: 'Great Great Grandchild',
-      great_great_grandchild: 'Great Great Grandparent',
-      uncle_aunt: 'Nephew/Niece',
-      nephew_niece: 'Uncle/Aunt',
-      cousin: 'Cousin',
-      in_law: 'In-law',
-      parent_in_law: 'Child-in-law',
-      child_in_law: 'Parent-in-law',
-      step_parent: 'Step Child',
-      step_child: 'Step Parent',
-      adopted_parent: 'Adopted Child',
-      adopted_child: 'Adopted Parent',
-      godparent: 'Godchild',
-      godchild: 'Godparent',
+      parent: 'Child', child: 'Parent', spouse: 'Spouse', ex_spouse: 'Ex-Spouse',
+      sibling: 'Sibling', step_sibling: 'Step Sibling', half_sibling: 'Half Sibling',
+      grandparent: 'Grandchild', grandchild: 'Grandparent',
+      great_grandparent: 'Great Grandchild', great_grandchild: 'Great Grandparent',
+      great_great_grandparent: 'Great Great Grandchild', great_great_grandchild: 'Great Great Grandparent',
+      uncle_aunt: 'Nephew/Niece', nephew_niece: 'Uncle/Aunt', cousin: 'Cousin',
+      in_law: 'In-law', parent_in_law: "Spouse's Child", child_in_law: "Child's Spouse",
+      step_parent: 'Step Child', step_child: 'Step Parent',
+      adopted_parent: 'Adopted Child', adopted_child: 'Adopted Parent',
+      godparent: 'Godchild', godchild: 'Godparent',
     };
-    // Direct map: when self is personB with type X, what is personA's label?
     const directLabel: Record<string, string> = {
-      parent: 'Parent',
-      child: 'Child',
-      spouse: 'Spouse',
-      ex_spouse: 'Ex-Spouse',
-      sibling: 'Sibling',
-      step_sibling: 'Step Sibling',
-      half_sibling: 'Half Sibling',
-      grandparent: 'Grandparent',
-      grandchild: 'Grandchild',
-      great_grandparent: 'Great Grandparent',
-      great_grandchild: 'Great Grandchild',
-      great_great_grandparent: 'Great Great Grandparent',
-      great_great_grandchild: 'Great Great Grandchild',
-      uncle_aunt: 'Uncle/Aunt',
-      nephew_niece: 'Nephew/Niece',
-      cousin: 'Cousin',
-      in_law: 'In-law',
-      parent_in_law: 'Parent-in-law',
-      child_in_law: 'Child-in-law',
-      step_parent: 'Step Parent',
-      step_child: 'Step Child',
-      adopted_parent: 'Adopted Parent',
-      adopted_child: 'Adopted Child',
-      godparent: 'Godparent',
-      godchild: 'Godchild',
+      parent: 'Parent', child: 'Child', spouse: 'Spouse', ex_spouse: 'Ex-Spouse',
+      sibling: 'Sibling', step_sibling: 'Step Sibling', half_sibling: 'Half Sibling',
+      grandparent: 'Grandparent', grandchild: 'Grandchild',
+      great_grandparent: 'Great Grandparent', great_grandchild: 'Great Grandchild',
+      great_great_grandparent: 'Great Great Grandparent', great_great_grandchild: 'Great Great Grandchild',
+      uncle_aunt: 'Uncle/Aunt', nephew_niece: 'Nephew/Niece', cousin: 'Cousin',
+      in_law: 'In-law', parent_in_law: "Spouse's Parent", child_in_law: "Child's Spouse",
+      step_parent: 'Step Parent', step_child: 'Step Child',
+      adopted_parent: 'Adopted Parent', adopted_child: 'Adopted Child',
+      godparent: 'Godparent', godchild: 'Godchild',
     };
 
+    roleLabels.set(selfPersonId, 'Me');
+    // Build relationship index by person for BFS
+    const relsByPerson = new Map<string, typeof relationships>();
     for (const rel of relationships) {
-      const type = rel.relationship_type;
-      if (rel.person_a_id === selfPersonId && rel.person_b_id !== selfPersonId) {
-        // Self is personA → personB's label is the inverse
-        const label = inverseLabel[type];
-        if (label && !roleLabels.has(rel.person_b_id)) {
-          roleLabels.set(rel.person_b_id, label);
+      if (!relsByPerson.has(rel.person_a_id)) relsByPerson.set(rel.person_a_id, []);
+      if (!relsByPerson.has(rel.person_b_id)) relsByPerson.set(rel.person_b_id, []);
+      relsByPerson.get(rel.person_a_id)!.push(rel);
+      relsByPerson.get(rel.person_b_id)!.push(rel);
+    }
+    const visited = new Set([selfPersonId]);
+    const queue: { id: string; prefix: string }[] = [{ id: selfPersonId, prefix: '' }];
+    while (queue.length > 0) {
+      const { id: curId, prefix } = queue.shift()!;
+      const rels = relsByPerson.get(curId) || [];
+      for (const rel of rels) {
+        let otherId: string | undefined;
+        let label: string | undefined;
+        const type = rel.relationship_type;
+        if (rel.person_a_id === curId && !visited.has(rel.person_b_id)) {
+          otherId = rel.person_b_id;
+          label = inverseLabel[type];
+        } else if (rel.person_b_id === curId && !visited.has(rel.person_a_id)) {
+          otherId = rel.person_a_id;
+          label = directLabel[type];
+        } else {
+          continue;
         }
-      } else if (rel.person_b_id === selfPersonId && rel.person_a_id !== selfPersonId) {
-        // Self is personB → personA's label is the direct
-        const label = directLabel[type];
-        if (label && !roleLabels.has(rel.person_a_id)) {
-          roleLabels.set(rel.person_a_id, label);
-        }
+        if (!label || !otherId || visited.has(otherId)) continue;
+        visited.add(otherId);
+        const fullLabel = prefix ? `${prefix}${label}` : label;
+        roleLabels.set(otherId, fullLabel);
+        const nextPrefix = `${fullLabel}'s `;
+        queue.push({ id: otherId, prefix: nextPrefix });
       }
     }
-    // Label self
-    roleLabels.set(selfPersonId, 'Me');
   } else {
     // Fallback: no self person — use generic labels
     for (const p of people) {

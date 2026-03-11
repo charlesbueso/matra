@@ -3,8 +3,8 @@
 // ============================================================
 
 import type { LLMProvider, PersonBiographyInput, FamilyDocumentaryInput } from './provider.ts';
-import type { ExtractionResult, SummaryResult, StoryResult, BiographyResult } from '../types.ts';
-import { getExtractionPrompt, getSummaryPrompt, getStoryGeneratorPrompt, getBiographyPrompt, getDocumentaryPrompt } from './prompts.ts';
+import type { ExtractionResult, SummaryResult, StoryResult, BiographyResult, VerificationResult } from '../types.ts';
+import { getExtractionPrompt, getSummaryPrompt, getStoryGeneratorPrompt, getBiographyPrompt, getDocumentaryPrompt, getVerificationPrompt } from './prompts.ts';
 import { fetchWithRetry } from './fetch-retry.ts';
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1';
@@ -55,7 +55,8 @@ export class AnthropicLLMProvider implements LLMProvider {
   async extractEntities(transcriptText: string, language?: string): Promise<ExtractionResult> {
     const raw = await this.message(
       getExtractionPrompt(language) + '\n\nIMPORTANT: Respond ONLY with valid JSON, no other text.',
-      transcriptText
+      transcriptText,
+      0.1
     );
     // Extract JSON from response (Claude may wrap in markdown code blocks)
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
@@ -99,5 +100,17 @@ export class AnthropicLLMProvider implements LLMProvider {
   async generateDocumentaryScript(familyInfo: FamilyDocumentaryInput, language?: string): Promise<string> {
     const input = JSON.stringify(familyInfo);
     return await this.message(getDocumentaryPrompt(language), input);
+  }
+
+  async verifyExtraction(transcriptText: string, extraction: ExtractionResult, language?: string): Promise<VerificationResult> {
+    const userMessage = `TRANSCRIPT:\n${transcriptText}\n\nEXTRACTION RESULT:\n${JSON.stringify(extraction, null, 2)}`;
+    const raw = await this.message(
+      getVerificationPrompt(language) + '\n\nIMPORTANT: Respond ONLY with valid JSON, no other text.',
+      userMessage,
+      0.1
+    );
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Failed to parse verification result');
+    return JSON.parse(jsonMatch[0]) as VerificationResult;
   }
 }

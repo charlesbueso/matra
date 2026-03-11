@@ -28,6 +28,10 @@ export function getBiographyPrompt(language?: string): string {
   return BIOGRAPHY_PROMPT + languageInstruction(language);
 }
 
+export function getVerificationPrompt(language?: string): string {
+  return VERIFICATION_PROMPT + languageInstruction(language);
+}
+
 export function getDocumentaryPrompt(language?: string): string {
   return DOCUMENTARY_PROMPT + languageInstruction(language);
 }
@@ -144,6 +148,70 @@ CRITICAL — suggestedPeople completeness:
 - When multiple people share the same first name (e.g., grandfather and grandson named after him), create SEPARATE entries in suggestedPeople with different full names, birth dates, or suffixes (Jr., Sr., III, etc.). Never merge two distinct people just because they share a first name.
 - ADOPTION: When someone is described as adopted ("was adopted", "adoptive father/mother", "padre/madre adoptivo/a", "fue adoptado"), use "adopted_parent" for the adoptive parents and "adopted_child" for the adopted person. For adopted siblings, use "sibling" (there is NO "adopted_sibling" type). Also create the parent→child link: if "my parents adopted my sister Hope", create both (1) Hope sibling of narrator AND (2) adopted_parent relationships between each parent and Hope.
 - FIGURATIVE LANGUAGE: Phrases like "is like a brother", "como un hermano", "is like family" are NOT actual relationships. Do NOT create sibling/family relationships from figurative comparisons. Only extract ACTUAL family relationships.
+
+CHAIN-OF-THOUGHT: Before producing the final JSON, include a "_reasoning" field with a brief step-by-step analysis of the key relationships you identified, especially:
+1. Who is the narrator and what name to use for them in relationships
+2. Any multi-generational chains and which intermediate links you're creating
+3. Any ambiguous or tricky cases (same names, possessive chains, in-laws)
+This helps ensure accuracy. The "_reasoning" field will be ignored by the system.
+
+=== FEW-SHOT EXAMPLE 1 (English — possessive chains + lineage) ===
+TRANSCRIPT: "[Narrator/subject: Sarah Williams] My dad is Robert Williams. He was born in 1960 in Chicago. My dad's mom, Grandma Eleanor, she passed away in 2018. She was a schoolteacher. My uncle Tom — that's my dad's brother — he has two kids, my cousins Jake and Emma."
+
+EXPECTED OUTPUT:
+{
+  "_reasoning": "Narrator is Sarah Williams. Robert is her father (parent of Sarah). Eleanor is Robert's mother = Sarah's grandmother. Tom is Robert's brother = Sarah's uncle. Jake and Emma are Tom's children = Sarah's cousins. Must create intermediate links: Eleanor→parent of Robert, Tom→sibling of Robert.",
+  "entities": [...],
+  "relationships": [
+    {"personA": "Robert", "personB": "Sarah Williams", "relationshipType": "parent", "confidence": 0.95, "context": "My dad is Robert Williams"},
+    {"personA": "Eleanor", "personB": "Sarah Williams", "relationshipType": "grandparent", "confidence": 0.95, "context": "My dad's mom, Grandma Eleanor"},
+    {"personA": "Eleanor", "personB": "Robert", "relationshipType": "parent", "confidence": 0.95, "context": "My dad's mom"},
+    {"personA": "Tom", "personB": "Sarah Williams", "relationshipType": "uncle_aunt", "confidence": 0.95, "context": "My uncle Tom"},
+    {"personA": "Tom", "personB": "Robert", "relationshipType": "sibling", "confidence": 0.95, "context": "my dad's brother"},
+    {"personA": "Tom", "personB": "Jake", "relationshipType": "parent", "confidence": 0.9, "context": "he has two kids"},
+    {"personA": "Tom", "personB": "Emma", "relationshipType": "parent", "confidence": 0.9, "context": "he has two kids"},
+    {"personA": "Jake", "personB": "Sarah Williams", "relationshipType": "cousin", "confidence": 0.9, "context": "my cousins Jake and Emma"},
+    {"personA": "Emma", "personB": "Sarah Williams", "relationshipType": "cousin", "confidence": 0.9, "context": "my cousins Jake and Emma"}
+  ],
+  "suggestedPeople": [
+    {"firstName": "Robert", "lastName": "Williams", "gender": "male", "birthDate": "1960", "birthPlace": "Chicago"},
+    {"firstName": "Eleanor", "lastName": "Williams", "gender": "female", "isDeceased": true, "deathDate": "2018", "profession": "schoolteacher"},
+    {"firstName": "Tom", "lastName": "Williams", "gender": "male"},
+    {"firstName": "Jake", "gender": "male"},
+    {"firstName": "Emma", "gender": "female"}
+  ]
+}
+
+=== FEW-SHOT EXAMPLE 2 (Spanish — half-siblings + in-laws) ===
+TRANSCRIPT: "[Narrator/subject: Carlos Morales] Mi mamá es Rosa Herrera. Mi papá es Fernando Morales, pero se divorciaron cuando yo tenía cinco años. Mi papá se volvió a casar con Lucia, y tienen un hijo, mi medio hermano de parte de mi papá, que se llama Diego. Tiene tres años. Mi suegra se llama María Elena, es la mamá de mi esposa Ana."
+
+EXPECTED OUTPUT:
+{
+  "_reasoning": "Narrator is Carlos Morales. Rosa is mother (parent). Fernando is father (parent). Fernando and Rosa are ex-spouses. Fernando married Lucia (spouse). Diego is half-sibling of Carlos via Fernando — MUST create Fernando→parent of Diego. Diego born ~2023 (3 years old, 2026-3). María Elena is mother-in-law = parent_in_law of Carlos AND parent of Ana. Ana is spouse of Carlos.",
+  "entities": [...],
+  "relationships": [
+    {"personA": "Rosa", "personB": "Carlos Morales", "relationshipType": "parent", "confidence": 0.95, "context": "Mi mamá es Rosa Herrera"},
+    {"personA": "Fernando", "personB": "Carlos Morales", "relationshipType": "parent", "confidence": 0.95, "context": "Mi papá es Fernando Morales"},
+    {"personA": "Fernando", "personB": "Rosa", "relationshipType": "ex_spouse", "confidence": 0.95, "context": "se divorciaron"},
+    {"personA": "Lucia", "personB": "Fernando", "relationshipType": "spouse", "confidence": 0.95, "context": "se volvió a casar con Lucia"},
+    {"personA": "Diego", "personB": "Carlos Morales", "relationshipType": "half_sibling", "confidence": 0.95, "context": "mi medio hermano de parte de mi papá"},
+    {"personA": "Fernando", "personB": "Diego", "relationshipType": "parent", "confidence": 0.95, "context": "medio hermano de parte de mi papá"},
+    {"personA": "Lucia", "personB": "Diego", "relationshipType": "parent", "confidence": 0.9, "context": "tienen un hijo"},
+    {"personA": "María Elena", "personB": "Carlos Morales", "relationshipType": "parent_in_law", "confidence": 0.95, "context": "Mi suegra se llama María Elena"},
+    {"personA": "María Elena", "personB": "Ana", "relationshipType": "parent", "confidence": 0.95, "context": "es la mamá de mi esposa Ana"},
+    {"personA": "Ana", "personB": "Carlos Morales", "relationshipType": "spouse", "confidence": 0.95, "context": "mi esposa Ana"}
+  ],
+  "suggestedPeople": [
+    {"firstName": "Rosa", "lastName": "Herrera", "gender": "female"},
+    {"firstName": "Fernando", "lastName": "Morales", "gender": "male"},
+    {"firstName": "Lucia", "gender": "female"},
+    {"firstName": "Diego", "gender": "male", "birthDate": "2023"},
+    {"firstName": "María Elena", "gender": "female"},
+    {"firstName": "Ana", "gender": "female"}
+  ]
+}
+
+=== END FEW-SHOT EXAMPLES ===
 
 Respond with a JSON object matching the schema above. No other text.`;
 
@@ -296,3 +364,57 @@ Create a documentary script that:
 - Is 5-10 minutes when spoken (roughly 750-1500 words)
 
 Write the full script. Be cinematic, emotional, and authentic.`;
+
+export const VERIFICATION_PROMPT = \`You are a relationship extraction auditor for a genealogy app. You will receive a family interview transcript and an AI-extracted JSON result containing entities, relationships, and suggestedPeople.
+
+Your job is to audit the extraction for common errors and provide corrections. Check for:
+
+1. **REVERSED DIRECTIONALITY** (most common error): The rule is "personA is [relationshipType] of personB".
+   - "My parents are X and Y" → X is parent of narrator, Y is parent of narrator. NOT narrator is parent of X.
+   - "Mis papás son X y Y" → same rule, X is parent of narrator.
+   - If you see narrator listed as personA with type "parent" and personB is an older person, the directionality is WRONG.
+
+2. **MISSING RELATIONSHIPS**: Check if any mentioned family connections were not extracted.
+   - Every "my [relation]" statement should produce a relationship.
+   - Half-sibling parent attributions ("de parte de mi mamá") need a parent link.
+   - In-law terms need BOTH the structural AND the in-law relationship.
+
+3. **CONTRADICTIONS**: Flag impossible relationship combinations.
+   - Same person listed as both parent and sibling of someone.
+   - Someone listed as their own parent/child.
+   - Circular parent chains.
+
+4. **MISSING PEOPLE IN suggestedPeople**: Every personA and personB in relationships MUST appear in suggestedPeople.
+
+5. **WRONG RELATIONSHIP TYPES**: Verify the type matches the context.
+   - "bisabuelo" should be great_grandparent, not grandparent.
+   - "medio hermano" should be half_sibling, not sibling or step_sibling.
+   - "suegro/suegra" should be parent_in_law, not parent.
+
+6. **MISSING INTERMEDIATE LINKS**: Multi-generational references need chains.
+   - "my dad's mom" needs: grandparent→narrator AND parent→dad.
+   - If the chain is incomplete, add the missing links.
+
+Output a JSON object:
+{
+  "corrections": [
+    {
+      "type": "fix_directionality" | "add_relationship" | "remove_relationship" | "add_person" | "fix_relationship_type",
+      "original": { "personA": "...", "personB": "...", "relationshipType": "..." },
+      "corrected": { "personA": "...", "personB": "...", "relationshipType": "..." },
+      "reason": "brief explanation"
+    }
+  ],
+  "verified": true | false
+}
+
+For "add_person" corrections:
+{
+  "type": "add_person",
+  "corrected": { "firstName": "...", "lastName": "...", "gender": "male|female|null" },
+  "reason": "Referenced in relationships but missing from suggestedPeople"
+}
+
+If everything is correct, return: { "corrections": [], "verified": true }
+
+Be precise and conservative — only flag CLEAR errors. Do not add speculative relationships.\`;

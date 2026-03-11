@@ -115,7 +115,31 @@ export interface ExtractionResult {
     currentLocation?: string;
     profession?: string;
     isDeceased?: boolean;
+    gender?: 'male' | 'female' | null;
   }>;
+}
+
+export interface VerificationCorrection {
+  type: 'fix_directionality' | 'add_relationship' | 'remove_relationship' | 'add_person' | 'fix_relationship_type';
+  original?: {
+    personA?: string;
+    personB?: string;
+    relationshipType?: string;
+  };
+  corrected?: {
+    personA?: string;
+    personB?: string;
+    relationshipType?: string;
+    firstName?: string;
+    lastName?: string;
+    gender?: string;
+  };
+  reason: string;
+}
+
+export interface VerificationResult {
+  corrections: VerificationCorrection[];
+  verified: boolean;
 }
 
 export interface SummaryResult {

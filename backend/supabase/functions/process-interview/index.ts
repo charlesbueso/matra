@@ -168,6 +168,7 @@ serve(async (req: Request) => {
 
   try {
     console.log('[process-interview] Starting...');
+    const pipelineStartMs = Date.now();
     const userId = await getAuthUserId(req);
     console.log('[process-interview] Authenticated user:', userId);
     const supabase = getServiceClient();
@@ -447,6 +448,102 @@ CRITICAL — VOICE RECOGNITION NAME MATCHING: This transcript comes from voice/s
       extractionResult = { entities: [], relationships: [], suggestedPeople: [] };
     }
 
+    // Strip the _reasoning field (used for CoT) — it's not needed downstream
+    if ((extractionResult as any)._reasoning) {
+      console.log(`[process-interview] AI reasoning: ${(extractionResult as any)._reasoning}`);
+      delete (extractionResult as any)._reasoning;
+    }
+
+    // 5b. Verification pass — AI audits its own extraction for common errors
+    const verificationStartMs = Date.now();
+    try {
+      const verification = await llmProvider.verifyExtraction(transcriptForAI, extractionResult, language || undefined);
+      const correctionCount = verification.corrections?.length || 0;
+      console.log(`[process-interview] Verification pass: ${correctionCount} corrections, verified=${verification.verified} (${Date.now() - verificationStartMs}ms)`);
+
+      if (verification.corrections && verification.corrections.length > 0) {
+        for (const correction of verification.corrections) {
+          switch (correction.type) {
+            case 'fix_directionality': {
+              // Find and fix the reversed relationship
+              if (correction.original && correction.corrected) {
+                const idx = extractionResult.relationships.findIndex(
+                  (r: any) => normalize(r.personA) === normalize(correction.original!.personA || '') &&
+                              normalize(r.personB) === normalize(correction.original!.personB || '') &&
+                              r.relationshipType === correction.original!.relationshipType
+                );
+                if (idx >= 0) {
+                  console.log(`[verification] Fixing directionality: ${correction.reason}`);
+                  extractionResult.relationships[idx].personA = correction.corrected.personA || extractionResult.relationships[idx].personA;
+                  extractionResult.relationships[idx].personB = correction.corrected.personB || extractionResult.relationships[idx].personB;
+                }
+              }
+              break;
+            }
+            case 'add_relationship': {
+              if (correction.corrected) {
+                console.log(`[verification] Adding missing relationship: ${correction.corrected.personA} → ${correction.corrected.personB} (${correction.corrected.relationshipType}) — ${correction.reason}`);
+                extractionResult.relationships.push({
+                  personA: correction.corrected.personA || '',
+                  personB: correction.corrected.personB || '',
+                  relationshipType: correction.corrected.relationshipType || 'other',
+                  confidence: 0.85,
+                  context: `Added by verification: ${correction.reason}`,
+                });
+              }
+              break;
+            }
+            case 'remove_relationship': {
+              if (correction.original) {
+                const idx = extractionResult.relationships.findIndex(
+                  (r: any) => normalize(r.personA) === normalize(correction.original!.personA || '') &&
+                              normalize(r.personB) === normalize(correction.original!.personB || '') &&
+                              r.relationshipType === correction.original!.relationshipType
+                );
+                if (idx >= 0) {
+                  console.log(`[verification] Removing contradictory relationship: ${correction.reason}`);
+                  extractionResult.relationships.splice(idx, 1);
+                }
+              }
+              break;
+            }
+            case 'add_person': {
+              if (correction.corrected?.firstName) {
+                const exists = extractionResult.suggestedPeople.some(
+                  (p: any) => normalize(p.firstName || '') === normalize(correction.corrected!.firstName || '')
+                );
+                if (!exists) {
+                  console.log(`[verification] Adding missing person: ${correction.corrected.firstName} ${correction.corrected.lastName || ''} — ${correction.reason}`);
+                  extractionResult.suggestedPeople.push({
+                    firstName: correction.corrected.firstName,
+                    lastName: correction.corrected.lastName,
+                    gender: correction.corrected.gender as any,
+                  });
+                }
+              }
+              break;
+            }
+            case 'fix_relationship_type': {
+              if (correction.original && correction.corrected) {
+                const idx = extractionResult.relationships.findIndex(
+                  (r: any) => normalize(r.personA) === normalize(correction.original!.personA || '') &&
+                              normalize(r.personB) === normalize(correction.original!.personB || '') &&
+                              r.relationshipType === correction.original!.relationshipType
+                );
+                if (idx >= 0) {
+                  console.log(`[verification] Fixing relationship type: ${correction.original.relationshipType} → ${correction.corrected.relationshipType} — ${correction.reason}`);
+                  extractionResult.relationships[idx].relationshipType = correction.corrected.relationshipType || extractionResult.relationships[idx].relationshipType;
+                }
+              }
+              break;
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[process-interview] Verification pass failed (non-fatal):', (err as Error).message);
+    }
+
     // Log extraction result for debugging narrator variant handling
     console.log(`[process-interview] AI extracted ${extractionResult.suggestedPeople.length} suggestedPeople:`,
       extractionResult.suggestedPeople.map((p: any) => `${p.firstName} ${p.lastName || ''} (birth: ${p.birthDate || '?'}, place: ${p.birthPlace || '?'})`).join(', '));
@@ -497,6 +594,11 @@ CRITICAL — VOICE RECOGNITION NAME MATCHING: This transcript comes from voice/s
     // Strip parenthetical disambiguators: "Héctor (padre)" → "Héctor"
     function stripDisambiguator(name: string): string {
       return (name || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
+    }
+
+    // Strip honorifics: "Don Fernando" → "Fernando"
+    function stripHonorifics(name: string): string {
+      return name.replace(/\b(don|doña|dona|señor|señora|sr\.?|sra\.?|mr\.?|mrs\.?|ms\.?|dr\.?)\s+/gi, '').trim();
     }
 
     // Check if a relationship name plausibly refers to a target person name.
@@ -1001,12 +1103,15 @@ CRITICAL — VOICE RECOGNITION NAME MATCHING: This transcript comes from voice/s
     // Helper: resolve a name reference (from relationships/stories) to a person ID
     function resolvePersonName(name: string): string | null {
       // Handle self-references — map to subject person if available
-      const selfRefs = ['i', 'me', 'myself', 'narrator', 'the narrator'];
+      const selfRefs = ['i', 'me', 'myself', 'narrator', 'the narrator', 'yo'];
       if (subjectPerson && selfRefs.includes(name.toLowerCase().trim())) {
         return subjectPerson.id;
       }
 
       const normName = normalize(name);
+      // Try honorific-stripped version
+      const strippedName = normalize(stripHonorifics(name));
+      if (strippedName !== normName && resolvedPeople.has(strippedName)) return resolvedPeople.get(strippedName)!;
       const normParts = normName.split(/\s+/);
       const normFirst = normParts[0];
       const normLast = normParts.length > 1 ? normParts.slice(1).join(' ') : '';
@@ -1165,6 +1270,16 @@ CRITICAL — VOICE RECOGNITION NAME MATCHING: This transcript comes from voice/s
       return rejectedSet.has(`${aId}|${bId}|${type}`);
     }
 
+    // Pre-load existing relationship confidences for confidence-weighted merging
+    const { data: existingRelRows } = await supabase
+      .from('relationships')
+      .select('person_a_id, person_b_id, relationship_type, confidence')
+      .eq('family_group_id', familyGroupId);
+    const existingConfMap = new Map<string, number>();
+    for (const er of (existingRelRows || [])) {
+      existingConfMap.set(`${er.person_a_id}|${er.person_b_id}|${er.relationship_type}`, er.confidence || 0);
+    }
+
     for (const rel of extractionResult.relationships) {
       let personAId = resolvePersonName(rel.personA);
       let personBId = resolvePersonName(rel.personB);
@@ -1204,6 +1319,45 @@ CRITICAL — VOICE RECOGNITION NAME MATCHING: This transcript comes from voice/s
       }
 
       if (personAId && personBId && personAId !== personBId) {
+        // Normalize common LLM-generated non-standard relationship types
+        const typeAliases: Record<string, string> = {
+          // English aliases
+          aunt: 'uncle_aunt', uncle: 'uncle_aunt',
+          nephew: 'nephew_niece', niece: 'nephew_niece',
+          grandfather: 'grandparent', grandmother: 'grandparent',
+          grandson: 'grandchild', granddaughter: 'grandchild',
+          father: 'parent', mother: 'parent',
+          son: 'child', daughter: 'child',
+          husband: 'spouse', wife: 'spouse',
+          brother: 'sibling', sister: 'sibling',
+          adopted_sibling: 'sibling',
+          father_in_law: 'parent_in_law', mother_in_law: 'parent_in_law',
+          son_in_law: 'child_in_law', daughter_in_law: 'child_in_law',
+          brother_in_law: 'in_law', sister_in_law: 'in_law',
+          // Spanish aliases
+          padre: 'parent', madre: 'parent', 'papá': 'parent', 'mamá': 'parent', papa: 'parent', mama: 'parent',
+          hijo: 'child', hija: 'child',
+          hermano: 'sibling', hermana: 'sibling',
+          medio_hermano: 'half_sibling', media_hermana: 'half_sibling', hermanastro: 'half_sibling', hermanastra: 'half_sibling',
+          abuelo: 'grandparent', abuela: 'grandparent',
+          nieto: 'grandchild', nieta: 'grandchild',
+          bisabuelo: 'great_grandparent', bisabuela: 'great_grandparent',
+          bisnieto: 'great_grandchild', bisnieta: 'great_grandchild',
+          'tío': 'uncle_aunt', 'tía': 'uncle_aunt', tio: 'uncle_aunt', tia: 'uncle_aunt',
+          sobrino: 'nephew_niece', sobrina: 'nephew_niece',
+          primo: 'cousin', prima: 'cousin',
+          esposo: 'spouse', esposa: 'spouse', 'cónyuge': 'spouse', conyuge: 'spouse', marido: 'spouse',
+          ex_esposo: 'ex_spouse', ex_esposa: 'ex_spouse', exesposo: 'ex_spouse', exesposa: 'ex_spouse',
+          padrastro: 'step_parent', madrastra: 'step_parent',
+          hijastro: 'step_child', hijastra: 'step_child',
+          suegro: 'parent_in_law', suegra: 'parent_in_law',
+          yerno: 'child_in_law', nuera: 'child_in_law',
+          'cuñado': 'in_law', 'cuñada': 'in_law', cunado: 'in_law', cunada: 'in_law',
+          padrino: 'godparent', madrina: 'godparent',
+          ahijado: 'godchild', ahijada: 'godchild',
+        };
+        const normalizedType = typeAliases[rel.relationshipType] || rel.relationshipType;
+
         // Validate that the relationship type is a known enum value
         const validTypes = [
           'parent', 'child', 'spouse', 'ex_spouse', 'sibling', 'half_sibling', 'grandparent', 'grandchild',
@@ -1212,8 +1366,8 @@ CRITICAL — VOICE RECOGNITION NAME MATCHING: This transcript comes from voice/s
           'step_parent', 'step_child', 'step_sibling',
           'adopted_parent', 'adopted_child', 'godparent', 'godchild', 'other',
         ];
-        const relType = validTypes.includes(rel.relationshipType)
-          ? rel.relationshipType
+        const relType = validTypes.includes(normalizedType)
+          ? normalizedType
           : 'other';
 
         // Skip if user previously rejected this relationship
@@ -1222,6 +1376,13 @@ CRITICAL — VOICE RECOGNITION NAME MATCHING: This transcript comes from voice/s
           continue;
         }
 
+        // Confidence-weighted merging: if relationship already exists, boost confidence
+        const confKey = `${personAId}|${personBId}|${relType}`;
+        const existingConf = existingConfMap.get(confKey);
+        const mergedConfidence = existingConf !== undefined
+          ? Math.min(1.0, Math.max(existingConf, rel.confidence) + 0.05)
+          : rel.confidence;
+
         await supabase.from('relationships').upsert(
           {
             family_group_id: familyGroupId,
@@ -1229,7 +1390,8 @@ CRITICAL — VOICE RECOGNITION NAME MATCHING: This transcript comes from voice/s
             person_b_id: personBId,
             relationship_type: relType,
             source_interview_id: interview.id,
-            confidence: rel.confidence,
+            confidence: mergedConfidence,
+            is_inferred: false,
           },
           { onConflict: 'person_a_id,person_b_id,relationship_type' }
         );
@@ -1296,9 +1458,17 @@ CRITICAL — VOICE RECOGNITION NAME MATCHING: This transcript comes from voice/s
     }
 
     // 8b. Infer transitive relationships
-    // Runs multiple passes to propagate all logical connections.
+    // Runs multiple convergence rounds to propagate all logical connections.
+    // Clears previous inferred relationships first, then re-derives them.
     {
-      // Collect all relationships we just created (plus any pre-existing)
+      // Clear old inferred relationships for this family group so we derive fresh
+      await supabase
+        .from('relationships')
+        .delete()
+        .eq('family_group_id', familyGroupId)
+        .eq('is_inferred', true);
+
+      // Collect all relationships (non-inferred) for this family group
       const { data: allRels } = await supabase
         .from('relationships')
         .select('person_a_id, person_b_id, relationship_type')
@@ -1356,6 +1526,15 @@ CRITICAL — VOICE RECOGNITION NAME MATCHING: This transcript comes from voice/s
         existingRelSet.add(fwd);
         return true;
       }
+
+      // ── Convergence loop: run all passes until no new relationships are inferred ──
+      let inferenceRound = 0;
+      const MAX_INFERENCE_ROUNDS = 5;
+      let totalInferredBefore = 0;
+
+      do {
+        totalInferredBefore = inferredRels.length;
+        inferenceRound++;
 
       // ── Pass 1: Full siblings share all parents ──
       // Run in a loop until stable (propagation can cascade)
@@ -1572,9 +1751,133 @@ CRITICAL — VOICE RECOGNITION NAME MATCHING: This transcript comes from voice/s
         }
       }
 
+      // ── Pass 8: Cousin inference with degree tracking ──
+      // If A's parent is sibling of B's parent → A and B are first cousins
+      // If A's grandparent is sibling of B's grandparent → second cousins
+      for (const [personId, myParents] of parentsOf) {
+        for (const parentId of myParents) {
+          const parentSiblings = siblingsOf.get(parentId) || new Set();
+          const parentHalfSiblings = stepSiblingsOf.get(parentId) || new Set();
+          const allParentSibs = new Set([...parentSiblings, ...parentHalfSiblings]);
+          for (const parentSibId of allParentSibs) {
+            // parentSibId's children are my first cousins
+            const cousinCandidates = childrenOf.get(parentSibId) || new Set();
+            for (const cousinId of cousinCandidates) {
+              if (cousinId === personId) continue;
+              if (tryInfer(personId, cousinId, 'cousin')) {
+                // Track cousin degree in metadata during persist phase
+              }
+            }
+          }
+        }
+      }
+
+      // ── Pass 8b: Reverse-grandparent inference ──
+      // If X is grandparent of Y and Z is parent of Y but X is NOT parent of Z → infer X is parent of Z
+      for (const [grandchildId, grandparents] of (() => {
+        const gpOf = new Map<string, Set<string>>();
+        for (const rel of [...rels, ...inferredRels]) {
+          if (rel.relationship_type === 'grandparent') {
+            if (!gpOf.has(rel.person_b_id)) gpOf.set(rel.person_b_id, new Set());
+            gpOf.get(rel.person_b_id)!.add(rel.person_a_id);
+          }
+        }
+        return gpOf;
+      })()) {
+        const myParents = parentsOf.get(grandchildId) || new Set();
+        for (const gpId of grandparents) {
+          const gpChildren = childrenOf.get(gpId) || new Set();
+          for (const parentId of myParents) {
+            if (!gpChildren.has(parentId)) {
+              if (tryInfer(gpId, parentId, 'parent')) {
+                addToSetMap(parentsOf, parentId, gpId);
+                addToSetMap(childrenOf, gpId, parentId);
+              }
+            }
+          }
+        }
+      }
+
+      // ── Pass 8c: Sibling-parent sharing ──
+      // If X is parent of A, and A is sibling of B, but X is NOT parent of B → infer X is parent of B
+      for (const [parentId, children] of childrenOf) {
+        for (const childId of children) {
+          const childSiblings = siblingsOf.get(childId) || new Set();
+          for (const sibId of childSiblings) {
+            const sibParents = parentsOf.get(sibId) || new Set();
+            if (sibParents.size < 2 && !sibParents.has(parentId)) {
+              if (tryInfer(parentId, sibId, 'parent')) {
+                addToSetMap(parentsOf, sibId, parentId);
+                addToSetMap(childrenOf, parentId, sibId);
+              }
+            }
+          }
+        }
+      }
+
+      // ── Pass 8d: Cousin-parent inference ──
+      // If X is cousin of Y, X has no parents, Z is uncle_aunt of Y and has no children → infer Z is parent of X
+      for (const [personId, myParents] of parentsOf) {
+        if (myParents.size > 0) continue; // already has parents
+        // Find cousins of personId
+        for (const rel of [...rels, ...inferredRels]) {
+          if (rel.relationship_type !== 'cousin') continue;
+          const cousinId = rel.person_a_id === personId ? rel.person_b_id
+            : rel.person_b_id === personId ? rel.person_a_id : null;
+          if (!cousinId) continue;
+          // Find uncle/aunts of the cousin who have no children
+          for (const uaRel of [...rels, ...inferredRels]) {
+            if (uaRel.relationship_type !== 'uncle_aunt') continue;
+            const uncleId = uaRel.person_b_id === cousinId ? uaRel.person_a_id : null;
+            if (!uncleId) continue;
+            const uncleChildren = childrenOf.get(uncleId) || new Set();
+            if (uncleChildren.size === 0) {
+              if (tryInfer(uncleId, personId, 'parent')) {
+                addToSetMap(parentsOf, personId, uncleId);
+                addToSetMap(childrenOf, uncleId, personId);
+              }
+            }
+          }
+        }
+      }
+
+      // ── Pass 9: Bidirectional relationship validation ──
+      // Ensure complementary relationships exist (parent↔child, grandparent↔grandchild)
+      const complementMap: Record<string, string> = {
+        'parent': 'child',
+        'child': 'parent',
+        'grandparent': 'grandchild',
+        'grandchild': 'grandparent',
+        'great_grandparent': 'great_grandchild',
+        'great_grandchild': 'great_grandparent',
+        'great_great_grandparent': 'great_great_grandchild',
+        'great_great_grandchild': 'great_great_grandparent',
+        'uncle_aunt': 'nephew_niece',
+        'nephew_niece': 'uncle_aunt',
+      };
+      // Collect current + inferred to check
+      const allCurrentRels = [...rels, ...inferredRels];
+      for (const rel of allCurrentRels) {
+        const complement = complementMap[rel.relationship_type];
+        if (!complement) continue; // symmetric types (sibling, spouse, cousin) don't need complements
+        // Check if complement exists (B → A with complement type)
+        const compFwd = `${rel.person_b_id}|${rel.person_a_id}|${complement}`;
+        if (!existingRelSet.has(compFwd)) {
+          tryInfer(rel.person_b_id, rel.person_a_id, complement);
+        }
+      }
+
+      // ── End of convergence round ──
+      const newInThisRound = inferredRels.length - totalInferredBefore;
+      console.log(`[process-interview] Inference round ${inferenceRound}: ${newInThisRound} new relationships`);
+
+      } while (inferredRels.length > totalInferredBefore && inferenceRound < MAX_INFERENCE_ROUNDS);
+
+      console.log(`[process-interview] Inference converged after ${inferenceRound} round(s), ${inferredRels.length} total inferred`);
+
       // Persist inferred relationships
       if (inferredRels.length > 0) {
-        console.log(`[process-interview] Inferring ${inferredRels.length} transitive relationships`);
+        console.log(`[process-interview] Persisting ${inferredRels.length} inferred relationships`);
         for (const inf of inferredRels) {
           await supabase.from('relationships').upsert(
             {
@@ -1584,6 +1887,7 @@ CRITICAL — VOICE RECOGNITION NAME MATCHING: This transcript comes from voice/s
               relationship_type: inf.relationship_type,
               source_interview_id: interview.id,
               confidence: 0.85,
+              is_inferred: true,
             },
             { onConflict: 'person_a_id,person_b_id,relationship_type' }
           );
@@ -1780,12 +2084,17 @@ CRITICAL — VOICE RECOGNITION NAME MATCHING: This transcript comes from voice/s
       .eq('id', interview.id)
       .single();
 
+    // Log pipeline metrics
+    const pipelineDurationMs = Date.now() - pipelineStartMs;
+    console.log(`[process-interview] ✅ Pipeline complete in ${(pipelineDurationMs / 1000).toFixed(1)}s — ${extractionResult.relationships.length} extracted rels, ${extractionResult.suggestedPeople.length} people, ${storiesCreatedCount} stories`);
+
     return jsonResponse({
       interview: finalInterview,
       extractedEntities: extractionResult.entities.length,
       extractedRelationships: extractionResult.relationships.length,
       suggestedPeople: extractionResult.suggestedPeople.length,
       storiesCreated: storiesCreatedCount,
+      pipelineDurationMs,
     });
   } catch (err) {
     console.error('[process-interview] FATAL ERROR:', (err as any)?.message || err, (err as any)?.stack || '');

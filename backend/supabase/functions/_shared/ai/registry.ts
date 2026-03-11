@@ -161,5 +161,6 @@ export function getLLMProviderWithFallback(): LLMProvider {
     generateStories: withFallback('generateStories'),
     generateBiography: withFallback('generateBiography'),
     generateDocumentaryScript: withFallback('generateDocumentaryScript'),
+    verifyExtraction: withFallback('verifyExtraction'),
   };
 }

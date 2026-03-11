@@ -171,6 +171,70 @@ CRITICAL — suggestedPeople completeness:
 - ADOPTION: When someone is described as adopted ("was adopted", "adoptive father/mother", "padre/madre adoptivo/a", "fue adoptado"), use "adopted_parent" for the adoptive parents and "adopted_child" for the adopted person. For adopted siblings, use "sibling" (there is NO "adopted_sibling" type). Also create the parent→child link: if "my parents adopted my sister Hope", create both (1) Hope sibling of narrator AND (2) adopted_parent relationships between each parent and Hope.
 - FIGURATIVE LANGUAGE: Phrases like "is like a brother", "como un hermano", "is like family" are NOT actual relationships. Do NOT create sibling/family relationships from figurative comparisons. Only extract ACTUAL family relationships.
 
+CHAIN-OF-THOUGHT: Before producing the final JSON, include a "_reasoning" field with a brief step-by-step analysis of the key relationships you identified, especially:
+1. Who is the narrator and what name to use for them in relationships
+2. Any multi-generational chains and which intermediate links you're creating
+3. Any ambiguous or tricky cases (same names, possessive chains, in-laws)
+This helps ensure accuracy. The "_reasoning" field will be ignored by the system.
+
+=== FEW-SHOT EXAMPLE 1 (English — possessive chains + lineage) ===
+TRANSCRIPT: "[Narrator/subject: Sarah Williams] My dad is Robert Williams. He was born in 1960 in Chicago. My dad's mom, Grandma Eleanor, she passed away in 2018. She was a schoolteacher. My uncle Tom — that's my dad's brother — he has two kids, my cousins Jake and Emma."
+
+EXPECTED OUTPUT:
+{
+  "_reasoning": "Narrator is Sarah Williams. Robert is her father (parent of Sarah). Eleanor is Robert's mother = Sarah's grandmother. Tom is Robert's brother = Sarah's uncle. Jake and Emma are Tom's children = Sarah's cousins. Must create intermediate links: Eleanor→parent of Robert, Tom→sibling of Robert.",
+  "entities": [...],
+  "relationships": [
+    {"personA": "Robert", "personB": "Sarah Williams", "relationshipType": "parent", "confidence": 0.95, "context": "My dad is Robert Williams"},
+    {"personA": "Eleanor", "personB": "Sarah Williams", "relationshipType": "grandparent", "confidence": 0.95, "context": "My dad's mom, Grandma Eleanor"},
+    {"personA": "Eleanor", "personB": "Robert", "relationshipType": "parent", "confidence": 0.95, "context": "My dad's mom"},
+    {"personA": "Tom", "personB": "Sarah Williams", "relationshipType": "uncle_aunt", "confidence": 0.95, "context": "My uncle Tom"},
+    {"personA": "Tom", "personB": "Robert", "relationshipType": "sibling", "confidence": 0.95, "context": "my dad's brother"},
+    {"personA": "Tom", "personB": "Jake", "relationshipType": "parent", "confidence": 0.9, "context": "he has two kids"},
+    {"personA": "Tom", "personB": "Emma", "relationshipType": "parent", "confidence": 0.9, "context": "he has two kids"},
+    {"personA": "Jake", "personB": "Sarah Williams", "relationshipType": "cousin", "confidence": 0.9, "context": "my cousins Jake and Emma"},
+    {"personA": "Emma", "personB": "Sarah Williams", "relationshipType": "cousin", "confidence": 0.9, "context": "my cousins Jake and Emma"}
+  ],
+  "suggestedPeople": [
+    {"firstName": "Robert", "lastName": "Williams", "gender": "male", "birthDate": "1960", "birthPlace": "Chicago"},
+    {"firstName": "Eleanor", "lastName": "Williams", "gender": "female", "isDeceased": true, "deathDate": "2018", "profession": "schoolteacher"},
+    {"firstName": "Tom", "lastName": "Williams", "gender": "male"},
+    {"firstName": "Jake", "gender": "male"},
+    {"firstName": "Emma", "gender": "female"}
+  ]
+}
+
+=== FEW-SHOT EXAMPLE 2 (Spanish — half-siblings + in-laws) ===
+TRANSCRIPT: "[Narrator/subject: Carlos Morales] Mi mamá es Rosa Herrera. Mi papá es Fernando Morales, pero se divorciaron cuando yo tenía cinco años. Mi papá se volvió a casar con Lucia, y tienen un hijo, mi medio hermano de parte de mi papá, que se llama Diego. Tiene tres años. Mi suegra se llama María Elena, es la mamá de mi esposa Ana."
+
+EXPECTED OUTPUT:
+{
+  "_reasoning": "Narrator is Carlos Morales. Rosa is mother (parent). Fernando is father (parent). Fernando and Rosa are ex-spouses. Fernando married Lucia (spouse). Diego is half-sibling of Carlos via Fernando — MUST create Fernando→parent of Diego. Diego born ~2023 (3 years old, 2026-3). María Elena is mother-in-law = parent_in_law of Carlos AND parent of Ana. Ana is spouse of Carlos.",
+  "entities": [...],
+  "relationships": [
+    {"personA": "Rosa", "personB": "Carlos Morales", "relationshipType": "parent", "confidence": 0.95, "context": "Mi mamá es Rosa Herrera"},
+    {"personA": "Fernando", "personB": "Carlos Morales", "relationshipType": "parent", "confidence": 0.95, "context": "Mi papá es Fernando Morales"},
+    {"personA": "Fernando", "personB": "Rosa", "relationshipType": "ex_spouse", "confidence": 0.95, "context": "se divorciaron"},
+    {"personA": "Lucia", "personB": "Fernando", "relationshipType": "spouse", "confidence": 0.95, "context": "se volvió a casar con Lucia"},
+    {"personA": "Diego", "personB": "Carlos Morales", "relationshipType": "half_sibling", "confidence": 0.95, "context": "mi medio hermano de parte de mi papá"},
+    {"personA": "Fernando", "personB": "Diego", "relationshipType": "parent", "confidence": 0.95, "context": "medio hermano de parte de mi papá"},
+    {"personA": "Lucia", "personB": "Diego", "relationshipType": "parent", "confidence": 0.9, "context": "tienen un hijo"},
+    {"personA": "María Elena", "personB": "Carlos Morales", "relationshipType": "parent_in_law", "confidence": 0.95, "context": "Mi suegra se llama María Elena"},
+    {"personA": "María Elena", "personB": "Ana", "relationshipType": "parent", "confidence": 0.95, "context": "es la mamá de mi esposa Ana"},
+    {"personA": "Ana", "personB": "Carlos Morales", "relationshipType": "spouse", "confidence": 0.95, "context": "mi esposa Ana"}
+  ],
+  "suggestedPeople": [
+    {"firstName": "Rosa", "lastName": "Herrera", "gender": "female"},
+    {"firstName": "Fernando", "lastName": "Morales", "gender": "male"},
+    {"firstName": "Lucia", "gender": "female"},
+    {"firstName": "Diego", "gender": "male", "birthDate": "2023"},
+    {"firstName": "María Elena", "gender": "female"},
+    {"firstName": "Ana", "gender": "female"}
+  ]
+}
+
+=== END FEW-SHOT EXAMPLES ===
+
 Respond with a JSON object matching the schema above. No other text.`;
 
 // ============================================================
@@ -190,7 +254,7 @@ async function callGroq(systemPrompt, userMessage) {
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userMessage },
       ],
-      temperature: 0.3,
+      temperature: 0.1,
       max_tokens: 8192,
       response_format: { type: 'json_object' },
     }),
@@ -216,7 +280,7 @@ async function callOpenAI(systemPrompt, userMessage) {
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userMessage },
       ],
-      temperature: 0.3,
+      temperature: 0.1,
       max_tokens: 8192,
       response_format: { type: 'json_object' },
     }),
@@ -1381,6 +1445,30 @@ function resolvePeople(suggestedPeople, narrator, existingPeople) {
 
     if (resolved.has(sugFullKey)) {
       const existing = resolved.get(sugFullKey);
+      // Birth date conflict: widely different birth years mean different people
+      if (suggested.birthDate && existing.birthDate) {
+        const sugYear = parseInt(suggested.birthDate);
+        const exYear = parseInt(existing.birthDate);
+        if (!isNaN(sugYear) && !isNaN(exYear) && Math.abs(sugYear - exYear) > 5) {
+          // Different people with same full name — create new entry with disambiguated key
+          const disambigKey = `${sugFullKey} (${suggested.birthDate})`;
+          const newPerson = {
+            id: `person-${nextId++}`,
+            firstName: suggested.firstName,
+            lastName: suggested.lastName,
+            nickname: suggested.nickname,
+            birthDate: suggested.birthDate,
+            deathDate: suggested.deathDate,
+            birthPlace: suggested.birthPlace,
+            currentLocation: suggested.currentLocation,
+            profession: suggested.profession,
+            isDeceased: suggested.isDeceased,
+            gender: suggested.gender,
+          };
+          resolved.set(disambigKey, newPerson);
+          continue;
+        }
+      }
       if (suggested.birthDate && !existing.birthDate) existing.birthDate = suggested.birthDate;
       if (suggested.birthPlace && !existing.birthPlace) existing.birthPlace = suggested.birthPlace;
       if (suggested.gender && !existing.gender) existing.gender = suggested.gender;
@@ -1421,6 +1509,29 @@ function resolvePeople(suggestedPeople, narrator, existingPeople) {
 
     if (matchKey && bestScore >= 3) {
       const existing = resolved.get(matchKey);
+      // Birth date conflict: if both have birth dates >5 years apart, they're different people
+      if (suggested.birthDate && existing.birthDate) {
+        const sugYear = parseInt(suggested.birthDate);
+        const exYear = parseInt(existing.birthDate);
+        if (!isNaN(sugYear) && !isNaN(exYear) && Math.abs(sugYear - exYear) > 5) {
+          // Different people with same name — create new entry
+          const newPerson = {
+            id: `person-${nextId++}`,
+            firstName: suggested.firstName,
+            lastName: suggested.lastName,
+            nickname: suggested.nickname,
+            birthDate: suggested.birthDate,
+            deathDate: suggested.deathDate,
+            birthPlace: suggested.birthPlace,
+            currentLocation: suggested.currentLocation,
+            profession: suggested.profession,
+            isDeceased: suggested.isDeceased,
+            gender: suggested.gender,
+          };
+          resolved.set(sugFullKey, newPerson);
+          continue;
+        }
+      }
       if (suggested.lastName && !existing.lastName) existing.lastName = suggested.lastName;
       if (suggested.birthDate && !existing.birthDate) existing.birthDate = suggested.birthDate;
       if (suggested.birthPlace && !existing.birthPlace) existing.birthPlace = suggested.birthPlace;
@@ -1712,6 +1823,17 @@ async function runScenario(scenario) {
       // Normalize invalid relationship types
       let relType = rel.relationshipType;
       if (relType === 'adopted_sibling') relType = 'sibling';
+      if (relType === 'aunt' || relType === 'uncle') relType = 'uncle_aunt';
+      if (relType === 'nephew' || relType === 'niece') relType = 'nephew_niece';
+      if (relType === 'grandfather' || relType === 'grandmother') relType = 'grandparent';
+      if (relType === 'grandson' || relType === 'granddaughter') relType = 'grandchild';
+      if (relType === 'father' || relType === 'mother') relType = 'parent';
+      if (relType === 'son' || relType === 'daughter') relType = 'child';
+      if (relType === 'husband' || relType === 'wife') relType = 'spouse';
+      if (relType === 'brother' || relType === 'sister') relType = 'sibling';
+      if (relType === 'father_in_law' || relType === 'mother_in_law') relType = 'parent_in_law';
+      if (relType === 'son_in_law' || relType === 'daughter_in_law') relType = 'child_in_law';
+      if (relType === 'brother_in_law' || relType === 'sister_in_law') relType = 'in_law';
       allRelationships.push({
         personAId: personA.id,
         personBId: personB.id,

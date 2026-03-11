@@ -3,8 +3,8 @@
 // ============================================================
 
 import type { STTProvider, LLMProvider, PersonBiographyInput, FamilyDocumentaryInput } from './provider.ts';
-import type { TranscriptionResult, ExtractionResult, SummaryResult, StoryResult, BiographyResult } from '../types.ts';
-import { getExtractionPrompt, getSummaryPrompt, getStoryGeneratorPrompt, getBiographyPrompt, getDocumentaryPrompt } from './prompts.ts';
+import type { TranscriptionResult, ExtractionResult, SummaryResult, StoryResult, BiographyResult, VerificationResult } from '../types.ts';
+import { getExtractionPrompt, getSummaryPrompt, getStoryGeneratorPrompt, getBiographyPrompt, getDocumentaryPrompt, getVerificationPrompt } from './prompts.ts';
 import { fetchWithRetry } from './fetch-retry.ts';
 
 const GROQ_API_URL = 'https://api.groq.com/openai/v1';
@@ -206,7 +206,7 @@ export class GroqLLMProvider implements LLMProvider {
   }
 
   async extractEntities(transcriptText: string, language?: string): Promise<ExtractionResult> {
-    const raw = await this.chatCompletion(getExtractionPrompt(language), transcriptText);
+    const raw = await this.chatCompletion(getExtractionPrompt(language), transcriptText, true, 0.1);
     return JSON.parse(raw) as ExtractionResult;
   }
 
@@ -229,5 +229,11 @@ export class GroqLLMProvider implements LLMProvider {
   async generateDocumentaryScript(familyInfo: FamilyDocumentaryInput, language?: string): Promise<string> {
     const input = JSON.stringify(familyInfo);
     return await this.chatCompletion(getDocumentaryPrompt(language), input, false);
+  }
+
+  async verifyExtraction(transcriptText: string, extraction: ExtractionResult, language?: string): Promise<VerificationResult> {
+    const userMessage = `TRANSCRIPT:\n${transcriptText}\n\nEXTRACTION RESULT:\n${JSON.stringify(extraction, null, 2)}`;
+    const raw = await this.chatCompletion(getVerificationPrompt(language), userMessage, true, 0.1);
+    return JSON.parse(raw) as VerificationResult;
   }
 }

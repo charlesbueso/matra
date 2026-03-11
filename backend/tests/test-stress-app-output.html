@@ -1,0 +1,3872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Matra — Stress Test App Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: #EDE6D8; color: #3B2E1E; }
+
+  .page-header {
+    background: #F7F2EA; border-bottom: 1px solid rgba(139,115,85,0.15); padding: 20px 32px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .page-header h1 { font-family: 'Space Grotesk', sans-serif; font-size: 28px; color: #3B2E1E; }
+  .page-header .subtitle { color: #6B5D4F; font-size: 14px; margin-top: 2px; }
+  .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge-green { background: rgba(107,143,60,0.12); color: #6B8F3C; }
+  .badge-amber { background: rgba(196,154,60,0.12); color: #C49A3C; }
+  .badge-red { background: rgba(196,102,90,0.12); color: #C4665A; }
+
+  .stats-bar {
+    display: flex; gap: 24px; padding: 16px 32px; background: #F7F2EA;
+    border-bottom: 1px solid rgba(139,115,85,0.1); flex-wrap: wrap;
+  }
+  .stat-item { text-align: center; }
+  .stat-num { font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; color: #6B8F3C; }
+  .stat-label { font-size: 11px; color: #9B8E7E; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* Tab Navigation mimicking Matra's bottom tabs */
+  .app-tabs {
+    display: flex; gap: 0; background: #FFFFFF; border-bottom: 1px solid rgba(139,115,85,0.1);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .app-tab {
+    flex: 1; padding: 14px 8px; text-align: center; cursor: pointer; border: none; background: none;
+    font-size: 12px; font-weight: 500; color: #9B8E7E; transition: all 0.2s;
+    border-bottom: 3px solid transparent; font-family: 'Inter', system-ui, sans-serif;
+  }
+  .app-tab:hover { color: #6B5D4F; }
+  .app-tab.active { color: #6B8F3C; border-bottom-color: #6B8F3C; }
+  .app-tab .tab-icon { font-size: 20px; display: block; margin-bottom: 2px; }
+
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Tree Tab ── */
+  .tree-container {
+    padding: 16px; overflow: auto; background: #F7F2EA;
+    min-height: 500px; position: relative;
+  }
+  .tree-container svg { display: block; margin: 0 auto; }
+  .tree-controls {
+    display: flex; gap: 8px; padding: 8px 16px; background: #FFFFFF;
+    border-bottom: 1px solid rgba(139,115,85,0.08);
+  }
+  .tree-controls button {
+    background: #F0EADE; border: 1px solid rgba(139,115,85,0.12); border-radius: 8px;
+    padding: 6px 14px; cursor: pointer; font-size: 12px; color: #6B5D4F;
+    font-family: 'Inter', system-ui, sans-serif; transition: all 0.15s;
+  }
+  .tree-controls button:hover { background: #E5DDD0; }
+
+  /* ── People Tab ── */
+  .people-grid { padding: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+  .person-card {
+    background: #FFFFFF; border-radius: 20px; padding: 16px; border: 1px solid rgba(139,115,85,0.08);
+    box-shadow: 0 1px 6px rgba(139,115,85,0.06); display: flex; gap: 12px; align-items: flex-start;
+    transition: transform 0.1s;
+  }
+  .person-card:hover { transform: scale(0.995); }
+  .person-card.deceased { opacity: 0.7; }
+  .person-avatar {
+    width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-weight: 700; font-size: 16px; flex-shrink: 0;
+    border: 2px solid #6B8F3C; background: #F0EADE; color: #6B8F3C;
+  }
+  .person-avatar.self { border-color: #C49A3C; color: #C49A3C; }
+  .person-info { flex: 1; min-width: 0; }
+  .person-name { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 16px; color: #3B2E1E; }
+  .person-role { font-size: 11px; font-weight: 600; color: #6B8F3C; text-transform: uppercase; letter-spacing: 0.5px; }
+  .person-role.self-role { color: #C49A3C; }
+  .person-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px;
+    border-radius: 16px; background: #F0EADE; font-size: 11px; color: #6B5D4F;
+  }
+
+  /* ── Stories Tab ── */
+  .stories-list { padding: 16px; display: grid; gap: 12px; }
+  .story-card {
+    background: #FFFFFF; border-radius: 20px; padding: 20px;
+    border: 1px solid rgba(107,143,60,0.18); box-shadow: 0 4px 16px rgba(139,115,85,0.15);
+  }
+  .story-badge { font-size: 10px; font-weight: 600; color: #8BAF5C; background: rgba(107,143,60,0.12); padding: 2px 8px; border-radius: 12px; display: inline-block; margin-bottom: 8px; }
+  .story-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; color: #3B2E1E; margin-bottom: 8px; }
+  .story-meta { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .story-meta .chip { background: rgba(107,143,60,0.08); }
+  .story-content { font-size: 14px; line-height: 1.75; color: #6B5D4F; }
+
+  /* ── Interviews Tab ── */
+  .interviews-list { padding: 16px; display: grid; gap: 16px; }
+  .interview-card {
+    background: #FFFFFF; border-radius: 20px; padding: 20px;
+    border: 1px solid rgba(139,115,85,0.08); box-shadow: 0 1px 6px rgba(139,115,85,0.06);
+  }
+  .interview-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .interview-icon { width: 44px; height: 44px; border-radius: 50%; background: rgba(107,143,60,0.12); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+  .interview-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 18px; color: #3B2E1E; }
+  .interview-stats { font-size: 12px; color: #9B8E7E; }
+  .interview-transcript {
+    background: #F7F2EA; border-radius: 12px; padding: 16px; margin-top: 12px;
+    font-size: 13px; line-height: 1.8; color: #6B5D4F; max-height: 200px; overflow-y: auto;
+    border: 1px solid rgba(139,115,85,0.08);
+  }
+  .interview-extraction { margin-top: 12px; }
+  .extraction-table {
+    width: 100%; border-collapse: collapse; font-size: 12px;
+  }
+  .extraction-table th {
+    background: #F0EADE; color: #6B5D4F; padding: 8px 12px; text-align: left;
+    font-weight: 600; border-bottom: 1px solid rgba(139,115,85,0.12);
+  }
+  .extraction-table td {
+    padding: 6px 12px; border-bottom: 1px solid rgba(139,115,85,0.06); color: #3B2E1E;
+  }
+  .extraction-table code { background: rgba(107,143,60,0.08); padding: 2px 6px; border-radius: 4px; font-size: 11px; color: #6B8F3C; }
+
+  /* ── Relationships Tab ── */
+  .rels-container { padding: 16px; }
+  .rel-group { margin-bottom: 16px; }
+  .rel-group-header {
+    font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 14px;
+    color: #6B8F3C; text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 0;
+    border-bottom: 1px solid rgba(107,143,60,0.15); margin-bottom: 8px;
+  }
+  .rel-row {
+    display: flex; align-items: center; gap: 8px; padding: 6px 12px;
+    background: #FFFFFF; border-radius: 10px; margin-bottom: 4px; font-size: 13px;
+    border: 1px solid rgba(139,115,85,0.06);
+  }
+  .rel-row.inferred { background: rgba(196,154,60,0.04); border-left: 3px solid #C49A3C; }
+  .rel-arrow { color: #9B8E7E; font-size: 16px; }
+
+  /* ── Assertions Tab ── */
+  .assertions-container { padding: 16px; }
+  .assertion-section { margin-bottom: 16px; }
+  .assertion-section h3 { font-family: 'Space Grotesk', sans-serif; font-size: 16px; color: #3B2E1E; margin-bottom: 8px; }
+  .assertion-item { padding: 6px 12px; border-radius: 8px; margin-bottom: 3px; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+  .assertion-pass { background: rgba(107,143,60,0.06); }
+  .assertion-fail { background: rgba(196,102,90,0.08); }
+  .assertion-warn { background: rgba(196,154,60,0.06); }
+
+  details summary { cursor: pointer; font-weight: 500; color: #6B5D4F; padding: 8px 0; }
+  details summary:hover { color: #3B2E1E; }
+
+  .legend {
+    display: flex; gap: 16px; padding: 8px 16px; background: #FFFFFF; border-bottom: 1px solid rgba(139,115,85,0.08);
+    font-size: 11px; color: #9B8E7E; flex-wrap: wrap; align-items: center;
+  }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+  .legend-line { width: 20px; height: 2px; display: inline-block; margin-right: 4px; }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="page-header">
+  <div>
+    <h1>🌿 Matra — Stress Test Results</h1>
+    <div class="subtitle">4 interviews · 47 people · 240 relationships · 10 stories</div>
+  </div>
+  <div>
+    <span class="badge badge-green">
+      ✓ ALL PASSED
+    </span>
+    <span class="badge badge-amber">2 warnings</span>
+  </div>
+</div>
+
+<!-- Stats Bar -->
+<div class="stats-bar">
+  <div class="stat-item"><div class="stat-num">47</div><div class="stat-label">People</div></div>
+  <div class="stat-item"><div class="stat-num">81</div><div class="stat-label">Direct Rels</div></div>
+  <div class="stat-item"><div class="stat-num">159</div><div class="stat-label">Inferred Rels</div></div>
+  <div class="stat-item"><div class="stat-num">10</div><div class="stat-label">Stories</div></div>
+  <div class="stat-item"><div class="stat-num">41.0s</div><div class="stat-label">Total Time</div></div>
+  <div class="stat-item"><div class="stat-num">13</div><div class="stat-label">Rel Types</div></div>
+  <div class="stat-item"><div class="stat-num">61/63</div><div class="stat-label">Pass Rate</div></div>
+</div>
+
+<!-- App-style Tab Navigation -->
+<div class="app-tabs">
+  <button class="app-tab active" onclick="showTab('tree')"><span class="tab-icon">🌳</span>Lineage</button>
+  <button class="app-tab" onclick="showTab('people')"><span class="tab-icon">👥</span>People</button>
+  <button class="app-tab" onclick="showTab('stories')"><span class="tab-icon">📖</span>Stories</button>
+  <button class="app-tab" onclick="showTab('interviews')"><span class="tab-icon">🎙️</span>Interviews</button>
+  <button class="app-tab" onclick="showTab('relationships')"><span class="tab-icon">🔗</span>Relationships</button>
+  <button class="app-tab" onclick="showTab('assertions')"><span class="tab-icon">🧪</span>Tests</button>
+</div>
+
+<!-- ═══════════ TREE TAB ═══════════ -->
+<div class="tab-panel active" id="tab-tree">
+  <div class="legend">
+    <span><span class="legend-dot" style="border: 2px solid #C49A3C; background: #FFF;"></span> Self (narrator)</span>
+    <span><span class="legend-dot" style="border: 2px solid #6B8F3C; background: #FFF;"></span> Family member</span>
+    <span><span class="legend-line" style="background: #C49A3C;"></span> Spouse</span>
+    <span><span class="legend-line" style="background: #C4665A; border-top: 1.5px dashed #C4665A; height: 0;"></span> Ex-Spouse</span>
+    <span><span class="legend-line" style="background: rgba(107,143,60,0.6);"></span> Parent→Child</span>
+  </div>
+  <div class="tree-controls">
+    <button onclick="zoomTree(1.2)">🔍+ Zoom In</button>
+    <button onclick="zoomTree(0.8)">🔍− Zoom Out</button>
+    <button onclick="treeScale=1;applyTreeScale()">↺ Reset</button>
+  </div>
+  <div class="tree-container" id="tree-container">
+    <svg width="2820" height="960" xmlns="http://www.w3.org/2000/svg" style="background: #F7F2EA;">
+      <defs>
+    <radialGradient id="nodeGlowG" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#6B8F3C" stop-opacity="0.15"/><stop offset="100%" stop-color="#6B8F3C" stop-opacity="0"/></radialGradient>
+    <radialGradient id="selfGlowG" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#C49A3C" stop-opacity="0.25"/><stop offset="100%" stop-color="#C49A3C" stop-opacity="0"/></radialGradient>
+  </defs>
+<path d="M 330 428 L 330 480 L 560 480 L 560 532" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 430 428 L 430 480 L 560 480 L 560 532" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<line x1="128" y1="560" x2="172" y2="560" stroke="#C49A3C" stroke-width="2"/>
+<path d="M 200 588 L 200 640 L 80 640 L 80 692" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 200 588 L 200 640 L 220 640 L 220 692" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<line x1="488" y1="560" x2="532" y2="560" stroke="#C49A3C" stroke-width="2"/>
+<path d="M 560 588 L 560 640 L 440 640 L 440 692" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 560 588 L 560 640 L 580 640 L 580 692" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 310 268 L 310 320 L 330 320 L 330 372" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 410 268 L 410 320 L 330 320 L 330 372" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 310 108 L 310 160 L 310 160 L 310 212" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 878 268 L 878 320 L 430 320 L 430 372" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 700 428 L 700 480 L 460 480 L 460 532" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 700 428 L 700 480 L 460 480 L 460 532" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 800 428 L 800 480 L 460 480 L 460 532" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 800 428 L 800 480 L 460 480 L 460 532" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<line x1="828" y1="560" x2="872" y2="560" stroke="#C49A3C" stroke-width="2"/>
+<line x1="828" y1="560" x2="872" y2="560" stroke="#C49A3C" stroke-width="2"/>
+<path d="M 900 588 L 900 640 L 850 640 L 850 692" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 900 588 L 900 640 L 850 640 L 850 692" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 1554 268 L 1554 320 L 700 320 L 700 372" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 1554 268 L 1554 320 L 700 320 L 700 372" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 1654 268 L 1654 320 L 700 320 L 700 372" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 1654 268 L 1654 320 L 700 320 L 700 372" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<line x1="1788" y1="400" x2="1832" y2="400" stroke="#C49A3C" stroke-width="2"/>
+<line x1="1788" y1="400" x2="1832" y2="400" stroke="#C49A3C" stroke-width="2"/>
+<path d="M 1760 428 L 1760 480 L 1740 480 L 1740 532" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 1760 428 L 1760 480 L 1740 480 L 1740 532" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 1760 428 L 1760 480 L 1880 480 L 1880 532" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 1760 428 L 1760 480 L 1880 480 L 1880 532" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<line x1="488" y1="560" x2="532" y2="560" stroke="#C49A3C" stroke-width="2"/>
+<path d="M 460 588 L 460 640 L 440 640 L 440 692" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 460 588 L 460 640 L 440 640 L 440 692" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 460 588 L 460 640 L 580 640 L 580 692" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 460 588 L 460 640 L 580 640 L 580 692" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<line x1="906" y1="240" x2="950" y2="240" stroke="#C49A3C" stroke-width="2"/>
+<path d="M 978 268 L 978 320 L 430 320 L 430 372" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 978 268 L 978 320 L 1200 320 L 1200 372" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 978 268 L 978 320 L 2000 320 L 2000 372" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 800 108 L 800 160 L 978 160 L 978 212" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 900 108 L 900 160 L 978 160 L 978 212" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<line x1="1006" y1="240" x2="1766" y2="240" stroke="#C4665A" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.6"/>
+<line x1="906" y1="240" x2="950" y2="240" stroke="#C49A3C" stroke-width="2"/>
+<path d="M 978 268 L 978 320 L 430 320 L 430 372" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 978 268 L 978 320 L 1200 320 L 1200 372" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 978 268 L 978 320 L 2000 320 L 2000 372" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 800 108 L 800 160 L 978 160 L 978 212" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 900 108 L 900 160 L 978 160 L 978 212" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<line x1="1006" y1="240" x2="1766" y2="240" stroke="#C4665A" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.6"/>
+<line x1="358" y1="400" x2="402" y2="400" stroke="#C49A3C" stroke-width="2"/>
+<path d="M 430 428 L 430 480 L 200 480 L 200 532" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 430 428 L 430 480 L 560 480 L 560 532" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 430 428 L 430 480 L 320 480 L 320 532" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<line x1="588" y1="560" x2="632" y2="560" stroke="#C49A3C" stroke-width="2"/>
+<line x1="588" y1="560" x2="632" y2="560" stroke="#C49A3C" stroke-width="2"/>
+<line x1="1228" y1="400" x2="1272" y2="400" stroke="#C4665A" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.6"/>
+<line x1="1228" y1="400" x2="1272" y2="400" stroke="#C4665A" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.6"/>
+<path d="M 1200 428 L 1200 480 L 1180 480 L 1180 532" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<line x1="1228" y1="400" x2="2112" y2="400" stroke="#C49A3C" stroke-width="2"/>
+<line x1="1228" y1="400" x2="2112" y2="400" stroke="#C49A3C" stroke-width="2"/>
+<path d="M 1200 428 L 1200 480 L 1320 480 L 1320 532" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 430 428 L 430 480 L 200 480 L 200 532" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 200 588 L 200 640 L 80 640 L 80 692" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 200 588 L 200 640 L 220 640 L 220 692" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 940 428 L 940 480 L 660 480 L 660 532" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 1040 428 L 1040 480 L 660 480 L 660 532" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 330 428 L 330 480 L 200 480 L 200 532" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 330 428 L 330 480 L 320 480 L 320 532" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 700 428 L 700 480 L 900 480 L 900 532" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 800 428 L 800 480 L 900 480 L 900 532" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 700 428 L 700 480 L 1040 480 L 1040 532" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 800 428 L 800 480 L 1040 480 L 1040 532" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 1554 268 L 1554 320 L 1760 320 L 1760 372" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 1654 268 L 1654 320 L 1760 320 L 1760 372" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<line x1="338" y1="240" x2="382" y2="240" stroke="#C49A3C" stroke-width="2"/>
+<line x1="728" y1="400" x2="772" y2="400" stroke="#C49A3C" stroke-width="2"/>
+<line x1="1582" y1="240" x2="1626" y2="240" stroke="#C49A3C" stroke-width="2"/>
+<line x1="828" y1="80" x2="872" y2="80" stroke="#C49A3C" stroke-width="2"/>
+<line x1="968" y1="400" x2="1012" y2="400" stroke="#C49A3C" stroke-width="2"/>
+<path d="M 900 108 L 900 80 L 800 80 L 800 52" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 978 268 L 978 320 L 430 320 L 430 372" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 978 268 L 978 320 L 1200 320 L 1200 372" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 978 268 L 978 320 L 2000 320 L 2000 372" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 800 108 L 800 160 L 978 160 L 978 212" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 900 108 L 900 160 L 978 160 L 978 212" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<line x1="228" y1="560" x2="532" y2="560" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" />
+<line x1="348" y1="560" x2="532" y2="560" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" />
+<line x1="488" y1="560" x2="872" y2="560" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" />
+<line x1="488" y1="560" x2="872" y2="560" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" />
+<line x1="488" y1="560" x2="1012" y2="560" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" />
+<line x1="488" y1="560" x2="1012" y2="560" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" />
+<line x1="728" y1="400" x2="1732" y2="400" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" />
+<line x1="728" y1="400" x2="1732" y2="400" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" />
+<line x1="228" y1="560" x2="292" y2="560" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" />
+<line x1="108" y1="720" x2="192" y2="720" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" />
+<line x1="468" y1="720" x2="552" y2="720" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" />
+<line x1="928" y1="560" x2="1012" y2="560" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" />
+<line x1="1768" y1="560" x2="1852" y2="560" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" />
+<line x1="458" y1="400" x2="1172" y2="400" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" stroke-dasharray="6 3"/>
+<line x1="458" y1="400" x2="1972" y2="400" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" stroke-dasharray="6 3"/>
+<line x1="458" y1="400" x2="772" y2="80" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" stroke-dasharray="6 3"/>
+<line x1="458" y1="400" x2="872" y2="80" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" stroke-dasharray="6 3"/>
+<line x1="1228" y1="400" x2="1972" y2="400" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" />
+<line x1="828" y1="400" x2="1172" y2="80" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" />
+<line x1="928" y1="400" x2="1172" y2="80" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" />
+<line x1="828" y1="400" x2="1972" y2="80" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" />
+<line x1="928" y1="400" x2="1972" y2="80" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" />
+<line x1="828" y1="80" x2="872" y2="80" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" />
+<line x1="1208" y1="560" x2="1292" y2="560" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" />
+<circle cx="560" cy="560" r="56" fill="url(#selfGlowG)"/>
+<circle cx="560" cy="560" r="28" fill="#FFFFFF" stroke="#C49A3C" stroke-width="3"/>
+<text x="560" y="565" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">CB</text>
+<text x="560" y="604" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Carlos</text>
+<text x="560" y="617" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Bueso</text>
+<text x="560" y="630" text-anchor="middle" font-size="9" fill="#C49A3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Me</text>
+<circle cx="330" cy="400" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="330" cy="400" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="330" y="405" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">RB</text>
+<text x="330" y="444" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Roberto</text>
+<text x="330" y="457" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Bueso</text>
+<text x="330" y="470" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Parent</text>
+<circle cx="430" cy="400" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="430" cy="400" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="430" y="405" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">PH</text>
+<text x="430" y="444" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Patricia</text>
+<text x="430" y="457" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Hernández de Bueso</text>
+<text x="430" y="470" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Parent</text>
+<circle cx="200" cy="560" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="200" cy="560" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="200" y="565" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">JB</text>
+<text x="200" y="604" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">James</text>
+<text x="200" y="617" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Bueso</text>
+<text x="200" y="630" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Sibling</text>
+<circle cx="100" cy="560" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="100" cy="560" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="100" y="565" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">SK</text>
+<text x="100" y="604" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Stephanie</text>
+<text x="100" y="617" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Kim</text>
+<text x="100" y="630" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Sibling's Spouse</text>
+<circle cx="80" cy="720" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="80" cy="720" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="80" y="725" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">MB</text>
+<text x="80" y="764" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Mia</text>
+<text x="80" y="777" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Bueso</text>
+<text x="80" y="790" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Nephew/Niece</text>
+<circle cx="220" cy="720" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="220" cy="720" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="220" y="725" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">EB</text>
+<text x="220" y="764" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Ethan</text>
+<text x="220" y="777" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Bueso</text>
+<text x="220" y="790" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Nephew/Niece</text>
+<circle cx="320" cy="560" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="320" cy="560" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="320" y="565" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">DB</text>
+<text x="320" y="604" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Daniela</text>
+<text x="320" y="617" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Bueso</text>
+<text x="320" y="630" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Sibling</text>
+<circle cx="460" cy="560" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="460" cy="560" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="460" y="565" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">MR</text>
+<text x="460" y="604" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">María Elena</text>
+<text x="460" y="617" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Reyes</text>
+<text x="460" y="630" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Spouse</text>
+<circle cx="440" cy="720" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="440" cy="720" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="440" y="725" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">SB</text>
+<text x="440" y="764" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Sofia</text>
+<text x="440" y="777" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Bueso</text>
+<text x="440" y="790" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Child</text>
+<circle cx="580" cy="720" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="580" cy="720" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="580" y="725" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">MB</text>
+<text x="580" y="764" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Mateo</text>
+<text x="580" y="777" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Bueso</text>
+<text x="580" y="790" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Child</text>
+<circle cx="310" cy="240" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="310" cy="240" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="310" y="245" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">EB</text>
+<text x="310" y="284" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Ernesto</text>
+<text x="310" y="297" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Bueso</text>
+<text x="310" y="310" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Grandparent</text>
+<circle cx="410" cy="240" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="410" cy="240" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="410" y="245" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">CF</text>
+<text x="410" y="284" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Carmen</text>
+<text x="410" y="297" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Flores de Bueso</text>
+<text x="410" y="310" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Grandparent</text>
+<circle cx="310" cy="80" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="310" cy="80" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2" opacity="0.6"/>
+<text x="310" y="85" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">DB</text>
+<text x="310" y="124" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Don Miguel</text>
+<text x="310" y="137" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Bueso</text>
+<text x="310" y="150" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Gt-Grandparent</text>
+<text x="334" y="62" text-anchor="middle" font-size="10" fill="#C4665A">✝</text>
+<circle cx="878" cy="240" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="878" cy="240" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2" opacity="0.6"/>
+<text x="878" y="245" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">AH</text>
+<text x="878" y="284" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Alfredo</text>
+<text x="878" y="297" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Hernández</text>
+<text x="878" y="310" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Grandparent</text>
+<text x="902" y="222" text-anchor="middle" font-size="10" fill="#C4665A">✝</text>
+<circle cx="700" cy="400" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="700" cy="400" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="700" y="405" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">FR</text>
+<text x="700" y="444" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Fernando</text>
+<text x="700" y="457" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Reyes Aguilar</text>
+<text x="700" y="470" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Spouse's Parent</text>
+<circle cx="800" cy="400" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="800" cy="400" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="800" y="405" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">LM</text>
+<text x="800" y="444" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Lucía</text>
+<text x="800" y="457" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Mendoza de Reyes</text>
+<text x="800" y="470" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Spouse's Parent</text>
+<circle cx="900" cy="560" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="900" cy="560" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="900" y="565" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">AR</text>
+<text x="900" y="604" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Andrés</text>
+<text x="900" y="617" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Reyes Mendoza</text>
+<text x="900" y="630" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Spouse's Sibling</text>
+<circle cx="800" cy="560" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="800" cy="560" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="800" y="565" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">VT</text>
+<text x="800" y="604" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Valentina</text>
+<text x="800" y="617" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Torres</text>
+<text x="800" y="630" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Spouse's Sibling's Spouse</text>
+<circle cx="850" cy="720" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="850" cy="720" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="850" y="725" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">S</text>
+<text x="850" y="764" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Sebastián</text>
+<text x="850" y="780" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Spouse's Nephew/Niece</text>
+<circle cx="1040" cy="560" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="1040" cy="560" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="1040" y="565" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">IR</text>
+<text x="1040" y="604" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Isabel</text>
+<text x="1040" y="617" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Reyes Mendoza</text>
+<text x="1040" y="630" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Spouse's Sibling</text>
+<circle cx="1554" cy="240" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="1554" cy="240" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="1554" y="245" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">DR</text>
+<text x="1554" y="284" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Don Ramón</text>
+<text x="1554" y="297" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Reyes</text>
+<text x="1554" y="310" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Spouse's Grandparent</text>
+<circle cx="1654" cy="240" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="1654" cy="240" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2" opacity="0.6"/>
+<text x="1654" y="245" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">DA</text>
+<text x="1654" y="284" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Doña Esperanza</text>
+<text x="1654" y="297" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Aguilar de Reyes</text>
+<text x="1654" y="310" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Spouse's Grandparent</text>
+<text x="1678" y="222" text-anchor="middle" font-size="10" fill="#C4665A">✝</text>
+<circle cx="1760" cy="400" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="1760" cy="400" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="1760" y="405" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">MR</text>
+<text x="1760" y="444" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Marcos</text>
+<text x="1760" y="457" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Reyes Aguilar</text>
+<text x="1760" y="470" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Spouse's Uncle/Aunt</text>
+<circle cx="1860" cy="400" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="1860" cy="400" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="1860" y="405" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">GP</text>
+<text x="1860" y="444" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Gloria</text>
+<text x="1860" y="457" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Pineda</text>
+<text x="1860" y="470" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Spouse's Uncle/Aunt's Spouse</text>
+<circle cx="1740" cy="560" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="1740" cy="560" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="1740" y="565" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">C</text>
+<text x="1740" y="604" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Carolina</text>
+<text x="1740" y="620" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Spouse's Parent's Nephew/Niece</text>
+<circle cx="1880" cy="560" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="1880" cy="560" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="1880" y="565" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">D</text>
+<text x="1880" y="604" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Diego</text>
+<text x="1880" y="620" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Spouse's Parent's Nephew/Niece</text>
+<circle cx="1460" cy="560" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="1460" cy="560" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="1460" y="565" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">D</text>
+<text x="1460" y="604" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Don Ernesto</text>
+<circle cx="1600" cy="560" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="1600" cy="560" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="1600" y="565" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">D</text>
+<text x="1600" y="604" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Doña Carmen</text>
+<circle cx="978" cy="240" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="978" cy="240" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="978" y="245" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">RM</text>
+<text x="978" y="284" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Rosa</text>
+<text x="978" y="297" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Martínez</text>
+<text x="978" y="310" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Grandparent</text>
+<circle cx="660" cy="560" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="660" cy="560" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="660" y="565" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">ER</text>
+<text x="660" y="604" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Elena</text>
+<text x="660" y="617" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Reyes</text>
+<text x="660" y="630" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Spouse</text>
+<circle cx="1200" cy="400" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="1200" cy="400" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="1200" y="405" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">EH</text>
+<text x="1200" y="444" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Eduardo</text>
+<text x="1200" y="457" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Hernández Martínez</text>
+<text x="1200" y="470" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Uncle/Aunt</text>
+<circle cx="1300" cy="400" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="1300" cy="400" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="1300" y="405" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">JW</text>
+<text x="1300" y="444" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Jennifer</text>
+<text x="1300" y="457" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Wilson</text>
+<text x="1300" y="470" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Uncle/Aunt's Ex-Spouse</text>
+<circle cx="1180" cy="560" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="1180" cy="560" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="1180" y="565" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">N</text>
+<text x="1180" y="604" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Natalie</text>
+<text x="1180" y="620" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Parent's Nephew/Niece</text>
+<circle cx="2140" cy="400" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="2140" cy="400" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="2140" y="405" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">CL</text>
+<text x="2140" y="444" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Claudia</text>
+<text x="2140" y="457" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">López</text>
+<text x="2140" y="470" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Uncle/Aunt's Spouse</text>
+<circle cx="1320" cy="560" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="1320" cy="560" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="1320" y="565" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">G</text>
+<text x="1320" y="604" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Gabriel</text>
+<text x="1320" y="620" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Parent's Nephew/Niece</text>
+<circle cx="2000" cy="400" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="2000" cy="400" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="2000" y="405" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">RH</text>
+<text x="2000" y="444" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Ricardo</text>
+<text x="2000" y="457" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Hernández Martínez</text>
+<text x="2000" y="470" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Uncle/Aunt</text>
+<circle cx="800" cy="80" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="800" cy="80" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2" opacity="0.6"/>
+<text x="800" y="85" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">DM</text>
+<text x="800" y="124" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Don Tomás</text>
+<text x="800" y="137" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Martínez</text>
+<text x="800" y="150" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Gt-Grandparent</text>
+<text x="824" y="62" text-anchor="middle" font-size="10" fill="#C4665A">✝</text>
+<circle cx="900" cy="80" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="900" cy="80" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2" opacity="0.6"/>
+<text x="900" y="85" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">DV</text>
+<text x="900" y="124" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Doña Consuelo</text>
+<text x="900" y="137" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Vásquez de Martínez</text>
+<text x="900" y="150" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Gt-Grandparent</text>
+<text x="924" y="62" text-anchor="middle" font-size="10" fill="#C4665A">✝</text>
+<circle cx="1794" cy="240" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="1794" cy="240" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="1794" y="245" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">HS</text>
+<text x="1794" y="284" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Héctor</text>
+<text x="1794" y="297" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Solís</text>
+<text x="1794" y="310" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Grandparent's Ex-Spouse</text>
+<circle cx="940" cy="400" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="940" cy="400" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="940" y="405" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">DF</text>
+<text x="940" y="444" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Don</text>
+<text x="940" y="457" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Fernando</text>
+<text x="940" y="470" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Spouse's Parent</text>
+<circle cx="1040" cy="400" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="1040" cy="400" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="1040" y="405" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">DL</text>
+<text x="1040" y="444" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Doña</text>
+<text x="1040" y="457" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Lucía</text>
+<text x="1040" y="470" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" text-transform="uppercase" font-family="Inter, system-ui">Spouse's Parent</text>
+<circle cx="2020" cy="560" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="2020" cy="560" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="2020" y="565" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">JK</text>
+<text x="2020" y="604" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Joon-Ho</text>
+<text x="2020" y="617" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Kim</text>
+<circle cx="2160" cy="560" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="2160" cy="560" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="2160" y="565" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">SP</text>
+<text x="2160" y="604" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Sung-Hee</text>
+<text x="2160" y="617" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Park</text>
+<circle cx="2300" cy="560" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="2300" cy="560" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="2300" y="565" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">DK</text>
+<text x="2300" y="604" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">David</text>
+<text x="2300" y="617" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Kim</text>
+<circle cx="2440" cy="560" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="2440" cy="560" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="2440" y="565" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">LC</text>
+<text x="2440" y="604" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Lisa</text>
+<text x="2440" y="617" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Chen</text>
+<circle cx="2580" cy="560" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="2580" cy="560" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="2580" y="565" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">EK</text>
+<text x="2580" y="604" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Emily</text>
+<text x="2580" y="617" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Kim</text>
+
+    </svg>
+  </div>
+</div>
+
+<!-- ═══════════ PEOPLE TAB ═══════════ -->
+<div class="tab-panel" id="tab-people">
+  <div class="people-grid">
+    
+      <div class="person-card">
+        <div class="person-avatar self">CB</div>
+        <div class="person-info">
+          <div class="person-name">Carlos Bueso</div>
+          <div class="person-role self-role">Me</div>
+          <div class="person-chips"><span class="chip">🎂 1990</span><span class="chip">📍 Houston, Texas</span><span class="chip">💼 software engineer</span><span class="chip">👤 male</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">RB</div>
+        <div class="person-info">
+          <div class="person-name">Roberto Bueso</div>
+          <div class="person-role">Parent</div>
+          <div class="person-chips"><span class="chip">🎂 1962</span><span class="chip">📍 San Pedro Sula, Honduras</span><span class="chip">💼 mechanical engineer</span><span class="chip">👤 male</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">PH</div>
+        <div class="person-info">
+          <div class="person-name">Patricia Hernández de Bueso</div>
+          <div class="person-role">Parent</div>
+          <div class="person-chips"><span class="chip">🎂 1965</span><span class="chip">📍 Guatemala City</span><span class="chip">💼 teacher</span><span class="chip">👤 female</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">JB</div>
+        <div class="person-info">
+          <div class="person-name">James Bueso</div>
+          <div class="person-role">Sibling</div>
+          <div class="person-chips"><span class="chip">🎂 1987</span><span class="chip">💼 dentist</span><span class="chip">👤 male</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">SK</div>
+        <div class="person-info">
+          <div class="person-name">Stephanie Kim</div>
+          <div class="person-role">Sibling's Spouse</div>
+          <div class="person-chips"><span class="chip">🎂 1989</span><span class="chip">💼 pharmacist</span><span class="chip">👤 female</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">MB</div>
+        <div class="person-info">
+          <div class="person-name">Mia Bueso</div>
+          <div class="person-role">Nephew/Niece</div>
+          <div class="person-chips"><span class="chip">🎂 2019</span><span class="chip">👤 female</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">EB</div>
+        <div class="person-info">
+          <div class="person-name">Ethan Bueso</div>
+          <div class="person-role">Nephew/Niece</div>
+          <div class="person-chips"><span class="chip">🎂 2023</span><span class="chip">👤 male</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">DB</div>
+        <div class="person-info">
+          <div class="person-name">Daniela Bueso</div>
+          <div class="person-role">Sibling</div>
+          <div class="person-chips"><span class="chip">🎂 1993</span><span class="chip">📍 Houston, Texas</span><span class="chip">🏠 New York</span><span class="chip">💼 finance</span><span class="chip">👤 female</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">MR</div>
+        <div class="person-info">
+          <div class="person-name">María Elena Reyes</div>
+          <div class="person-role">Spouse</div>
+          <div class="person-chips"><span class="chip">🎂 1992</span><span class="chip">📍 Tegucigalpa, Honduras</span><span class="chip">🏠 Houston</span><span class="chip">💼 pediatrician</span><span class="chip">👤 female</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">SB</div>
+        <div class="person-info">
+          <div class="person-name">Sofia Bueso</div>
+          <div class="person-role">Child</div>
+          <div class="person-chips"><span class="chip">🎂 2023</span><span class="chip">👤 female</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">MB</div>
+        <div class="person-info">
+          <div class="person-name">Mateo Bueso</div>
+          <div class="person-role">Child</div>
+          <div class="person-chips"><span class="chip">🎂 2025</span><span class="chip">👤 male</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">EB</div>
+        <div class="person-info">
+          <div class="person-name">Ernesto Bueso</div>
+          <div class="person-role">Grandparent</div>
+          <div class="person-chips"><span class="chip">🎂 1935</span><span class="chip">📍 La Ceiba, Honduras</span><span class="chip">💼 coffee farmer</span><span class="chip">👤 male</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">CF</div>
+        <div class="person-info">
+          <div class="person-name">Carmen Flores de Bueso</div>
+          <div class="person-role">Grandparent</div>
+          <div class="person-chips"><span class="chip">🎂 1938</span><span class="chip">👤 female</span></div>
+        </div>
+      </div>
+      <div class="person-card deceased">
+        <div class="person-avatar">DB</div>
+        <div class="person-info">
+          <div class="person-name">Don Miguel Bueso</div>
+          <div class="person-role">Gt-Grandparent</div>
+          <div class="person-chips"><span class="chip">🎂 1905</span><span class="chip">🕊️ 1980</span><span class="chip">👤 male</span></div>
+        </div>
+      </div>
+      <div class="person-card deceased">
+        <div class="person-avatar">AH</div>
+        <div class="person-info">
+          <div class="person-name">Alfredo Hernández</div>
+          <div class="person-role">Grandparent</div>
+          <div class="person-chips"><span class="chip">🎂 1937</span><span class="chip">🕊️ 1988</span><span class="chip">💼 university professor</span><span class="chip">👤 male</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">FR</div>
+        <div class="person-info">
+          <div class="person-name">Fernando Reyes Aguilar</div>
+          <div class="person-role">Spouse's Parent</div>
+          <div class="person-chips"><span class="chip">🎂 1960</span><span class="chip">📍 Tegucigalpa</span><span class="chip">💼 abogado</span><span class="chip">👤 male</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">LM</div>
+        <div class="person-info">
+          <div class="person-name">Lucía Mendoza de Reyes</div>
+          <div class="person-role">Spouse's Parent</div>
+          <div class="person-chips"><span class="chip">🎂 1963</span><span class="chip">📍 Comayagua, Honduras</span><span class="chip">💼 ama de casa, enfermera</span><span class="chip">👤 female</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">AR</div>
+        <div class="person-info">
+          <div class="person-name">Andrés Reyes Mendoza</div>
+          <div class="person-role">Spouse's Sibling</div>
+          <div class="person-chips"><span class="chip">🎂 1988</span><span class="chip">💼 médico cirujano</span><span class="chip">👤 male</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">VT</div>
+        <div class="person-info">
+          <div class="person-name">Valentina Torres</div>
+          <div class="person-role">Spouse's Sibling's Spouse</div>
+          <div class="person-chips"><span class="chip">👤 female</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">S</div>
+        <div class="person-info">
+          <div class="person-name">Sebastián</div>
+          <div class="person-role">Spouse's Nephew/Niece</div>
+          <div class="person-chips"><span class="chip">👤 male</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">IR</div>
+        <div class="person-info">
+          <div class="person-name">Isabel Reyes Mendoza</div>
+          <div class="person-role">Spouse's Sibling</div>
+          <div class="person-chips"><span class="chip">🎂 1995</span><span class="chip">🏠 Madrid, España</span><span class="chip">💼 trabaja en una empresa de tecnología</span><span class="chip">👤 female</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">DR</div>
+        <div class="person-info">
+          <div class="person-name">Don Ramón Reyes</div>
+          <div class="person-role">Spouse's Grandparent</div>
+          <div class="person-chips"><span class="chip">🎂 1932</span><span class="chip">👤 male</span></div>
+        </div>
+      </div>
+      <div class="person-card deceased">
+        <div class="person-avatar">DA</div>
+        <div class="person-info">
+          <div class="person-name">Doña Esperanza Aguilar de Reyes</div>
+          <div class="person-role">Spouse's Grandparent</div>
+          <div class="person-chips"><span class="chip">🎂 1936</span><span class="chip">🕊️ 2018</span><span class="chip">👤 female</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">MR</div>
+        <div class="person-info">
+          <div class="person-name">Marcos Reyes Aguilar</div>
+          <div class="person-role">Spouse's Uncle/Aunt</div>
+          <div class="person-chips"><span class="chip">🎂 1958</span><span class="chip">💼 empresario</span><span class="chip">👤 male</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">GP</div>
+        <div class="person-info">
+          <div class="person-name">Gloria Pineda</div>
+          <div class="person-role">Spouse's Uncle/Aunt's Spouse</div>
+          <div class="person-chips"><span class="chip">👤 female</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">C</div>
+        <div class="person-info">
+          <div class="person-name">Carolina</div>
+          <div class="person-role">Spouse's Parent's Nephew/Niece</div>
+          <div class="person-chips"><span class="chip">👤 female</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">D</div>
+        <div class="person-info">
+          <div class="person-name">Diego</div>
+          <div class="person-role">Spouse's Parent's Nephew/Niece</div>
+          <div class="person-chips"><span class="chip">👤 male</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">D</div>
+        <div class="person-info">
+          <div class="person-name">Don Ernesto</div>
+          
+          <div class="person-chips"><span class="chip">👤 male</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">D</div>
+        <div class="person-info">
+          <div class="person-name">Doña Carmen</div>
+          
+          <div class="person-chips"><span class="chip">👤 female</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">RM</div>
+        <div class="person-info">
+          <div class="person-name">Rosa Martínez</div>
+          <div class="person-role">Grandparent</div>
+          <div class="person-chips"><span class="chip">🎂 1940</span><span class="chip">📍 Quetzaltenango, Guatemala</span><span class="chip">👤 female</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">ER</div>
+        <div class="person-info">
+          <div class="person-name">Elena Reyes</div>
+          <div class="person-role">Spouse</div>
+          <div class="person-chips"><span class="chip">🎂 1992</span><span class="chip">💼 pediatrician</span><span class="chip">👤 female</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">EH</div>
+        <div class="person-info">
+          <div class="person-name">Eduardo Hernández Martínez</div>
+          <div class="person-role">Uncle/Aunt</div>
+          <div class="person-chips"><span class="chip">🎂 1967</span><span class="chip">👤 male</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">JW</div>
+        <div class="person-info">
+          <div class="person-name">Jennifer Wilson</div>
+          <div class="person-role">Uncle/Aunt's Ex-Spouse</div>
+          <div class="person-chips"><span class="chip">👤 female</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">N</div>
+        <div class="person-info">
+          <div class="person-name">Natalie</div>
+          <div class="person-role">Parent's Nephew/Niece</div>
+          <div class="person-chips"><span class="chip">👤 female</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">CL</div>
+        <div class="person-info">
+          <div class="person-name">Claudia López</div>
+          <div class="person-role">Uncle/Aunt's Spouse</div>
+          <div class="person-chips"><span class="chip">👤 female</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">G</div>
+        <div class="person-info">
+          <div class="person-name">Gabriel</div>
+          <div class="person-role">Parent's Nephew/Niece</div>
+          <div class="person-chips"><span class="chip">👤 male</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">RH</div>
+        <div class="person-info">
+          <div class="person-name">Ricardo Hernández Martínez</div>
+          <div class="person-role">Uncle/Aunt</div>
+          <div class="person-chips"><span class="chip">🎂 1970</span><span class="chip">💼 artist</span><span class="chip">👤 male</span></div>
+        </div>
+      </div>
+      <div class="person-card deceased">
+        <div class="person-avatar">DM</div>
+        <div class="person-info">
+          <div class="person-name">Don Tomás Martínez</div>
+          <div class="person-role">Gt-Grandparent</div>
+          <div class="person-chips"><span class="chip">🎂 1912</span><span class="chip">🕊️ 1985</span><span class="chip">👤 male</span></div>
+        </div>
+      </div>
+      <div class="person-card deceased">
+        <div class="person-avatar">DV</div>
+        <div class="person-info">
+          <div class="person-name">Doña Consuelo Vásquez de Martínez</div>
+          <div class="person-role">Gt-Grandparent</div>
+          <div class="person-chips"><span class="chip">🎂 1915</span><span class="chip">🕊️ 2000</span><span class="chip">👤 female</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">HS</div>
+        <div class="person-info">
+          <div class="person-name">Héctor Solís</div>
+          <div class="person-role">Grandparent's Ex-Spouse</div>
+          <div class="person-chips"><span class="chip">👤 male</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">DF</div>
+        <div class="person-info">
+          <div class="person-name">Don Fernando</div>
+          <div class="person-role">Spouse's Parent</div>
+          <div class="person-chips"><span class="chip">🎂 1960</span><span class="chip">💼 abogado</span><span class="chip">👤 male</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">DL</div>
+        <div class="person-info">
+          <div class="person-name">Doña Lucía</div>
+          <div class="person-role">Spouse's Parent</div>
+          <div class="person-chips"><span class="chip">🎂 1963</span><span class="chip">💼 ama de casa, enfermera</span><span class="chip">👤 female</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">JK</div>
+        <div class="person-info">
+          <div class="person-name">Joon-Ho Kim</div>
+          
+          <div class="person-chips"><span class="chip">🎂 1958</span><span class="chip">💼 electronics engineer</span><span class="chip">👤 male</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">SP</div>
+        <div class="person-info">
+          <div class="person-name">Sung-Hee Park</div>
+          
+          <div class="person-chips"><span class="chip">🎂 1961</span><span class="chip">💼 piano teacher</span><span class="chip">👤 female</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">DK</div>
+        <div class="person-info">
+          <div class="person-name">David Kim</div>
+          
+          <div class="person-chips"><span class="chip">🎂 1985</span><span class="chip">💼 data scientist</span><span class="chip">👤 male</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">LC</div>
+        <div class="person-info">
+          <div class="person-name">Lisa Chen</div>
+          
+          <div class="person-chips"><span class="chip">👤 female</span></div>
+        </div>
+      </div>
+      <div class="person-card">
+        <div class="person-avatar">EK</div>
+        <div class="person-info">
+          <div class="person-name">Emily Kim</div>
+          
+          <div class="person-chips"><span class="chip">👤 female</span></div>
+        </div>
+      </div>
+  </div>
+</div>
+
+<!-- ═══════════ STORIES TAB ═══════════ -->
+<div class="tab-panel" id="tab-stories">
+  <div class="stories-list">
+    
+    <div class="story-card">
+      <div class="story-badge">✨ AI-crafted</div>
+      <div class="story-title">A Taste of Home</div>
+      <div class="story-meta">
+        <span class="chip">👤 Carlos Bueso</span><span class="chip">👤 Carmen Flores de Bueso</span>
+        
+        
+        <span class="chip">📖 Interview 1 — Carlos Bueso (primary user, English)</span>
+      </div>
+      <div class="story-content">Carlos remembers his grandmother Carmen's famous baleadas, a traditional Honduran dish that brings the family together. Every time he takes a bite, he is transported back to his childhood and the warm, loving atmosphere of his grandparents' home. His grandmother's cooking is more than just a meal; it's a way of sharing love, culture, and tradition.</div>
+    </div>
+    <div class="story-card">
+      <div class="story-badge">✨ AI-crafted</div>
+      <div class="story-title">The Coffee Plantation</div>
+      <div class="story-meta">
+        <span class="chip">👤 Carlos Bueso</span><span class="chip">👤 Don Miguel Bueso</span>
+        
+        
+        <span class="chip">📖 Interview 1 — Carlos Bueso (primary user, English)</span>
+      </div>
+      <div class="story-content">Carlos's great-grandfather Don Miguel founded the family coffee plantation in the mountains near La Ceiba, Honduras. The plantation has been a symbol of the family's hard work and dedication to their craft. Carlos feels a deep connection to his great-grandfather's legacy and the land that has been in their family for generations.</div>
+    </div>
+    <div class="story-card">
+      <div class="story-badge">✨ AI-crafted</div>
+      <div class="story-title">A Family of Immigrants</div>
+      <div class="story-meta">
+        <span class="chip">👤 Carlos Bueso</span><span class="chip">👤 Roberto Bueso</span><span class="chip">👤 Patricia Hernández de Bueso</span>
+        
+        
+        <span class="chip">📖 Interview 1 — Carlos Bueso (primary user, English)</span>
+      </div>
+      <div class="story-content">Carlos's parents, Roberto and Patricia, immigrated to the United States from Honduras and Guatemala, respectively. Their journey was not easy, but they worked hard to build a new life for themselves and their family. Carlos is grateful for the sacrifices they made and the opportunities they have given him.</div>
+    </div>
+    <div class="story-card">
+      <div class="story-badge">✨ AI-crafted</div>
+      <div class="story-title">El Encuentro con Carlos</div>
+      <div class="story-meta">
+        <span class="chip">👤 María Elena Reyes</span><span class="chip">👤 Carlos Bueso</span>
+        <span class="chip">📍 Congreso médico</span>
+        <span class="chip">📅 2016</span>
+        <span class="chip">📖 Interview 2 — María Elena Reyes (wife, Spanish)</span>
+      </div>
+      <div class="story-content">María Elena y Carlos se conocieron en un congreso médico en 2016. Fue un encuentro casual que cambió sus vidas para siempre. María Elena recuerda el momento en que vio a Carlos por primera vez y cómo se sintió atraída por su sonrisa y su personalidad. A medida que pasaban más tiempo juntos, María Elena se dio cuenta de que había encontrado a su alma gemela.</div>
+    </div>
+    <div class="story-card">
+      <div class="story-badge">✨ AI-crafted</div>
+      <div class="story-title">La Familia de Carlos</div>
+      <div class="story-meta">
+        <span class="chip">👤 María Elena Reyes</span><span class="chip">👤 Carlos Bueso</span><span class="chip">👤 Roberto Bueso</span><span class="chip">👤 Patricia Hernández de Bueso</span><span class="chip">👤 James Bueso</span>
+        <span class="chip">📍 Casa de los Bueso</span>
+        
+        <span class="chip">📖 Interview 2 — María Elena Reyes (wife, Spanish)</span>
+      </div>
+      <div class="story-content">La familia de Carlos ha sido como una segunda familia para María Elena. Desde sus suegros Roberto y Patricia hasta su cuñado James, todos la han recibido con cariño y amor. María Elena recuerda la primera vez que probó las baleadas de Doña Carmen y cómo se sintió como en casa.</div>
+    </div>
+    <div class="story-card">
+      <div class="story-badge">✨ AI-crafted</div>
+      <div class="story-title">La Historia de una Vida</div>
+      <div class="story-meta">
+        <span class="chip">👤 Rosa Martínez</span><span class="chip">👤 Alfredo Hernández</span><span class="chip">👤 Patricia Hernández</span><span class="chip">👤 Eduardo Hernández</span><span class="chip">👤 Ricardo Hernández</span>
+        <span class="chip">📍 Quetzaltenango, Guatemala</span>
+        <span class="chip">📅 1940-2023</span>
+        <span class="chip">📖 Interview 3 — Rosa Martínez (maternal grandmother, Spanish)</span>
+      </div>
+      <div class="story-content">Rosa Martínez nació en 1940 en Quetzaltenango, Guatemala. Desde joven, Rosa supo que quería ser maestra y dedicar su vida a la educación. Se casó con Alfredo Hernández en 1960 y tuvieron tres hijos: Patricia, Eduardo y Ricardo. A lo largo de su vida, Rosa ha experimentado momentos de alegría y tristeza, pero siempre se ha mantenido orgullosa de su familia y su legado.</div>
+    </div>
+    <div class="story-card">
+      <div class="story-badge">✨ AI-crafted</div>
+      <div class="story-title">La Familia es Todo</div>
+      <div class="story-meta">
+        <span class="chip">👤 Rosa Martínez</span><span class="chip">👤 Patricia Hernández</span><span class="chip">👤 Eduardo Hernández</span><span class="chip">👤 Ricardo Hernández</span><span class="chip">👤 Sofía Bueso</span><span class="chip">👤 Mateo Bueso</span>
+        <span class="chip">📍 Guatemala</span>
+        <span class="chip">📅 1960-2023</span>
+        <span class="chip">📖 Interview 3 — Rosa Martínez (maternal grandmother, Spanish)</span>
+      </div>
+      <div class="story-content">La familia de Rosa es muy importante para ella. Sus hijos y nietos han seguido sus pasos y han encontrado sus propios caminos en la vida, lo que la llena de orgullo y satisfacción. Rosa también se siente agradecida por la oportunidad de conocer a sus bisnietos, Sofía y Mateo, y de ver cómo crecen y se desarrollan.</div>
+    </div>
+    <div class="story-card">
+      <div class="story-badge">✨ AI-crafted</div>
+      <div class="story-title">A Blend of Cultures</div>
+      <div class="story-meta">
+        <span class="chip">👤 James Bueso</span><span class="chip">👤 Stephanie Kim</span><span class="chip">👤 Roberto Bueso</span><span class="chip">👤 Patricia Hernández</span>
+        
+        
+        <span class="chip">📖 Interview 4 — James Bueso (brother, English)</span>
+      </div>
+      <div class="story-content">James's family is a testament to the beauty of cultural diversity. Their Thanksgiving celebrations, which feature a mix of traditional dishes, are a reflection of their blended heritage. James's wife, Stephanie, brings her Korean background to the table, while his parents contribute their Honduran and Guatemalan traditions. The result is a vibrant and chaotic celebration that James loves.</div>
+    </div>
+    <div class="story-card">
+      <div class="story-badge">✨ AI-crafted</div>
+      <div class="story-title">The Power of Family Stories</div>
+      <div class="story-meta">
+        <span class="chip">👤 James Bueso</span><span class="chip">👤 Rosa Martínez</span>
+        
+        
+        <span class="chip">📖 Interview 4 — James Bueso (brother, English)</span>
+      </div>
+      <div class="story-content">James's grandmother Rosa is an incredible storyteller, and her tales about his grandfather Alfredo have had a profound impact on James's life. Through her stories, James has developed a deep appreciation for his heritage and the importance of preserving it for future generations.</div>
+    </div>
+    <div class="story-card">
+      <div class="story-badge">✨ AI-crafted</div>
+      <div class="story-title">A Legacy of Resilience</div>
+      <div class="story-meta">
+        <span class="chip">👤 James Bueso</span><span class="chip">👤 Don Miguel Bueso</span>
+        
+        
+        <span class="chip">📖 Interview 4 — James Bueso (brother, English)</span>
+      </div>
+      <div class="story-content">James's great-grandfather Don Miguel is an inspiration to him, having survived a hurricane in 1935 and rebuilt his life from scratch. James sees this as a testament to the resilience and determination that runs through his family.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ INTERVIEWS TAB ═══════════ -->
+<div class="tab-panel" id="tab-interviews">
+  <div class="interviews-list">
+    
+    <div class="interview-card">
+      <div class="interview-header">
+        <div class="interview-icon">🎙️</div>
+        <div>
+          <div class="interview-title">Interview 1 — Carlos Bueso (primary user, English)</div>
+          <div class="interview-stats">
+            ⏱️ 7.9s · 🌐 EN ·
+            👥 15 people ·
+            🔗 14 direct + 50 inferred ·
+            📖 3 stories ·
+            📊 Cumulative: 15 ppl / 64 rels
+          </div>
+        </div>
+      </div>
+      <details>
+        <summary>📝 Transcript</summary>
+        <div class="interview-transcript">My name is Carlos Bueso, I'm a man, born in 1990 in Houston, Texas. I work as a software engineer.
+
+My dad is Roberto Bueso, born in 1962 in San Pedro Sula, Honduras. He's a mechanical engineer and came to the US in 1985. My mom is Patricia Hernández de Bueso, born in 1965 in Guatemala City. She's a teacher.
+
+I have an older brother named James, born in 1987. James is married to Stephanie Kim — she's Korean-American, a pharmacist. They have two kids: Mia, who's six, and little Ethan who just turned two.
+
+I also have a younger sister, Daniela Bueso, born in 1993. She's single and lives in New York, works in finance.
+
+My wife is María Elena Reyes. We got married in 2018. Elena — that's what we call her — was born in 1992 in Tegucigalpa, Honduras. She's a pediatrician. We have a daughter named Sofia, she's three years old, and a son named Mateo who's one.
+
+On my dad's side, my grandfather is Ernesto Bueso, born in 1935 in La Ceiba, Honduras. He was a coffee farmer, a real patriarch. My grandmother is Carmen Flores de Bueso, born in 1938. Grandma Carmen is the heart of the family, she still makes the best baleadas in the world.
+
+My great-grandfather on my dad's side was Don Miguel Bueso, born in 1905. He founded the family coffee plantation in the mountains near La Ceiba. He passed away in 1980.
+
+On my mom's side, I don't know much about her parents. I think my maternal grandfather's name was Alfredo but he passed before I was born.</div>
+      </details>
+      <details class="interview-extraction">
+        <summary>🔍 Extracted Relationships (14)</summary>
+        <table class="extraction-table">
+          <tr><th>Person A</th><th>→</th><th>Person B</th><th>Type</th><th>Confidence</th></tr>
+          
+          <tr>
+            <td>Roberto Bueso</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Carlos Bueso</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Patricia Hernández de Bueso</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Carlos Bueso</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>James</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Carlos Bueso</td>
+            <td><code>sibling</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Stephanie Kim</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>James</td>
+            <td><code>spouse</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Mia</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>James</td>
+            <td><code>child</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Ethan</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>James</td>
+            <td><code>child</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Daniela Bueso</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Carlos Bueso</td>
+            <td><code>sibling</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>María Elena Reyes</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Carlos Bueso</td>
+            <td><code>spouse</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Sofia</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Carlos Bueso</td>
+            <td><code>child</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Mateo</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Carlos Bueso</td>
+            <td><code>child</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Ernesto Bueso</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Roberto Bueso</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Carmen Flores de Bueso</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Roberto Bueso</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Don Miguel Bueso</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Ernesto Bueso</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Alfredo</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Patricia Hernández de Bueso</td>
+            <td><code>parent</code></td>
+            <td>80%</td>
+          </tr>
+        </table>
+      </details>
+      <details class="interview-extraction">
+        <summary>👥 Extracted People (15)</summary>
+        <table class="extraction-table">
+          <tr><th>Name</th><th>Birth</th><th>Place</th><th>Profession</th><th>Gender</th></tr>
+          
+          <tr>
+            <td>Carlos Bueso</td>
+            <td>1990</td>
+            <td>Houston, Texas</td>
+            <td>software engineer</td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Roberto Bueso</td>
+            <td>1962</td>
+            <td>San Pedro Sula, Honduras</td>
+            <td>mechanical engineer</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Patricia Hernández de Bueso</td>
+            <td>1965</td>
+            <td>Guatemala City</td>
+            <td>teacher</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>James Bueso</td>
+            <td>1987</td>
+            <td></td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Stephanie Kim</td>
+            <td></td>
+            <td></td>
+            <td>pharmacist</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Mia Bueso</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Ethan Bueso</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Daniela Bueso</td>
+            <td>1993</td>
+            <td>Houston, Texas</td>
+            <td>finance</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>María Elena Reyes</td>
+            <td>1992</td>
+            <td>Tegucigalpa, Honduras</td>
+            <td>pediatrician</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Sofia Bueso</td>
+            <td>2023</td>
+            <td></td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Mateo Bueso</td>
+            <td>2025</td>
+            <td></td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Ernesto Bueso</td>
+            <td>1935</td>
+            <td>La Ceiba, Honduras</td>
+            <td>coffee farmer</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Carmen Flores de Bueso</td>
+            <td>1938</td>
+            <td></td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Don Miguel Bueso</td>
+            <td>1905</td>
+            <td></td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>Alfredo</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td></td>
+          </tr>
+        </table>
+      </details>
+    </div>
+    <div class="interview-card">
+      <div class="interview-header">
+        <div class="interview-icon">🎙️</div>
+        <div>
+          <div class="interview-title">Interview 2 — María Elena Reyes (wife, Spanish)</div>
+          <div class="interview-stats">
+            ⏱️ 11.2s · 🌐 ES ·
+            👥 22 people ·
+            🔗 36 direct + 93 inferred ·
+            📖 2 stories ·
+            📊 Cumulative: 29 ppl / 142 rels
+          </div>
+        </div>
+      </div>
+      <details>
+        <summary>📝 Transcript</summary>
+        <div class="interview-transcript">Me llamo María Elena Reyes, soy mujer, nací en 1992 en Tegucigalpa, Honduras. Soy pediatra y vivo en Houston con mi esposo Carlos Bueso.
+
+Mi papá es Fernando Reyes Aguilar, nació en 1960 en Tegucigalpa. Es abogado y tiene su propio bufete. Mi mamá se llama Lucía Mendoza de Reyes, nació en 1963 en Comayagua, Honduras. Ella es ama de casa pero antes era enfermera.
+
+Tengo un hermano mayor, Andrés Reyes Mendoza, nació en 1988. Andrés es médico cirujano, está casado con Valentina Torres. Tienen un hijo que se llama Sebastián, tiene cuatro años. Andrés y su familia viven en Tegucigalpa.
+
+También tengo una hermana menor, Isabel Reyes Mendoza, nació en 1995. Isabel vive en Madrid, España, trabaja en una empresa de tecnología. Ella tiene novio pero no está casada.
+
+Por el lado de mi papá, mis abuelos paternos son Don Ramón Reyes, nació en 1932, y Doña Esperanza Aguilar de Reyes, nació en 1936. Mi abuelo Ramón fue juez en Tegucigalpa durante cuarenta años. Mi abuela Esperanza falleció en 2018, descanse en paz.
+
+Mi papá tiene un hermano, mi tío Marcos Reyes Aguilar, nació en 1958. El tío Marcos es empresario, está casado con Gloria Pineda. Tienen dos hijos: mi prima Carolina, que tiene treinta años, y mi primo Diego, que tiene veinticinco.
+
+Mi esposo Carlos es increíble. Nos conocimos en un congreso médico en 2016. Él es ingeniero de software. Tenemos a Sofía que tiene tres añitos y a Mateo que tiene un año. La familia de Carlos es muy linda — mis suegros Roberto y Patricia son como mis segundos padres. Mi cuñado James y su esposa Stephanie son muy buena onda.
+
+Los abuelos de Carlos, Don Ernesto y Doña Carmen, me recibieron con mucho cariño. La primera vez que probé las baleadas de Doña Carmen, supe que había encontrado mi familia.</div>
+      </details>
+      <details class="interview-extraction">
+        <summary>🔍 Extracted Relationships (36)</summary>
+        <table class="extraction-table">
+          <tr><th>Person A</th><th>→</th><th>Person B</th><th>Type</th><th>Confidence</th></tr>
+          
+          <tr>
+            <td>María Elena Reyes</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Fernando Reyes Aguilar</td>
+            <td><code>child</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Fernando Reyes Aguilar</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>María Elena Reyes</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>María Elena Reyes</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Lucía Mendoza de Reyes</td>
+            <td><code>child</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Lucía Mendoza de Reyes</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>María Elena Reyes</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Andrés Reyes Mendoza</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>María Elena Reyes</td>
+            <td><code>sibling</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>María Elena Reyes</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Andrés Reyes Mendoza</td>
+            <td><code>sibling</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Andrés Reyes Mendoza</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Valentina Torres</td>
+            <td><code>spouse</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Valentina Torres</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Andrés Reyes Mendoza</td>
+            <td><code>spouse</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Sebastián</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Andrés Reyes Mendoza</td>
+            <td><code>child</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Andrés Reyes Mendoza</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Sebastián</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Isabel Reyes Mendoza</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>María Elena Reyes</td>
+            <td><code>sibling</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>María Elena Reyes</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Isabel Reyes Mendoza</td>
+            <td><code>sibling</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Don Ramón Reyes</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Fernando Reyes Aguilar</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Fernando Reyes Aguilar</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Don Ramón Reyes</td>
+            <td><code>child</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Doña Esperanza Aguilar de Reyes</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Fernando Reyes Aguilar</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Fernando Reyes Aguilar</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Doña Esperanza Aguilar de Reyes</td>
+            <td><code>child</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Marcos Reyes Aguilar</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Fernando Reyes Aguilar</td>
+            <td><code>sibling</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Fernando Reyes Aguilar</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Marcos Reyes Aguilar</td>
+            <td><code>sibling</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Marcos Reyes Aguilar</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Gloria Pineda</td>
+            <td><code>spouse</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Gloria Pineda</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Marcos Reyes Aguilar</td>
+            <td><code>spouse</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Carolina</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Marcos Reyes Aguilar</td>
+            <td><code>child</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Marcos Reyes Aguilar</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Carolina</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Diego</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Marcos Reyes Aguilar</td>
+            <td><code>child</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Marcos Reyes Aguilar</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Diego</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>María Elena Reyes</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Carlos Bueso</td>
+            <td><code>spouse</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Carlos Bueso</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>María Elena Reyes</td>
+            <td><code>spouse</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Sofía</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>María Elena Reyes</td>
+            <td><code>child</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>María Elena Reyes</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Sofía</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Mateo</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>María Elena Reyes</td>
+            <td><code>child</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>María Elena Reyes</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Mateo</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Roberto</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>María Elena Reyes</td>
+            <td><code>parent_in_law</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Patricia</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>María Elena Reyes</td>
+            <td><code>parent_in_law</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>James</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>María Elena Reyes</td>
+            <td><code>sibling_in_law</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Stephanie</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>María Elena Reyes</td>
+            <td><code>sibling_in_law</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Don Ernesto</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>María Elena Reyes</td>
+            <td><code>grandparent_in_law</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Doña Carmen</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>María Elena Reyes</td>
+            <td><code>grandparent_in_law</code></td>
+            <td>90%</td>
+          </tr>
+        </table>
+      </details>
+      <details class="interview-extraction">
+        <summary>👥 Extracted People (22)</summary>
+        <table class="extraction-table">
+          <tr><th>Name</th><th>Birth</th><th>Place</th><th>Profession</th><th>Gender</th></tr>
+          
+          <tr>
+            <td>María Elena Reyes</td>
+            <td>1992</td>
+            <td>Tegucigalpa, Honduras</td>
+            <td>pediatra</td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>Fernando Reyes Aguilar</td>
+            <td>1960</td>
+            <td>Tegucigalpa</td>
+            <td>abogado</td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Lucía Mendoza de Reyes</td>
+            <td>1963</td>
+            <td>Comayagua, Honduras</td>
+            <td>ama de casa, enfermera</td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>Andrés Reyes Mendoza</td>
+            <td>1988</td>
+            <td></td>
+            <td>médico cirujano</td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Valentina Torres</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>Sebastián</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Isabel Reyes Mendoza</td>
+            <td>1995</td>
+            <td></td>
+            <td>trabaja en una empresa de tecnología</td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>Don Ramón Reyes</td>
+            <td>1932</td>
+            <td></td>
+            <td></td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Doña Esperanza Aguilar de Reyes</td>
+            <td>1936</td>
+            <td></td>
+            <td></td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>Marcos Reyes Aguilar</td>
+            <td>1958</td>
+            <td></td>
+            <td>empresario</td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Gloria Pineda</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>Carolina</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>Diego</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Carlos Bueso</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Sofía</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>Mateo</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Roberto</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Patricia</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>James</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Stephanie</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>Don Ernesto</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Doña Carmen</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>female</td>
+          </tr>
+        </table>
+      </details>
+    </div>
+    <div class="interview-card">
+      <div class="interview-header">
+        <div class="interview-icon">🎙️</div>
+        <div>
+          <div class="interview-title">Interview 3 — Rosa Martínez (maternal grandmother, Spanish)</div>
+          <div class="interview-stats">
+            ⏱️ 10.6s · 🌐 ES ·
+            👥 19 people ·
+            🔗 29 direct + 158 inferred ·
+            📖 2 stories ·
+            📊 Cumulative: 40 ppl / 233 rels
+          </div>
+        </div>
+      </div>
+      <details>
+        <summary>📝 Transcript</summary>
+        <div class="interview-transcript">Me llamo Rosa Martínez viuda de Hernández, soy mujer, nací en 1940 en Quetzaltenango, Guatemala.
+
+Mi esposo fue Alfredo Hernández, que en paz descanse. Alfredo nació en 1937 en la Ciudad de Guatemala. Nos casamos en 1960. Era profesor de historia en la Universidad de San Carlos. Falleció en 1988, un infarto.
+
+Tuvimos tres hijos. La mayor es mi hija Patricia, que nació en 1965. Patricia se casó con Roberto Bueso, un hondureño. Tienen tres hijos preciosos: James, Carlos y Daniela. Carlos se casó con una muchacha hondureña muy linda, Elena. Ya tienen dos hijos, imagínense, soy bisabuela — Sofía y Mateo.
+
+Mi segundo hijo es Eduardo Hernández Martínez, nació en 1967. Eduardo vive en Los Ángeles. Se casó con una americana, Jennifer Wilson, pero se divorciaron en 2010. Tienen una hija, Natalie, que tiene veinte años. Eduardo después se casó con Claudia López en 2015. Con Claudia tienen un hijo, Gabriel, que tiene seis años.
+
+Mi hijo menor es Ricardo Hernández Martínez, nació en 1970. Ricardo nunca se casó, vive en Guatemala y es artista, pintor. Tiene un estudio en Antigua Guatemala.
+
+Mi papá fue Don Tomás Martínez, nacido en 1912 en Quetzaltenango. Era comerciante, vendía café y cacao. Falleció en 1985. Mi mamá fue Doña Consuelo Vásquez de Martínez, nacida en 1915. Ella murió en 2000. Mis papás tuvieron una vida dura pero bonita.
+
+Antes de Alfredo, yo estuve brevemente casada con un hombre llamado Héctor Solís, en 1958. Fue un error de juventud, nos divorciamos al año. Héctor se fue a México y nunca más supe de él.
+
+Lo que más me enorgullece es ver a mi familia crecer. Patricia es maestra, como yo quise ser. Eduardo tuvo sus problemas pero salió adelante. Y Ricardo, aunque no tiene familia propia, tiene un talento increíble. Sus cuadros están en galerías de todo Centroamérica.
+
+Mis bisnietos Sofía y Mateo son mi mayor alegría. Cuando Carlos me habla por videollamada y Sofía me dice &quot;hola abuelita Rosa&quot;, se me llena el corazón.</div>
+      </details>
+      <details class="interview-extraction">
+        <summary>🔍 Extracted Relationships (29)</summary>
+        <table class="extraction-table">
+          <tr><th>Person A</th><th>→</th><th>Person B</th><th>Type</th><th>Confidence</th></tr>
+          
+          <tr>
+            <td>Rosa Martínez</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Alfredo Hernández</td>
+            <td><code>spouse</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Rosa Martínez</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Patricia Hernández</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Rosa Martínez</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Eduardo Hernández Martínez</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Rosa Martínez</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Ricardo Hernández Martínez</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Rosa Martínez</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Don Tomás Martínez</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Rosa Martínez</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Doña Consuelo Vásquez de Martínez</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Rosa Martínez</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Héctor Solís</td>
+            <td><code>ex_spouse</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Alfredo Hernández</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Rosa Martínez</td>
+            <td><code>spouse</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Patricia Hernández</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Rosa Martínez</td>
+            <td><code>child</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Eduardo Hernández Martínez</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Rosa Martínez</td>
+            <td><code>child</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Ricardo Hernández Martínez</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Rosa Martínez</td>
+            <td><code>child</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Don Tomás Martínez</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Rosa Martínez</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Doña Consuelo Vásquez de Martínez</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Rosa Martínez</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Héctor Solís</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Rosa Martínez</td>
+            <td><code>ex_spouse</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Roberto Bueso</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Patricia Hernández</td>
+            <td><code>spouse</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Patricia Hernández</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Roberto Bueso</td>
+            <td><code>spouse</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>James Bueso</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Patricia Hernández</td>
+            <td><code>child</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Carlos Bueso</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Patricia Hernández</td>
+            <td><code>child</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Daniela Bueso</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Patricia Hernández</td>
+            <td><code>child</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Elena</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Carlos Bueso</td>
+            <td><code>spouse</code></td>
+            <td>80%</td>
+          </tr>
+          <tr>
+            <td>Carlos Bueso</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Elena</td>
+            <td><code>spouse</code></td>
+            <td>80%</td>
+          </tr>
+          <tr>
+            <td>Sofía Bueso</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Carlos Bueso</td>
+            <td><code>child</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Mateo Bueso</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Carlos Bueso</td>
+            <td><code>child</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Jennifer Wilson</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Eduardo Hernández Martínez</td>
+            <td><code>ex_spouse</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Eduardo Hernández Martínez</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Jennifer Wilson</td>
+            <td><code>ex_spouse</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Natalie</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Eduardo Hernández Martínez</td>
+            <td><code>child</code></td>
+            <td>80%</td>
+          </tr>
+          <tr>
+            <td>Claudia López</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Eduardo Hernández Martínez</td>
+            <td><code>spouse</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Eduardo Hernández Martínez</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Claudia López</td>
+            <td><code>spouse</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Gabriel</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Eduardo Hernández Martínez</td>
+            <td><code>child</code></td>
+            <td>80%</td>
+          </tr>
+        </table>
+      </details>
+      <details class="interview-extraction">
+        <summary>👥 Extracted People (19)</summary>
+        <table class="extraction-table">
+          <tr><th>Name</th><th>Birth</th><th>Place</th><th>Profession</th><th>Gender</th></tr>
+          
+          <tr>
+            <td>Rosa Martínez</td>
+            <td>1940</td>
+            <td>Quetzaltenango, Guatemala</td>
+            <td></td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>Alfredo Hernández</td>
+            <td>1937</td>
+            <td></td>
+            <td></td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Patricia Hernández</td>
+            <td>1965</td>
+            <td></td>
+            <td></td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>Roberto Bueso</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>James Bueso</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Carlos Bueso</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Daniela Bueso</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>Elena</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>Sofía Bueso</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>Mateo Bueso</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Eduardo Hernández Martínez</td>
+            <td>1967</td>
+            <td></td>
+            <td></td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Jennifer Wilson</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>Natalie</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>Claudia López</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>Gabriel</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Ricardo Hernández Martínez</td>
+            <td>1970</td>
+            <td></td>
+            <td></td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Don Tomás Martínez</td>
+            <td>1912</td>
+            <td></td>
+            <td></td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Doña Consuelo Vásquez de Martínez</td>
+            <td>1915</td>
+            <td></td>
+            <td></td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>Héctor Solís</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>male</td>
+          </tr>
+        </table>
+      </details>
+    </div>
+    <div class="interview-card">
+      <div class="interview-header">
+        <div class="interview-icon">🎙️</div>
+        <div>
+          <div class="interview-title">Interview 4 — James Bueso (brother, English)</div>
+          <div class="interview-stats">
+            ⏱️ 11.3s · 🌐 EN ·
+            👥 26 people ·
+            🔗 17 direct + 159 inferred ·
+            📖 3 stories ·
+            📊 Cumulative: 47 ppl / 240 rels
+          </div>
+        </div>
+      </div>
+      <details>
+        <summary>📝 Transcript</summary>
+        <div class="interview-transcript">I'm James Bueso, born in 1987 in Houston, Texas. I'm a man and I'm a dentist.
+
+My parents are Roberto Bueso and Patricia Hernández. Dad came from Honduras, Mom from Guatemala. They met at a church event in Houston in 1985 and got married in 1986.
+
+I have a younger brother Carlos, born in 1990, and a younger sister Daniela, born in 1993. Carlos married Elena Reyes, they have Sofia and Mateo. Daniela lives in New York, she's in finance, doing really well.
+
+My wife is Stephanie Kim, we got married in 2016. Steph was born in 1989 in Los Angeles. Her parents are Joon-Ho Kim and Sung-Hee Park. Mr. Kim — I call him appa — was born in 1958 in Seoul, South Korea. He's a retired electronics engineer. Mrs. Park was born in 1961, also in Seoul. She's a piano teacher [laughter]. They moved to LA in 1985.
+
+Stephanie has an older brother, David Kim, born in 1985. David's a data scientist in San Francisco, married to Lisa Chen. They have a baby girl named Emily, she was born last year.
+
+Our daughter Mia was born in 2019, she's six and already reading chapter books. Our son Ethan was born in 2023, he's two and is the most energetic kid I've ever seen [laughs].
+
+My grandfather Ernesto Bueso is ninety years old now and still sharp as a tack. He tells stories about the coffee plantation. Grandma Carmen still makes baleadas every Sunday — it's the family tradition. My great-grandfather Don Miguel apparently survived a hurricane in 1935 that destroyed half of La Ceiba. He rebuilt everything from scratch.
+
+My grandmother Rosa on my mom's side is incredible. She's eighty-five and still calls us every week from Guatemala. Grandpa Alfredo died before I was born, but Grandma Rosa always tells us stories about him. He was a university professor.
+
+My uncle Eduardo lives in LA with his second wife Claudia and their son Gabriel. Eduardo's daughter Natalie from his first marriage sometimes babysits for us when she visits. She's great with kids.
+
+My uncle Ricardo is the artist of the family. He made a portrait of our grandparents Alfredo and Rosa that hangs in my parents' house. It's beautiful.
+
+Elena's parents, Don Fernando and Doña Lucía, are wonderful people. We visit them in Tegucigalpa during Christmas. Don Fernando always wants to discuss law with me even though I'm a dentist [laughs].
+
+I'm Daniela's godfather. I take that responsibility seriously. She was a difficult teenager but she's turned into an amazing woman. I'm so proud of her.
+
+One thing about our family — we're a real mix of cultures. We have Honduran, Guatemalan, Korean, and American traditions all blending together. Thanksgiving at our house has baleadas, kimchi, tamales, and turkey. It's chaos and I love it.</div>
+      </details>
+      <details class="interview-extraction">
+        <summary>🔍 Extracted Relationships (17)</summary>
+        <table class="extraction-table">
+          <tr><th>Person A</th><th>→</th><th>Person B</th><th>Type</th><th>Confidence</th></tr>
+          
+          <tr>
+            <td>Roberto Bueso</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>James Bueso</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Patricia Hernández</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>James Bueso</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>James Bueso</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Carlos Bueso</td>
+            <td><code>sibling</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>James Bueso</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Daniela Bueso</td>
+            <td><code>sibling</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Stephanie Kim</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>James Bueso</td>
+            <td><code>spouse</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>James Bueso</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Mia Bueso</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>James Bueso</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Ethan Bueso</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Ernesto Bueso</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Roberto Bueso</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Carmen Flores de Bueso</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Roberto Bueso</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Don Miguel Bueso</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Ernesto Bueso</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Rosa Martínez</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Patricia Hernández</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Alfredo Hernández</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Patricia Hernández</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Eduardo Hernández</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Rosa Martínez</td>
+            <td><code>child</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Ricardo Hernández</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Rosa Martínez</td>
+            <td><code>child</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Don Fernando</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Elena Reyes</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>Doña Lucía</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Elena Reyes</td>
+            <td><code>parent</code></td>
+            <td>90%</td>
+          </tr>
+          <tr>
+            <td>James Bueso</td>
+            <td style="color:#9B8E7E">→</td>
+            <td>Daniela Bueso</td>
+            <td><code>godparent</code></td>
+            <td>90%</td>
+          </tr>
+        </table>
+      </details>
+      <details class="interview-extraction">
+        <summary>👥 Extracted People (26)</summary>
+        <table class="extraction-table">
+          <tr><th>Name</th><th>Birth</th><th>Place</th><th>Profession</th><th>Gender</th></tr>
+          
+          <tr>
+            <td>James Bueso</td>
+            <td>1987</td>
+            <td></td>
+            <td>dentist</td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Roberto Bueso</td>
+            <td>1962</td>
+            <td></td>
+            <td>mechanical engineer</td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Patricia Hernández de Bueso</td>
+            <td>1965</td>
+            <td></td>
+            <td>teacher</td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>Carlos Bueso</td>
+            <td>1990</td>
+            <td></td>
+            <td>software engineer</td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Daniela Bueso</td>
+            <td>1993</td>
+            <td></td>
+            <td>finance</td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>Stephanie Kim</td>
+            <td>1989</td>
+            <td></td>
+            <td>pharmacist</td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>Mia Bueso</td>
+            <td>2019</td>
+            <td></td>
+            <td></td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>Ethan Bueso</td>
+            <td>2023</td>
+            <td></td>
+            <td></td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Ernesto Bueso</td>
+            <td>1935</td>
+            <td></td>
+            <td>coffee farmer</td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Carmen Flores de Bueso</td>
+            <td>1938</td>
+            <td></td>
+            <td></td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>Don Miguel Bueso</td>
+            <td>1905</td>
+            <td></td>
+            <td></td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Rosa Martínez</td>
+            <td>1940</td>
+            <td></td>
+            <td></td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>Alfredo Hernández</td>
+            <td>1937</td>
+            <td></td>
+            <td>university professor</td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Eduardo Hernández</td>
+            <td>1967</td>
+            <td></td>
+            <td></td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Ricardo Hernández</td>
+            <td>1970</td>
+            <td></td>
+            <td>artist</td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Don Fernando</td>
+            <td>1960</td>
+            <td></td>
+            <td>abogado</td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Doña Lucía</td>
+            <td>1963</td>
+            <td></td>
+            <td>ama de casa, enfermera</td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>Elena Reyes</td>
+            <td>1992</td>
+            <td></td>
+            <td>pediatrician</td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>Joon-Ho Kim</td>
+            <td>1958</td>
+            <td></td>
+            <td>electronics engineer</td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Sung-Hee Park</td>
+            <td>1961</td>
+            <td></td>
+            <td>piano teacher</td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>David Kim</td>
+            <td>1985</td>
+            <td></td>
+            <td>data scientist</td>
+            <td>male</td>
+          </tr>
+          <tr>
+            <td>Lisa Chen</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>Emily Kim</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>Natalie</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>Claudia</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>female</td>
+          </tr>
+          <tr>
+            <td>Gabriel</td>
+            <td></td>
+            <td></td>
+            <td></td>
+            <td>male</td>
+          </tr>
+        </table>
+      </details>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ RELATIONSHIPS TAB ═══════════ -->
+<div class="tab-panel" id="tab-relationships">
+  <div class="rels-container">
+    
+        <div class="rel-group">
+          <div class="rel-group-header">child (21)</div>
+          <div class="rel-row">
+              <span>Mia Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>James Bueso</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Ethan Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>James Bueso</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Sofia Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Carlos Bueso</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Mateo Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Carlos Bueso</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>María Elena Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Fernando Reyes Aguilar</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>María Elena Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Lucía Mendoza de Reyes</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Sebastián</span>
+              <span class="rel-arrow">→</span>
+              <span>Andrés Reyes Mendoza</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Fernando Reyes Aguilar</span>
+              <span class="rel-arrow">→</span>
+              <span>Don Ramón Reyes</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Fernando Reyes Aguilar</span>
+              <span class="rel-arrow">→</span>
+              <span>Doña Esperanza Aguilar de Reyes</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Carolina</span>
+              <span class="rel-arrow">→</span>
+              <span>Marcos Reyes Aguilar</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Diego</span>
+              <span class="rel-arrow">→</span>
+              <span>Marcos Reyes Aguilar</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Sofia Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>María Elena Reyes</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Mateo Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>María Elena Reyes</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Patricia Hernández de Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Rosa Martínez</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Eduardo Hernández Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Rosa Martínez</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Ricardo Hernández Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Rosa Martínez</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>James Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Patricia Hernández de Bueso</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Carlos Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Patricia Hernández de Bueso</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Daniela Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Patricia Hernández de Bueso</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Natalie</span>
+              <span class="rel-arrow">→</span>
+              <span>Eduardo Hernández Martínez</span>
+              <span class="chip" style="margin-left:auto">80%</span>
+            </div><div class="rel-row">
+              <span>Gabriel</span>
+              <span class="rel-arrow">→</span>
+              <span>Eduardo Hernández Martínez</span>
+              <span class="chip" style="margin-left:auto">80%</span>
+            </div>
+        </div>
+        <div class="rel-group">
+          <div class="rel-group-header">ex_spouse (4)</div>
+          <div class="rel-row">
+              <span>Rosa Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Héctor Solís</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Héctor Solís</span>
+              <span class="rel-arrow">→</span>
+              <span>Rosa Martínez</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Jennifer Wilson</span>
+              <span class="rel-arrow">→</span>
+              <span>Eduardo Hernández Martínez</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Eduardo Hernández Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Jennifer Wilson</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div>
+        </div>
+        <div class="rel-group">
+          <div class="rel-group-header">godparent (1)</div>
+          <div class="rel-row">
+              <span>James Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Daniela Bueso</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div>
+        </div>
+        <div class="rel-group">
+          <div class="rel-group-header">grandparent (46)</div>
+          <div class="rel-row inferred">
+              <span>Roberto Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Sofia Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Roberto Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Mateo Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Roberto Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Mia Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Roberto Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Ethan Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Patricia Hernández de Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Sofia Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Patricia Hernández de Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Mateo Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Patricia Hernández de Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Mia Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Patricia Hernández de Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Ethan Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Ernesto Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Carlos Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Ernesto Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>James Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Ernesto Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Daniela Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Carmen Flores de Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Carlos Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Carmen Flores de Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>James Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Carmen Flores de Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Daniela Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Miguel Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Roberto Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Alfredo Hernández</span>
+              <span class="rel-arrow">→</span>
+              <span>Carlos Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Alfredo Hernández</span>
+              <span class="rel-arrow">→</span>
+              <span>James Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Alfredo Hernández</span>
+              <span class="rel-arrow">→</span>
+              <span>Daniela Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Fernando Reyes Aguilar</span>
+              <span class="rel-arrow">→</span>
+              <span>Sofia Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Fernando Reyes Aguilar</span>
+              <span class="rel-arrow">→</span>
+              <span>Mateo Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Fernando Reyes Aguilar</span>
+              <span class="rel-arrow">→</span>
+              <span>Sebastián</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Lucía Mendoza de Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Sofia Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Lucía Mendoza de Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Mateo Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Lucía Mendoza de Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Sebastián</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Ramón Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>María Elena Reyes</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Ramón Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Andrés Reyes Mendoza</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Ramón Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Isabel Reyes Mendoza</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Ramón Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Carolina</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Ramón Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Diego</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Doña Esperanza Aguilar de Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>María Elena Reyes</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Doña Esperanza Aguilar de Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Andrés Reyes Mendoza</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Doña Esperanza Aguilar de Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Isabel Reyes Mendoza</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Doña Esperanza Aguilar de Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Carolina</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Doña Esperanza Aguilar de Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Diego</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Rosa Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Carlos Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Rosa Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>James Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Rosa Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Daniela Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Rosa Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Natalie</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Rosa Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Gabriel</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Tomás Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Patricia Hernández de Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Tomás Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Eduardo Hernández Martínez</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Tomás Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Ricardo Hernández Martínez</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Tomás Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Doña Consuelo Vásquez de Martínez</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Doña Consuelo Vásquez de Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Patricia Hernández de Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Doña Consuelo Vásquez de Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Eduardo Hernández Martínez</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Doña Consuelo Vásquez de Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Ricardo Hernández Martínez</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div>
+        </div>
+        <div class="rel-group">
+          <div class="rel-group-header">grandparent_in_law (2)</div>
+          <div class="rel-row">
+              <span>Don Ernesto</span>
+              <span class="rel-arrow">→</span>
+              <span>María Elena Reyes</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Doña Carmen</span>
+              <span class="rel-arrow">→</span>
+              <span>María Elena Reyes</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div>
+        </div>
+        <div class="rel-group">
+          <div class="rel-group-header">great_grandparent (40)</div>
+          <div class="rel-row inferred">
+              <span>Ernesto Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Sofia Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Ernesto Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Mateo Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Ernesto Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Mia Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Ernesto Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Ethan Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Carmen Flores de Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Sofia Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Carmen Flores de Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Mateo Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Carmen Flores de Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Mia Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Carmen Flores de Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Ethan Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Miguel Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Carlos Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Miguel Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>James Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Miguel Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Daniela Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Alfredo Hernández</span>
+              <span class="rel-arrow">→</span>
+              <span>Sofia Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Alfredo Hernández</span>
+              <span class="rel-arrow">→</span>
+              <span>Mateo Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Alfredo Hernández</span>
+              <span class="rel-arrow">→</span>
+              <span>Mia Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Alfredo Hernández</span>
+              <span class="rel-arrow">→</span>
+              <span>Ethan Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Ramón Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Sofia Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Ramón Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Mateo Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Ramón Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Sebastián</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Doña Esperanza Aguilar de Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Sofia Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Doña Esperanza Aguilar de Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Mateo Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Doña Esperanza Aguilar de Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Sebastián</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Rosa Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Sofia Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Rosa Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Mateo Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Rosa Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Mia Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Rosa Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Ethan Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Rosa Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Patricia Hernández de Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Rosa Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Eduardo Hernández Martínez</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Rosa Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Ricardo Hernández Martínez</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Rosa Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Don Tomás Martínez</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Rosa Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Doña Consuelo Vásquez de Martínez</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Tomás Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Carlos Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Tomás Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>James Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Tomás Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Daniela Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Tomás Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Natalie</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Tomás Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Gabriel</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Doña Consuelo Vásquez de Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Carlos Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Doña Consuelo Vásquez de Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>James Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Doña Consuelo Vásquez de Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Daniela Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Doña Consuelo Vásquez de Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Natalie</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Doña Consuelo Vásquez de Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Gabriel</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div>
+        </div>
+        <div class="rel-group">
+          <div class="rel-group-header">half_sibling (4)</div>
+          <div class="rel-row inferred">
+              <span>Patricia Hernández de Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Eduardo Hernández Martínez</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Patricia Hernández de Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Ricardo Hernández Martínez</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Patricia Hernández de Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Don Tomás Martínez</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Patricia Hernández de Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Doña Consuelo Vásquez de Martínez</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div>
+        </div>
+        <div class="rel-group">
+          <div class="rel-group-header">parent (35)</div>
+          <div class="rel-row">
+              <span>Roberto Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Carlos Bueso</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Patricia Hernández de Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Carlos Bueso</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Ernesto Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Roberto Bueso</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Carmen Flores de Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Roberto Bueso</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Don Miguel Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Ernesto Bueso</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Alfredo Hernández</span>
+              <span class="rel-arrow">→</span>
+              <span>Patricia Hernández de Bueso</span>
+              <span class="chip" style="margin-left:auto">80%</span>
+            </div><div class="rel-row">
+              <span>Fernando Reyes Aguilar</span>
+              <span class="rel-arrow">→</span>
+              <span>María Elena Reyes</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Lucía Mendoza de Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>María Elena Reyes</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Andrés Reyes Mendoza</span>
+              <span class="rel-arrow">→</span>
+              <span>Sebastián</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Don Ramón Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Fernando Reyes Aguilar</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Doña Esperanza Aguilar de Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Fernando Reyes Aguilar</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Marcos Reyes Aguilar</span>
+              <span class="rel-arrow">→</span>
+              <span>Carolina</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Marcos Reyes Aguilar</span>
+              <span class="rel-arrow">→</span>
+              <span>Diego</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>María Elena Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Sofia Bueso</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>María Elena Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Mateo Bueso</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Rosa Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Patricia Hernández de Bueso</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Rosa Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Eduardo Hernández Martínez</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Rosa Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Ricardo Hernández Martínez</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Rosa Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Don Tomás Martínez</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Rosa Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Doña Consuelo Vásquez de Martínez</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Don Tomás Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Rosa Martínez</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Doña Consuelo Vásquez de Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Rosa Martínez</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Patricia Hernández de Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>James Bueso</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>James Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Mia Bueso</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>James Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Ethan Bueso</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Don Fernando</span>
+              <span class="rel-arrow">→</span>
+              <span>Elena Reyes</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Doña Lucía</span>
+              <span class="rel-arrow">→</span>
+              <span>Elena Reyes</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row inferred">
+              <span>Roberto Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>James Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Roberto Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Daniela Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Fernando Reyes Aguilar</span>
+              <span class="rel-arrow">→</span>
+              <span>Andrés Reyes Mendoza</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Lucía Mendoza de Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Andrés Reyes Mendoza</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Fernando Reyes Aguilar</span>
+              <span class="rel-arrow">→</span>
+              <span>Isabel Reyes Mendoza</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Lucía Mendoza de Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Isabel Reyes Mendoza</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Ramón Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Marcos Reyes Aguilar</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Doña Esperanza Aguilar de Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Marcos Reyes Aguilar</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div>
+        </div>
+        <div class="rel-group">
+          <div class="rel-group-header">parent_in_law (2)</div>
+          <div class="rel-row">
+              <span>Roberto Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>María Elena Reyes</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Patricia Hernández de Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>María Elena Reyes</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div>
+        </div>
+        <div class="rel-group">
+          <div class="rel-group-header">sibling (20)</div>
+          <div class="rel-row">
+              <span>James Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Carlos Bueso</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Daniela Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Carlos Bueso</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Andrés Reyes Mendoza</span>
+              <span class="rel-arrow">→</span>
+              <span>María Elena Reyes</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>María Elena Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Andrés Reyes Mendoza</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Isabel Reyes Mendoza</span>
+              <span class="rel-arrow">→</span>
+              <span>María Elena Reyes</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>María Elena Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Isabel Reyes Mendoza</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Marcos Reyes Aguilar</span>
+              <span class="rel-arrow">→</span>
+              <span>Fernando Reyes Aguilar</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Fernando Reyes Aguilar</span>
+              <span class="rel-arrow">→</span>
+              <span>Marcos Reyes Aguilar</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row inferred">
+              <span>James Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Daniela Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Mia Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Ethan Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Sofia Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Mateo Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Andrés Reyes Mendoza</span>
+              <span class="rel-arrow">→</span>
+              <span>Isabel Reyes Mendoza</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Carolina</span>
+              <span class="rel-arrow">→</span>
+              <span>Diego</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Eduardo Hernández Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Ricardo Hernández Martínez</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Eduardo Hernández Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Don Tomás Martínez</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Eduardo Hernández Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Doña Consuelo Vásquez de Martínez</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Ricardo Hernández Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Don Tomás Martínez</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Ricardo Hernández Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Doña Consuelo Vásquez de Martínez</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Tomás Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Doña Consuelo Vásquez de Martínez</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Natalie</span>
+              <span class="rel-arrow">→</span>
+              <span>Gabriel</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div>
+        </div>
+        <div class="rel-group">
+          <div class="rel-group-header">sibling_in_law (2)</div>
+          <div class="rel-row">
+              <span>James Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>María Elena Reyes</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Stephanie Kim</span>
+              <span class="rel-arrow">→</span>
+              <span>María Elena Reyes</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div>
+        </div>
+        <div class="rel-group">
+          <div class="rel-group-header">spouse (19)</div>
+          <div class="rel-row">
+              <span>Stephanie Kim</span>
+              <span class="rel-arrow">→</span>
+              <span>James Bueso</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>María Elena Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Carlos Bueso</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Andrés Reyes Mendoza</span>
+              <span class="rel-arrow">→</span>
+              <span>Valentina Torres</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Valentina Torres</span>
+              <span class="rel-arrow">→</span>
+              <span>Andrés Reyes Mendoza</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Marcos Reyes Aguilar</span>
+              <span class="rel-arrow">→</span>
+              <span>Gloria Pineda</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Gloria Pineda</span>
+              <span class="rel-arrow">→</span>
+              <span>Marcos Reyes Aguilar</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Carlos Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>María Elena Reyes</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Rosa Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Alfredo Hernández</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Alfredo Hernández</span>
+              <span class="rel-arrow">→</span>
+              <span>Rosa Martínez</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Patricia Hernández de Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Roberto Bueso</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Elena Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Carlos Bueso</span>
+              <span class="chip" style="margin-left:auto">80%</span>
+            </div><div class="rel-row">
+              <span>Carlos Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Elena Reyes</span>
+              <span class="chip" style="margin-left:auto">80%</span>
+            </div><div class="rel-row">
+              <span>Claudia López</span>
+              <span class="rel-arrow">→</span>
+              <span>Eduardo Hernández Martínez</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row">
+              <span>Eduardo Hernández Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Claudia López</span>
+              <span class="chip" style="margin-left:auto">90%</span>
+            </div><div class="rel-row inferred">
+              <span>Ernesto Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Carmen Flores de Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Fernando Reyes Aguilar</span>
+              <span class="rel-arrow">→</span>
+              <span>Lucía Mendoza de Reyes</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Ramón Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Doña Esperanza Aguilar de Reyes</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Tomás Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Doña Consuelo Vásquez de Martínez</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Fernando</span>
+              <span class="rel-arrow">→</span>
+              <span>Doña Lucía</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div>
+        </div>
+        <div class="rel-group">
+          <div class="rel-group-header">uncle_aunt (44)</div>
+          <div class="rel-row inferred">
+              <span>James Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Sofia Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>James Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Mateo Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Carlos Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Mia Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Carlos Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Ethan Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Daniela Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Sofia Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Daniela Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Mateo Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Daniela Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Mia Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Daniela Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Ethan Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Andrés Reyes Mendoza</span>
+              <span class="rel-arrow">→</span>
+              <span>Sofia Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Andrés Reyes Mendoza</span>
+              <span class="rel-arrow">→</span>
+              <span>Mateo Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>María Elena Reyes</span>
+              <span class="rel-arrow">→</span>
+              <span>Sebastián</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Isabel Reyes Mendoza</span>
+              <span class="rel-arrow">→</span>
+              <span>Sofia Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Isabel Reyes Mendoza</span>
+              <span class="rel-arrow">→</span>
+              <span>Mateo Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Isabel Reyes Mendoza</span>
+              <span class="rel-arrow">→</span>
+              <span>Sebastián</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Marcos Reyes Aguilar</span>
+              <span class="rel-arrow">→</span>
+              <span>María Elena Reyes</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Marcos Reyes Aguilar</span>
+              <span class="rel-arrow">→</span>
+              <span>Andrés Reyes Mendoza</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Marcos Reyes Aguilar</span>
+              <span class="rel-arrow">→</span>
+              <span>Isabel Reyes Mendoza</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Fernando Reyes Aguilar</span>
+              <span class="rel-arrow">→</span>
+              <span>Carolina</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Fernando Reyes Aguilar</span>
+              <span class="rel-arrow">→</span>
+              <span>Diego</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Eduardo Hernández Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Rosa Martínez</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Ricardo Hernández Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Natalie</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Ricardo Hernández Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Gabriel</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Ricardo Hernández Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Rosa Martínez</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Tomás Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Natalie</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Tomás Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Gabriel</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Tomás Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Rosa Martínez</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Doña Consuelo Vásquez de Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Natalie</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Doña Consuelo Vásquez de Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Gabriel</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Doña Consuelo Vásquez de Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Rosa Martínez</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Patricia Hernández de Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Natalie</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Patricia Hernández de Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Gabriel</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Patricia Hernández de Bueso</span>
+              <span class="rel-arrow">→</span>
+              <span>Rosa Martínez</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Eduardo Hernández Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Carlos Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Eduardo Hernández Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>James Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Eduardo Hernández Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Daniela Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Ricardo Hernández Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Carlos Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Ricardo Hernández Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>James Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Ricardo Hernández Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Daniela Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Tomás Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Carlos Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Tomás Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>James Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Don Tomás Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Daniela Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Doña Consuelo Vásquez de Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Carlos Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Doña Consuelo Vásquez de Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>James Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div><div class="rel-row inferred">
+              <span>Doña Consuelo Vásquez de Martínez</span>
+              <span class="rel-arrow">→</span>
+              <span>Daniela Bueso</span>
+              <span class="chip" style="margin-left:auto">85% · inferred</span>
+            </div>
+        </div>
+  </div>
+</div>
+
+<!-- ═══════════ ASSERTIONS TAB ═══════════ -->
+<div class="tab-panel" id="tab-assertions">
+  <div class="assertions-container">
+    <div style="display: flex; gap: 16px; margin-bottom: 16px;">
+      <span class="badge badge-green">✅ 61 Passed</span>
+      <span class="badge badge-red">❌ 0 Failed</span>
+      <span class="badge badge-amber">⚠️ 2 Warnings</span>
+    </div>
+    
+    
+    <div class="assertion-section">
+      <h3>⚠️ Warnings</h3>
+      <div class="assertion-item assertion-warn">⚠ Ramón (Elena's grandfather)</div><div class="assertion-item assertion-warn">⚠ Possible over-duplication: 47 people</div>
+    </div>
+    <div class="assertion-section">
+      <h3>📊 Summary</h3>
+      <div class="assertion-item assertion-pass">Pass rate: 96.8%</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let treeScale = 1;
+
+  function showTab(name) {
+    document.querySelectorAll('.app-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    const tabs = document.querySelectorAll('.app-tab');
+    const tabNames = ['tree', 'people', 'stories', 'interviews', 'relationships', 'assertions'];
+    tabs[tabNames.indexOf(name)].classList.add('active');
+  }
+
+  function zoomTree(factor) {
+    treeScale = Math.min(Math.max(treeScale * factor, 0.2), 4);
+    applyTreeScale();
+  }
+
+  function applyTreeScale() {
+    const svg = document.querySelector('#tree-container svg');
+    if (svg) svg.style.transform = 'scale(' + treeScale + ')';
+    svg.style.transformOrigin = '0 0';
+  }
+
+  document.querySelector('#tree-container')?.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    zoomTree(e.deltaY > 0 ? 0.9 : 1.1);
+  }, { passive: false });
+</script>
+
+</body>
+</html>

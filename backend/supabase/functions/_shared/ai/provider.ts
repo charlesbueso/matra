@@ -5,7 +5,7 @@
 // This allows swapping providers without touching business logic.
 // ============================================================
 
-import type { TranscriptionResult, ExtractionResult, SummaryResult, StoryResult, BiographyResult } from '../types.ts';
+import type { TranscriptionResult, ExtractionResult, SummaryResult, StoryResult, BiographyResult, VerificationResult } from '../types.ts';
 
 /**
  * Speech-to-Text provider interface.
@@ -56,6 +56,13 @@ export interface LLMProvider {
    * Generate a documentary script for a family group.
    */
   generateDocumentaryScript(familyInfo: FamilyDocumentaryInput, language?: string): Promise<string>;
+
+  /**
+   * Verify and correct an extraction result against the original transcript.
+   * Acts as an AI "code review" of the extraction to catch directionality errors,
+   * missing relationships, contradictions, and other common mistakes.
+   */
+  verifyExtraction(transcriptText: string, extraction: ExtractionResult, language?: string): Promise<VerificationResult>;
 }
 
 /**

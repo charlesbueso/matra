@@ -1,0 +1,2795 @@
+{
+  "people": [
+    {
+      "id": "person-narrator-carlos",
+      "first_name": "Carlos",
+      "last_name": "Bueso",
+      "nickname": null,
+      "birth_date": "1999-10-22",
+      "death_date": null,
+      "birth_place": "Ciudad de México",
+      "current_location": null,
+      "metadata": {
+        "gender": "male",
+        "profession": null,
+        "is_deceased": null
+      }
+    },
+    {
+      "id": "person-1",
+      "first_name": "Carlos José",
+      "last_name": "Bueso",
+      "nickname": null,
+      "birth_date": null,
+      "death_date": null,
+      "birth_place": "Puerto Rico",
+      "current_location": null,
+      "metadata": {
+        "gender": "male",
+        "profession": null,
+        "is_deceased": null
+      }
+    },
+    {
+      "id": "person-2",
+      "first_name": "Alicia Rentería",
+      "last_name": "Montes de Oca",
+      "nickname": null,
+      "birth_date": null,
+      "death_date": null,
+      "birth_place": null,
+      "current_location": null,
+      "metadata": {
+        "gender": "female",
+        "profession": null,
+        "is_deceased": null
+      }
+    },
+    {
+      "id": "person-3",
+      "first_name": "Marco Andrés",
+      "last_name": "Bueso",
+      "nickname": null,
+      "birth_date": null,
+      "death_date": null,
+      "birth_place": null,
+      "current_location": null,
+      "metadata": {
+        "gender": "male",
+        "profession": null,
+        "is_deceased": null
+      }
+    },
+    {
+      "id": "person-4",
+      "first_name": "Brisela Alessandra",
+      "last_name": "Bueso",
+      "nickname": null,
+      "birth_date": null,
+      "death_date": null,
+      "birth_place": null,
+      "current_location": null,
+      "metadata": {
+        "gender": "female",
+        "profession": null,
+        "is_deceased": null
+      }
+    },
+    {
+      "id": "person-5",
+      "first_name": "Cristian",
+      "last_name": "Rentería",
+      "nickname": null,
+      "birth_date": "1985",
+      "death_date": null,
+      "birth_place": null,
+      "current_location": null,
+      "metadata": {
+        "gender": "male",
+        "profession": null,
+        "is_deceased": null
+      }
+    },
+    {
+      "id": "person-6",
+      "first_name": "Mateo",
+      "last_name": "Renter",
+      "nickname": null,
+      "birth_date": null,
+      "death_date": null,
+      "birth_place": null,
+      "current_location": null,
+      "metadata": {
+        "gender": "male",
+        "profession": null,
+        "is_deceased": null
+      }
+    },
+    {
+      "id": "person-7",
+      "first_name": "Andr",
+      "last_name": "Renter",
+      "nickname": null,
+      "birth_date": null,
+      "death_date": null,
+      "birth_place": null,
+      "current_location": null,
+      "metadata": {
+        "gender": "male",
+        "profession": null,
+        "is_deceased": null
+      }
+    },
+    {
+      "id": "person-8",
+      "first_name": "Alicia",
+      "last_name": "Rentería",
+      "nickname": null,
+      "birth_date": null,
+      "death_date": null,
+      "birth_place": null,
+      "current_location": null,
+      "metadata": {
+        "gender": "female",
+        "profession": null,
+        "is_deceased": true
+      }
+    },
+    {
+      "id": "person-9",
+      "first_name": "Claudia",
+      "last_name": null,
+      "nickname": null,
+      "birth_date": null,
+      "death_date": null,
+      "birth_place": null,
+      "current_location": null,
+      "metadata": {
+        "gender": "female",
+        "profession": null,
+        "is_deceased": null
+      }
+    },
+    {
+      "id": "person-10",
+      "first_name": "Omar",
+      "last_name": "Gutiérrez",
+      "nickname": null,
+      "birth_date": null,
+      "death_date": null,
+      "birth_place": null,
+      "current_location": null,
+      "metadata": {
+        "gender": "male",
+        "profession": null,
+        "is_deceased": null
+      }
+    },
+    {
+      "id": "person-11",
+      "first_name": "Valeria",
+      "last_name": "Gutiérrez",
+      "nickname": null,
+      "birth_date": null,
+      "death_date": null,
+      "birth_place": null,
+      "current_location": null,
+      "metadata": {
+        "gender": "female",
+        "profession": null,
+        "is_deceased": null
+      }
+    },
+    {
+      "id": "person-13",
+      "first_name": "Lilian",
+      "last_name": "Mas",
+      "nickname": null,
+      "birth_date": null,
+      "death_date": null,
+      "birth_place": null,
+      "current_location": null,
+      "metadata": {
+        "gender": "female",
+        "profession": null,
+        "is_deceased": null
+      }
+    },
+    {
+      "id": "person-14",
+      "first_name": "Héctor",
+      "last_name": "Bueso",
+      "nickname": null,
+      "birth_date": null,
+      "death_date": null,
+      "birth_place": null,
+      "current_location": null,
+      "metadata": {
+        "gender": "male",
+        "profession": null,
+        "is_deceased": true
+      }
+    },
+    {
+      "id": "person-15",
+      "first_name": "José",
+      "last_name": "Virriel",
+      "nickname": null,
+      "birth_date": null,
+      "death_date": null,
+      "birth_place": null,
+      "current_location": null,
+      "metadata": {
+        "gender": "male",
+        "profession": null,
+        "is_deceased": null
+      }
+    },
+    {
+      "id": "person-16",
+      "first_name": "Héctor",
+      "last_name": "Bueso",
+      "nickname": "(hermano)",
+      "birth_date": null,
+      "death_date": null,
+      "birth_place": null,
+      "current_location": null,
+      "metadata": {
+        "gender": "male",
+        "profession": null,
+        "is_deceased": null
+      }
+    },
+    {
+      "id": "person-17",
+      "first_name": "Omaira",
+      "last_name": "Ortega",
+      "nickname": null,
+      "birth_date": null,
+      "death_date": null,
+      "birth_place": null,
+      "current_location": null,
+      "metadata": {
+        "gender": "female",
+        "profession": null,
+        "is_deceased": null
+      }
+    }
+  ],
+  "relationships": [
+    {
+      "person_a_id": "person-narrator-carlos",
+      "person_b_id": "person-1",
+      "relationship_type": "child",
+      "confidence": 0.9,
+      "inferred": false,
+      "verified": true,
+      "personAName": "Carlos Bueso",
+      "personBName": "Carlos José Bueso"
+    },
+    {
+      "person_a_id": "person-narrator-carlos",
+      "person_b_id": "person-2",
+      "relationship_type": "child",
+      "confidence": 0.9,
+      "inferred": false,
+      "verified": true,
+      "personAName": "Carlos Bueso",
+      "personBName": "Alicia Rentería Montes de Oca"
+    },
+    {
+      "person_a_id": "person-1",
+      "person_b_id": "person-narrator-carlos",
+      "relationship_type": "parent",
+      "confidence": 0.9,
+      "inferred": false,
+      "verified": true,
+      "personAName": "Carlos José Bueso",
+      "personBName": "Carlos Bueso"
+    },
+    {
+      "person_a_id": "person-2",
+      "person_b_id": "person-narrator-carlos",
+      "relationship_type": "parent",
+      "confidence": 0.9,
+      "inferred": false,
+      "verified": true,
+      "personAName": "Alicia Rentería Montes de Oca",
+      "personBName": "Carlos Bueso"
+    },
+    {
+      "person_a_id": "person-narrator-carlos",
+      "person_b_id": "person-3",
+      "relationship_type": "sibling",
+      "confidence": 0.9,
+      "inferred": false,
+      "verified": true,
+      "personAName": "Carlos Bueso",
+      "personBName": "Marco Andrés Bueso"
+    },
+    {
+      "person_a_id": "person-narrator-carlos",
+      "person_b_id": "person-4",
+      "relationship_type": "sibling",
+      "confidence": 0.9,
+      "inferred": false,
+      "verified": true,
+      "personAName": "Carlos Bueso",
+      "personBName": "Brisela Alessandra Bueso"
+    },
+    {
+      "person_a_id": "person-2",
+      "person_b_id": "person-5",
+      "relationship_type": "parent",
+      "confidence": 0.9,
+      "inferred": false,
+      "verified": true,
+      "personAName": "Alicia Rentería Montes de Oca",
+      "personBName": "Cristian Rentería"
+    },
+    {
+      "person_a_id": "person-5",
+      "person_b_id": "person-2",
+      "relationship_type": "child",
+      "confidence": 0.9,
+      "inferred": false,
+      "verified": true,
+      "personAName": "Cristian Rentería",
+      "personBName": "Alicia Rentería Montes de Oca"
+    },
+    {
+      "person_a_id": "person-5",
+      "person_b_id": "person-6",
+      "relationship_type": "parent",
+      "confidence": 0.9,
+      "inferred": false,
+      "verified": true,
+      "personAName": "Cristian Rentería",
+      "personBName": "Mateo Renter"
+    },
+    {
+      "person_a_id": "person-5",
+      "person_b_id": "person-7",
+      "relationship_type": "parent",
+      "confidence": 0.9,
+      "inferred": false,
+      "verified": true,
+      "personAName": "Cristian Rentería",
+      "personBName": "Andr Renter"
+    },
+    {
+      "person_a_id": "person-8",
+      "person_b_id": "person-2",
+      "relationship_type": "parent",
+      "confidence": 0.9,
+      "inferred": false,
+      "verified": true,
+      "personAName": "Alicia Rentería",
+      "personBName": "Alicia Rentería Montes de Oca"
+    },
+    {
+      "person_a_id": "person-9",
+      "person_b_id": "person-2",
+      "relationship_type": "sibling",
+      "confidence": 0.9,
+      "inferred": false,
+      "verified": true,
+      "personAName": "Claudia",
+      "personBName": "Alicia Rentería Montes de Oca"
+    },
+    {
+      "person_a_id": "person-2",
+      "person_b_id": "person-9",
+      "relationship_type": "sibling",
+      "confidence": 0.9,
+      "inferred": false,
+      "verified": true,
+      "personAName": "Alicia Rentería Montes de Oca",
+      "personBName": "Claudia"
+    },
+    {
+      "person_a_id": "person-9",
+      "person_b_id": "person-10",
+      "relationship_type": "parent",
+      "confidence": 0.9,
+      "inferred": false,
+      "verified": true,
+      "personAName": "Claudia",
+      "personBName": "Omar Gutiérrez"
+    },
+    {
+      "person_a_id": "person-9",
+      "person_b_id": "person-11",
+      "relationship_type": "parent",
+      "confidence": 0.9,
+      "inferred": false,
+      "verified": true,
+      "personAName": "Claudia",
+      "personBName": "Valeria Gutiérrez"
+    },
+    {
+      "person_a_id": "person-narrator-carlos",
+      "person_b_id": "person-10",
+      "relationship_type": "cousin",
+      "confidence": 0.9,
+      "inferred": false,
+      "verified": true,
+      "personAName": "Carlos Bueso",
+      "personBName": "Omar Gutiérrez"
+    },
+    {
+      "person_a_id": "person-narrator-carlos",
+      "person_b_id": "person-11",
+      "relationship_type": "cousin",
+      "confidence": 0.9,
+      "inferred": false,
+      "verified": true,
+      "personAName": "Carlos Bueso",
+      "personBName": "Valeria Gutiérrez"
+    },
+    {
+      "person_a_id": "person-2",
+      "person_b_id": "person-1",
+      "relationship_type": "ex_spouse",
+      "confidence": 0.9,
+      "inferred": false,
+      "verified": true,
+      "personAName": "Alicia Rentería Montes de Oca",
+      "personBName": "Carlos José Bueso"
+    },
+    {
+      "person_a_id": "person-13",
+      "person_b_id": "person-1",
+      "relationship_type": "parent",
+      "confidence": 0.9,
+      "inferred": false,
+      "verified": true,
+      "personAName": "Lilian Mas",
+      "personBName": "Carlos José Bueso"
+    },
+    {
+      "person_a_id": "person-14",
+      "person_b_id": "person-1",
+      "relationship_type": "parent",
+      "confidence": 0.9,
+      "inferred": false,
+      "verified": true,
+      "personAName": "Héctor Bueso",
+      "personBName": "Carlos José Bueso"
+    },
+    {
+      "person_a_id": "person-15",
+      "person_b_id": "person-1",
+      "relationship_type": "step_parent",
+      "confidence": 0.9,
+      "inferred": false,
+      "verified": true,
+      "personAName": "José Virriel",
+      "personBName": "Carlos José Bueso"
+    },
+    {
+      "person_a_id": "person-16",
+      "person_b_id": "person-1",
+      "relationship_type": "sibling",
+      "confidence": 0.9,
+      "inferred": false,
+      "verified": true,
+      "personAName": "Héctor Bueso",
+      "personBName": "Carlos José Bueso"
+    },
+    {
+      "person_a_id": "person-16",
+      "person_b_id": "person-17",
+      "relationship_type": "spouse",
+      "confidence": 0.9,
+      "inferred": false,
+      "verified": true,
+      "personAName": "Héctor Bueso",
+      "personBName": "Omaira Ortega"
+    },
+    {
+      "person_a_id": "person-1",
+      "person_b_id": "person-3",
+      "relationship_type": "parent",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Carlos José Bueso",
+      "personBName": "Marco Andrés Bueso"
+    },
+    {
+      "person_a_id": "person-2",
+      "person_b_id": "person-3",
+      "relationship_type": "parent",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Alicia Rentería Montes de Oca",
+      "personBName": "Marco Andrés Bueso"
+    },
+    {
+      "person_a_id": "person-1",
+      "person_b_id": "person-4",
+      "relationship_type": "parent",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Carlos José Bueso",
+      "personBName": "Brisela Alessandra Bueso"
+    },
+    {
+      "person_a_id": "person-2",
+      "person_b_id": "person-4",
+      "relationship_type": "parent",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Alicia Rentería Montes de Oca",
+      "personBName": "Brisela Alessandra Bueso"
+    },
+    {
+      "person_a_id": "person-8",
+      "person_b_id": "person-9",
+      "relationship_type": "parent",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Alicia Rentería",
+      "personBName": "Claudia"
+    },
+    {
+      "person_a_id": "person-13",
+      "person_b_id": "person-16",
+      "relationship_type": "parent",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Lilian Mas",
+      "personBName": "Héctor Bueso"
+    },
+    {
+      "person_a_id": "person-14",
+      "person_b_id": "person-16",
+      "relationship_type": "parent",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Héctor Bueso",
+      "personBName": "Héctor Bueso"
+    },
+    {
+      "person_a_id": "person-3",
+      "person_b_id": "person-4",
+      "relationship_type": "sibling",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Marco Andrés Bueso",
+      "personBName": "Brisela Alessandra Bueso"
+    },
+    {
+      "person_a_id": "person-narrator-carlos",
+      "person_b_id": "person-5",
+      "relationship_type": "half_sibling",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Carlos Bueso",
+      "personBName": "Cristian Rentería"
+    },
+    {
+      "person_a_id": "person-5",
+      "person_b_id": "person-3",
+      "relationship_type": "half_sibling",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Cristian Rentería",
+      "personBName": "Marco Andrés Bueso"
+    },
+    {
+      "person_a_id": "person-5",
+      "person_b_id": "person-4",
+      "relationship_type": "half_sibling",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Cristian Rentería",
+      "personBName": "Brisela Alessandra Bueso"
+    },
+    {
+      "person_a_id": "person-6",
+      "person_b_id": "person-7",
+      "relationship_type": "sibling",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Mateo Renter",
+      "personBName": "Andr Renter"
+    },
+    {
+      "person_a_id": "person-10",
+      "person_b_id": "person-11",
+      "relationship_type": "sibling",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Omar Gutiérrez",
+      "personBName": "Valeria Gutiérrez"
+    },
+    {
+      "person_a_id": "person-1",
+      "person_b_id": "person-2",
+      "relationship_type": "spouse",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Carlos José Bueso",
+      "personBName": "Alicia Rentería Montes de Oca"
+    },
+    {
+      "person_a_id": "person-13",
+      "person_b_id": "person-14",
+      "relationship_type": "spouse",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Lilian Mas",
+      "personBName": "Héctor Bueso"
+    },
+    {
+      "person_a_id": "person-2",
+      "person_b_id": "person-6",
+      "relationship_type": "grandparent",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Alicia Rentería Montes de Oca",
+      "personBName": "Mateo Renter"
+    },
+    {
+      "person_a_id": "person-2",
+      "person_b_id": "person-7",
+      "relationship_type": "grandparent",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Alicia Rentería Montes de Oca",
+      "personBName": "Andr Renter"
+    },
+    {
+      "person_a_id": "person-8",
+      "person_b_id": "person-narrator-carlos",
+      "relationship_type": "grandparent",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Alicia Rentería",
+      "personBName": "Carlos Bueso"
+    },
+    {
+      "person_a_id": "person-8",
+      "person_b_id": "person-5",
+      "relationship_type": "grandparent",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Alicia Rentería",
+      "personBName": "Cristian Rentería"
+    },
+    {
+      "person_a_id": "person-8",
+      "person_b_id": "person-3",
+      "relationship_type": "grandparent",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Alicia Rentería",
+      "personBName": "Marco Andrés Bueso"
+    },
+    {
+      "person_a_id": "person-8",
+      "person_b_id": "person-4",
+      "relationship_type": "grandparent",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Alicia Rentería",
+      "personBName": "Brisela Alessandra Bueso"
+    },
+    {
+      "person_a_id": "person-8",
+      "person_b_id": "person-10",
+      "relationship_type": "grandparent",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Alicia Rentería",
+      "personBName": "Omar Gutiérrez"
+    },
+    {
+      "person_a_id": "person-8",
+      "person_b_id": "person-11",
+      "relationship_type": "grandparent",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Alicia Rentería",
+      "personBName": "Valeria Gutiérrez"
+    },
+    {
+      "person_a_id": "person-13",
+      "person_b_id": "person-narrator-carlos",
+      "relationship_type": "grandparent",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Lilian Mas",
+      "personBName": "Carlos Bueso"
+    },
+    {
+      "person_a_id": "person-13",
+      "person_b_id": "person-3",
+      "relationship_type": "grandparent",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Lilian Mas",
+      "personBName": "Marco Andrés Bueso"
+    },
+    {
+      "person_a_id": "person-13",
+      "person_b_id": "person-4",
+      "relationship_type": "grandparent",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Lilian Mas",
+      "personBName": "Brisela Alessandra Bueso"
+    },
+    {
+      "person_a_id": "person-14",
+      "person_b_id": "person-narrator-carlos",
+      "relationship_type": "grandparent",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Héctor Bueso",
+      "personBName": "Carlos Bueso"
+    },
+    {
+      "person_a_id": "person-14",
+      "person_b_id": "person-3",
+      "relationship_type": "grandparent",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Héctor Bueso",
+      "personBName": "Marco Andrés Bueso"
+    },
+    {
+      "person_a_id": "person-14",
+      "person_b_id": "person-4",
+      "relationship_type": "grandparent",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Héctor Bueso",
+      "personBName": "Brisela Alessandra Bueso"
+    },
+    {
+      "person_a_id": "person-8",
+      "person_b_id": "person-6",
+      "relationship_type": "great_grandparent",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Alicia Rentería",
+      "personBName": "Mateo Renter"
+    },
+    {
+      "person_a_id": "person-8",
+      "person_b_id": "person-7",
+      "relationship_type": "great_grandparent",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Alicia Rentería",
+      "personBName": "Andr Renter"
+    },
+    {
+      "person_a_id": "person-9",
+      "person_b_id": "person-narrator-carlos",
+      "relationship_type": "uncle_aunt",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Claudia",
+      "personBName": "Carlos Bueso"
+    },
+    {
+      "person_a_id": "person-9",
+      "person_b_id": "person-5",
+      "relationship_type": "uncle_aunt",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Claudia",
+      "personBName": "Cristian Rentería"
+    },
+    {
+      "person_a_id": "person-9",
+      "person_b_id": "person-3",
+      "relationship_type": "uncle_aunt",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Claudia",
+      "personBName": "Marco Andrés Bueso"
+    },
+    {
+      "person_a_id": "person-9",
+      "person_b_id": "person-4",
+      "relationship_type": "uncle_aunt",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Claudia",
+      "personBName": "Brisela Alessandra Bueso"
+    },
+    {
+      "person_a_id": "person-2",
+      "person_b_id": "person-10",
+      "relationship_type": "uncle_aunt",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Alicia Rentería Montes de Oca",
+      "personBName": "Omar Gutiérrez"
+    },
+    {
+      "person_a_id": "person-2",
+      "person_b_id": "person-11",
+      "relationship_type": "uncle_aunt",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Alicia Rentería Montes de Oca",
+      "personBName": "Valeria Gutiérrez"
+    },
+    {
+      "person_a_id": "person-16",
+      "person_b_id": "person-narrator-carlos",
+      "relationship_type": "uncle_aunt",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Héctor Bueso",
+      "personBName": "Carlos Bueso"
+    },
+    {
+      "person_a_id": "person-16",
+      "person_b_id": "person-3",
+      "relationship_type": "uncle_aunt",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Héctor Bueso",
+      "personBName": "Marco Andrés Bueso"
+    },
+    {
+      "person_a_id": "person-16",
+      "person_b_id": "person-4",
+      "relationship_type": "uncle_aunt",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Héctor Bueso",
+      "personBName": "Brisela Alessandra Bueso"
+    },
+    {
+      "person_a_id": "person-narrator-carlos",
+      "person_b_id": "person-6",
+      "relationship_type": "uncle_aunt",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Carlos Bueso",
+      "personBName": "Mateo Renter"
+    },
+    {
+      "person_a_id": "person-narrator-carlos",
+      "person_b_id": "person-7",
+      "relationship_type": "uncle_aunt",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Carlos Bueso",
+      "personBName": "Andr Renter"
+    },
+    {
+      "person_a_id": "person-3",
+      "person_b_id": "person-6",
+      "relationship_type": "uncle_aunt",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Marco Andrés Bueso",
+      "personBName": "Mateo Renter"
+    },
+    {
+      "person_a_id": "person-3",
+      "person_b_id": "person-7",
+      "relationship_type": "uncle_aunt",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Marco Andrés Bueso",
+      "personBName": "Andr Renter"
+    },
+    {
+      "person_a_id": "person-4",
+      "person_b_id": "person-6",
+      "relationship_type": "uncle_aunt",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Brisela Alessandra Bueso",
+      "personBName": "Mateo Renter"
+    },
+    {
+      "person_a_id": "person-4",
+      "person_b_id": "person-7",
+      "relationship_type": "uncle_aunt",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Brisela Alessandra Bueso",
+      "personBName": "Andr Renter"
+    },
+    {
+      "person_a_id": "person-10",
+      "person_b_id": "person-5",
+      "relationship_type": "cousin",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Omar Gutiérrez",
+      "personBName": "Cristian Rentería"
+    },
+    {
+      "person_a_id": "person-10",
+      "person_b_id": "person-3",
+      "relationship_type": "cousin",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Omar Gutiérrez",
+      "personBName": "Marco Andrés Bueso"
+    },
+    {
+      "person_a_id": "person-10",
+      "person_b_id": "person-4",
+      "relationship_type": "cousin",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Omar Gutiérrez",
+      "personBName": "Brisela Alessandra Bueso"
+    },
+    {
+      "person_a_id": "person-11",
+      "person_b_id": "person-5",
+      "relationship_type": "cousin",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Valeria Gutiérrez",
+      "personBName": "Cristian Rentería"
+    },
+    {
+      "person_a_id": "person-11",
+      "person_b_id": "person-3",
+      "relationship_type": "cousin",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Valeria Gutiérrez",
+      "personBName": "Marco Andrés Bueso"
+    },
+    {
+      "person_a_id": "person-11",
+      "person_b_id": "person-4",
+      "relationship_type": "cousin",
+      "confidence": 0.85,
+      "inferred": true,
+      "verified": false,
+      "personAName": "Valeria Gutiérrez",
+      "personBName": "Brisela Alessandra Bueso"
+    }
+  ],
+  "stories": [
+    {
+      "title": "La Llegada de mi Papá a la Ciudad de México",
+      "content": "Mi papá, Carlos José Bueso, nació en Puerto Rico y se fue a estudiar a la universidad en Boston, Massachusetts. Después de eso, consiguió un trabajo que lo expatrió a la Ciudad de México, donde conoció a mi mamá. Fue allí donde comenzó nuestra historia como familia.",
+      "involvedPeople": [
+        "Carlos José Bueso",
+        "Alicia Rentería Montes de Oca"
+      ],
+      "location": "Ciudad de México",
+      "approximateDate": "Años 90",
+      "source": "Interview 1 — Carlos (voice note)"
+    },
+    {
+      "title": "Recuerdos de Abuelita Mimi",
+      "content": "Mi abuela materna, Alicia Rentería, fue una mujer muy especial. La queremos mucho y la recordamos con cariño. Ella siempre estuvo allí para nosotros, ofreciéndonos amor y apoyo. Aunque ya no está con nosotros, su legado vive en nuestros corazones.",
+      "involvedPeople": [
+        "Alicia Rentería",
+        "Carlos Adrián Bueso"
+      ],
+      "location": null,
+      "approximateDate": null,
+      "source": "Interview 1 — Carlos (voice note)"
+    },
+    {
+      "title": "El Estudio Creativo Alquimia Studio",
+      "content": "Me dedico a la programación y tengo un estudio creativo llamado Alquimia Studio. Allí desarrollamos páginas web y aplicaciones, y siempre buscamos innovar y mejorar. Es un lugar donde puedo expresar mi creatividad y trabajar en proyectos que me apasionan.",
+      "involvedPeople": [
+        "Carlos Adrián Bueso"
+      ],
+      "location": null,
+      "approximateDate": null,
+      "source": "Interview 1 — Carlos (voice note)"
+    },
+    {
+      "title": "La Infancia en la Isla del Encanto",
+      "content": "Carlos José Bueso recuerda su infancia en Puerto Rico, rodeado de amor y naturaleza. Describe las exploraciones en la isla y los momentos especiales con su familia. La pérdida de su padre biológico a temprana edad dejó una huella profunda en su vida, pero también le enseñó a valorar cada momento con sus seres queridos.",
+      "involvedPeople": [
+        "Carlos José Bueso",
+        "Lilian Mas",
+        "Héctor Bueso",
+        "José Virriel"
+      ],
+      "location": "Puerto Rico",
+      "approximateDate": "1968-1975",
+      "source": "Interview 2 — Papá Carlos José (voice note)"
+    },
+    {
+      "title": "El Legado de la Familia Bueso",
+      "content": "Carlos José Bueso reflexiona sobre el legado de su familia y cómo ha influido en su vida y las vidas de sus hijos. Habla de la importancia de mantener vivas las tradiciones y los valores familiares, y cómo estos han sido transmitidos de generación en generación.",
+      "involvedPeople": [
+        "Carlos José Bueso",
+        "Alicia Rentería",
+        "Carlos",
+        "Marco",
+        "Bricel"
+      ],
+      "location": null,
+      "approximateDate": null,
+      "source": "Interview 2 — Papá Carlos José (voice note)"
+    }
+  ],
+  "interviewResults": [
+    {
+      "interviewId": "interview-1",
+      "label": "Interview 1 — Carlos (voice note)",
+      "narrator": {
+        "firstName": "Carlos",
+        "lastName": "Bueso",
+        "gender": "male"
+      },
+      "language": "Spanish",
+      "audioFile": "charlie-1.m4a",
+      "audioDuration": 152.87856,
+      "sttLanguage": "Spanish",
+      "transcript": " Hola, mi nombre es Carlos Adrián Bueso. Nací el octubre 22 de 1999 en la Ciudad de México. Mis papás se llaman Carlos José Bueso y mi mamá se llama Alicia Rentería Montes de Oca. Mi papá nació en Puerto Rico y se fue a estudiar la universidad a Boston, en Massachusetts. Y después de eso consiguió un trabajo que lo expatrió a la Ciudad de México, donde conoció a mi mamá. Una vez que mi mamá y él se conocieron, se casaron y tuvieron tres hijos, que soy yo, mi hermano grande Marco Andrés Bueso y mi hermana pequeña Brisela Alessandra Bueso. También tengo un medio hermano de parte de mi mamá que se llama Cristian Rentería. Él nació en 1985 y él ya tiene dos hijos. Uno de sus hijos se llama Mateo Renter y su otro hijo se llama Andr Renter Mi familia es bastante grande y la verdad es que somos muy unidos Yo soy desarrollador de software y me dedico a programar. Tengo una empresa con mis amigos, un estudio creativo que se llama Alquimia Studio y yo soy programador ahí. principalmente hago páginas web, aplicaciones como esta misma en la que estamos trabajando el cual construye una gráfica de tu árbol familiar con inteligencia artificial y bueno, entre muchas otras cosas mi abuela materna se llama igual que mi mamá, Alicia Rentería y ella ya falleció, pero la queremos mucho. De hecho, el apodo que le tenemos a ella es Abuelita Mimi y también tengo una tía de parte de mi mamá. Ella se llama Claudia y ella es hermana de mi mamá mamá y Claudia tiene dos hijos que son Omar Gutiérrez y Valeria Gutiérrez que son mis primos",
+      "extraction": {
+        "entities": [
+          {
+            "type": "person",
+            "value": "Carlos Adrián Bueso",
+            "confidence": 0.9,
+            "context": "Hola, mi nombre es Carlos Adrián Bueso."
+          },
+          {
+            "type": "date",
+            "value": "1999-10-22",
+            "confidence": 0.9,
+            "context": "Nací el octubre 22 de 1999 en la Ciudad de México."
+          },
+          {
+            "type": "location",
+            "value": "Ciudad de México",
+            "confidence": 0.9,
+            "context": "Nací el octubre 22 de 1999 en la Ciudad de México."
+          },
+          {
+            "type": "person",
+            "value": "Carlos José Bueso",
+            "confidence": 0.9,
+            "context": "Mis papás se llaman Carlos José Bueso y mi mamá se llama Alicia Rentería Montes de Oca."
+          },
+          {
+            "type": "person",
+            "value": "Alicia Rentería Montes de Oca",
+            "confidence": 0.9,
+            "context": "Mis papás se llaman Carlos José Bueso y mi mamá se llama Alicia Rentería Montes de Oca."
+          },
+          {
+            "type": "location",
+            "value": "Puerto Rico",
+            "confidence": 0.9,
+            "context": "Mi papá nació en Puerto Rico y se fue a estudiar la universidad a Boston, en Massachusetts."
+          },
+          {
+            "type": "location",
+            "value": "Boston",
+            "confidence": 0.9,
+            "context": "Mi papá nació en Puerto Rico y se fue a estudiar la universidad a Boston, en Massachusetts."
+          },
+          {
+            "type": "location",
+            "value": "Massachusetts",
+            "confidence": 0.9,
+            "context": "Mi papá nació en Puerto Rico y se fue a estudiar la universidad a Boston, en Massachusetts."
+          },
+          {
+            "type": "person",
+            "value": "Marco Andrés Bueso",
+            "confidence": 0.9,
+            "context": "Una vez que mi mamá y él se conocieron, se casaron y tuvieron tres hijos, que soy yo, mi hermano grande Marco Andrés Bueso y mi hermana pequeña Brisela Alessandra Bueso."
+          },
+          {
+            "type": "person",
+            "value": "Brisela Alessandra Bueso",
+            "confidence": 0.9,
+            "context": "Una vez que mi mamá y él se conocieron, se casaron y tuvieron tres hijos, que soy yo, mi hermano grande Marco Andrés Bueso y mi hermana pequeña Brisela Alessandra Bueso."
+          },
+          {
+            "type": "person",
+            "value": "Cristian Rentería",
+            "confidence": 0.9,
+            "context": "También tengo un medio hermano de parte de mi mamá que se llama Cristian Rentería."
+          },
+          {
+            "type": "date",
+            "value": "1985",
+            "confidence": 0.9,
+            "context": "Él nació en 1985 y él ya tiene dos hijos."
+          },
+          {
+            "type": "person",
+            "value": "Mateo Renter",
+            "confidence": 0.9,
+            "context": "Uno de sus hijos se llama Mateo Renter y su otro hijo se llama Andr Renter"
+          },
+          {
+            "type": "person",
+            "value": "Andr Renter",
+            "confidence": 0.9,
+            "context": "Uno de sus hijos se llama Mateo Renter y su otro hijo se llama Andr Renter"
+          },
+          {
+            "type": "person",
+            "value": "Alicia Rentería",
+            "confidence": 0.9,
+            "context": "mi abuela materna se llama igual que mi mamá, Alicia Rentería"
+          },
+          {
+            "type": "person",
+            "value": "Abuelita Mimi",
+            "confidence": 0.9,
+            "context": "De hecho, el apodo que le tenemos a ella es Abuelita Mimi"
+          },
+          {
+            "type": "person",
+            "value": "Claudia",
+            "confidence": 0.9,
+            "context": "también tengo una tía de parte de mi mamá. Ella se llama Claudia"
+          },
+          {
+            "type": "person",
+            "value": "Omar Gutiérrez",
+            "confidence": 0.9,
+            "context": "Ella es hermana de mi mamá mamá y Claudia tiene dos hijos que son Omar Gutiérrez y Valeria Gutiérrez"
+          },
+          {
+            "type": "person",
+            "value": "Valeria Gutiérrez",
+            "confidence": 0.9,
+            "context": "Ella es hermana de mi mamá mamá y Claudia tiene dos hijos que son Omar Gutiérrez y Valeria Gutiérrez"
+          }
+        ],
+        "relationships": [
+          {
+            "personA": "Carlos Adrián Bueso",
+            "personB": "Carlos José Bueso",
+            "relationshipType": "child",
+            "confidence": 0.9,
+            "context": "Mis papás se llaman Carlos José Bueso y mi mamá se llama Alicia Rentería Montes de Oca."
+          },
+          {
+            "personA": "Carlos Adrián Bueso",
+            "personB": "Alicia Rentería Montes de Oca",
+            "relationshipType": "child",
+            "confidence": 0.9,
+            "context": "Mis papás se llaman Carlos José Bueso y mi mamá se llama Alicia Rentería Montes de Oca."
+          },
+          {
+            "personA": "Carlos José Bueso",
+            "personB": "Carlos Adrián Bueso",
+            "relationshipType": "parent",
+            "confidence": 0.9,
+            "context": "Mis papás se llaman Carlos José Bueso y mi mamá se llama Alicia Rentería Montes de Oca."
+          },
+          {
+            "personA": "Alicia Rentería Montes de Oca",
+            "personB": "Carlos Adrián Bueso",
+            "relationshipType": "parent",
+            "confidence": 0.9,
+            "context": "Mis papás se llaman Carlos José Bueso y mi mamá se llama Alicia Rentería Montes de Oca."
+          },
+          {
+            "personA": "Carlos Adrián Bueso",
+            "personB": "Marco Andrés Bueso",
+            "relationshipType": "sibling",
+            "confidence": 0.9,
+            "context": "Una vez que mi mamá y él se conocieron, se casaron y tuvieron tres hijos, que soy yo, mi hermano grande Marco Andrés Bueso y mi hermana pequeña Brisela Alessandra Bueso."
+          },
+          {
+            "personA": "Carlos Adrián Bueso",
+            "personB": "Brisela Alessandra Bueso",
+            "relationshipType": "sibling",
+            "confidence": 0.9,
+            "context": "Una vez que mi mamá y él se conocieron, se casaron y tuvieron tres hijos, que soy yo, mi hermano grande Marco Andrés Bueso y mi hermana pequeña Brisela Alessandra Bueso."
+          },
+          {
+            "personA": "Alicia Rentería Montes de Oca",
+            "personB": "Cristian Rentería",
+            "relationshipType": "parent",
+            "confidence": 0.9,
+            "context": "También tengo un medio hermano de parte de mi mamá que se llama Cristian Rentería."
+          },
+          {
+            "personA": "Cristian Rentería",
+            "personB": "Alicia Rentería Montes de Oca",
+            "relationshipType": "child",
+            "confidence": 0.9,
+            "context": "También tengo un medio hermano de parte de mi mamá que se llama Cristian Rentería."
+          },
+          {
+            "personA": "Cristian Rentería",
+            "personB": "Mateo Renter",
+            "relationshipType": "parent",
+            "confidence": 0.9,
+            "context": "Él nació en 1985 y él ya tiene dos hijos. Uno de sus hijos se llama Mateo Renter y su otro hijo se llama Andr Renter"
+          },
+          {
+            "personA": "Cristian Rentería",
+            "personB": "Andr Renter",
+            "relationshipType": "parent",
+            "confidence": 0.9,
+            "context": "Él nació en 1985 y él ya tiene dos hijos. Uno de sus hijos se llama Mateo Renter y su otro hijo se llama Andr Renter"
+          },
+          {
+            "personA": "Alicia Rentería",
+            "personB": "Alicia Rentería Montes de Oca",
+            "relationshipType": "parent",
+            "confidence": 0.9,
+            "context": "mi abuela materna se llama igual que mi mamá, Alicia Rentería"
+          },
+          {
+            "personA": "Alicia Rentería Montes de Oca",
+            "personB": "Alicia Rentería",
+            "relationshipType": "child",
+            "confidence": 0.9,
+            "context": "mi abuela materna se llama igual que mi mamá, Alicia Rentería"
+          },
+          {
+            "personA": "Claudia",
+            "personB": "Alicia Rentería Montes de Oca",
+            "relationshipType": "sibling",
+            "confidence": 0.9,
+            "context": "también tengo una tía de parte de mi mamá. Ella se llama Claudia"
+          },
+          {
+            "personA": "Alicia Rentería Montes de Oca",
+            "personB": "Claudia",
+            "relationshipType": "sibling",
+            "confidence": 0.9,
+            "context": "también tengo una tía de parte de mi mamá. Ella se llama Claudia"
+          },
+          {
+            "personA": "Claudia",
+            "personB": "Omar Gutiérrez",
+            "relationshipType": "parent",
+            "confidence": 0.9,
+            "context": "Ella es hermana de mi mamá mamá y Claudia tiene dos hijos que son Omar Gutiérrez y Valeria Gutiérrez"
+          },
+          {
+            "personA": "Claudia",
+            "personB": "Valeria Gutiérrez",
+            "relationshipType": "parent",
+            "confidence": 0.9,
+            "context": "Ella es hermana de mi mamá mamá y Claudia tiene dos hijos que son Omar Gutiérrez y Valeria Gutiérrez"
+          },
+          {
+            "personA": "Carlos Adrián Bueso",
+            "personB": "Omar Gutiérrez",
+            "relationshipType": "cousin",
+            "confidence": 0.9,
+            "context": "Ella es hermana de mi mamá mamá y Claudia tiene dos hijos que son Omar Gutiérrez y Valeria Gutiérrez"
+          },
+          {
+            "personA": "Carlos Adrián Bueso",
+            "personB": "Valeria Gutiérrez",
+            "relationshipType": "cousin",
+            "confidence": 0.9,
+            "context": "Ella es hermana de mi mamá mamá y Claudia tiene dos hijos que son Omar Gutiérrez y Valeria Gutiérrez"
+          }
+        ],
+        "suggestedPeople": [
+          {
+            "firstName": "Carlos Adrián",
+            "lastName": "Bueso",
+            "birthDate": "1999-10-22",
+            "birthPlace": "Ciudad de México",
+            "gender": "male"
+          },
+          {
+            "firstName": "Carlos José",
+            "lastName": "Bueso",
+            "birthPlace": "Puerto Rico",
+            "gender": "male"
+          },
+          {
+            "firstName": "Alicia Rentería",
+            "lastName": "Montes de Oca",
+            "gender": "female"
+          },
+          {
+            "firstName": "Marco Andrés",
+            "lastName": "Bueso",
+            "gender": "male"
+          },
+          {
+            "firstName": "Brisela Alessandra",
+            "lastName": "Bueso",
+            "gender": "female"
+          },
+          {
+            "firstName": "Cristian",
+            "lastName": "Rentería",
+            "birthDate": "1985",
+            "gender": "male"
+          },
+          {
+            "firstName": "Mateo",
+            "lastName": "Renter",
+            "gender": "male"
+          },
+          {
+            "firstName": "Andr",
+            "lastName": "Renter",
+            "gender": "male"
+          },
+          {
+            "firstName": "Alicia",
+            "lastName": "Rentería",
+            "isDeceased": true,
+            "gender": "female"
+          },
+          {
+            "firstName": "Claudia",
+            "gender": "female"
+          },
+          {
+            "firstName": "Omar",
+            "lastName": "Gutiérrez",
+            "gender": "male"
+          },
+          {
+            "firstName": "Valeria",
+            "lastName": "Gutiérrez",
+            "gender": "female"
+          }
+        ]
+      },
+      "summary": {
+        "summary": "Carlos Adrián Bueso nació el 22 de octubre de 1999 en la Ciudad de México, hijo de Carlos José Bueso y Alicia Rentería Montes de Oca. Su familia es grande y unida, con una rica historia que se remonta a la llegada de su padre a la Ciudad de México desde Puerto Rico. Carlos se dedica a la programación y es dueño de un estudio creativo llamado Alquimia Studio, donde desarrolla páginas web y aplicaciones. La familia de Carlos es muy importante para él, y recuerda con cariño a su abuela materna, Alicia Rentería, a quien llamaban Abuelita Mimi.",
+        "summary2": "La familia de Carlos es muy extensa, con un medio hermano llamado Cristian Rentería, quien tiene dos hijos, Mateo y Andr. También tiene una tía llamada Claudia, hermana de su mamá, y dos primos, Omar y Valeria Gutiérrez. A pesar de la distancia y las diferencias, la familia de Carlos se mantiene unida y se apoya mutuamente.",
+        "summary3": "La historia de la familia de Carlos es una mezcla de tradición y innovación, con una rica herencia cultural y una visión hacia el futuro. Carlos se siente orgulloso de su familia y de su legado, y busca seguir adelante con su propio camino, siempre recordando las enseñanzas y el amor de sus seres queridos.",
+        "keyTopics": [
+          "Familia",
+          "Orígenes",
+          "Trabajo",
+          "Tecnología",
+          "Amor"
+        ],
+        "emotionalTone": "Cálido y familiar",
+        "suggestedStories": [
+          {
+            "title": "La Llegada de mi Papá a la Ciudad de México",
+            "content": "Mi papá, Carlos José Bueso, nació en Puerto Rico y se fue a estudiar a la universidad en Boston, Massachusetts. Después de eso, consiguió un trabajo que lo expatrió a la Ciudad de México, donde conoció a mi mamá. Fue allí donde comenzó nuestra historia como familia.",
+            "involvedPeople": [
+              "Carlos José Bueso",
+              "Alicia Rentería Montes de Oca"
+            ],
+            "approximateDate": "Años 90",
+            "location": "Ciudad de México",
+            "keyMoments": [
+              "Mi papá se fue a estudiar a la universidad en Boston",
+              "Conoció a mi mamá en la Ciudad de México"
+            ]
+          },
+          {
+            "title": "Recuerdos de Abuelita Mimi",
+            "content": "Mi abuela materna, Alicia Rentería, fue una mujer muy especial. La queremos mucho y la recordamos con cariño. Ella siempre estuvo allí para nosotros, ofreciéndonos amor y apoyo. Aunque ya no está con nosotros, su legado vive en nuestros corazones.",
+            "involvedPeople": [
+              "Alicia Rentería",
+              "Carlos Adrián Bueso"
+            ],
+            "keyMoments": [
+              "La llamábamos Abuelita Mimi",
+              "Siempre estuvo allí para nosotros"
+            ]
+          },
+          {
+            "title": "El Estudio Creativo Alquimia Studio",
+            "content": "Me dedico a la programación y tengo un estudio creativo llamado Alquimia Studio. Allí desarrollamos páginas web y aplicaciones, y siempre buscamos innovar y mejorar. Es un lugar donde puedo expresar mi creatividad y trabajar en proyectos que me apasionan.",
+            "involvedPeople": [
+              "Carlos Adrián Bueso"
+            ],
+            "keyMoments": [
+              "Desarrollamos páginas web y aplicaciones",
+              "Siempre buscamos innovar y mejorar"
+            ]
+          }
+        ]
+      },
+      "newRelationships": [
+        {
+          "personAId": "person-narrator-carlos",
+          "personBId": "person-1",
+          "personAName": "Carlos Bueso",
+          "personBName": "Carlos José Bueso",
+          "type": "child",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-narrator-carlos",
+          "personBId": "person-2",
+          "personAName": "Carlos Bueso",
+          "personBName": "Alicia Rentería Montes de Oca",
+          "type": "child",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-1",
+          "personBId": "person-narrator-carlos",
+          "personAName": "Carlos José Bueso",
+          "personBName": "Carlos Bueso",
+          "type": "parent",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-narrator-carlos",
+          "personAName": "Alicia Rentería Montes de Oca",
+          "personBName": "Carlos Bueso",
+          "type": "parent",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-narrator-carlos",
+          "personBId": "person-3",
+          "personAName": "Carlos Bueso",
+          "personBName": "Marco Andrés Bueso",
+          "type": "sibling",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-narrator-carlos",
+          "personBId": "person-4",
+          "personAName": "Carlos Bueso",
+          "personBName": "Brisela Alessandra Bueso",
+          "type": "sibling",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-5",
+          "personAName": "Alicia Rentería Montes de Oca",
+          "personBName": "Cristian Rentería",
+          "type": "parent",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-5",
+          "personBId": "person-2",
+          "personAName": "Cristian Rentería",
+          "personBName": "Alicia Rentería Montes de Oca",
+          "type": "child",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-5",
+          "personBId": "person-6",
+          "personAName": "Cristian Rentería",
+          "personBName": "Mateo Renter",
+          "type": "parent",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-5",
+          "personBId": "person-7",
+          "personAName": "Cristian Rentería",
+          "personBName": "Andr Renter",
+          "type": "parent",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-8",
+          "personBId": "person-2",
+          "personAName": "Alicia Rentería",
+          "personBName": "Alicia Rentería Montes de Oca",
+          "type": "parent",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-9",
+          "personBId": "person-2",
+          "personAName": "Claudia",
+          "personBName": "Alicia Rentería Montes de Oca",
+          "type": "sibling",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-9",
+          "personAName": "Alicia Rentería Montes de Oca",
+          "personBName": "Claudia",
+          "type": "sibling",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-9",
+          "personBId": "person-10",
+          "personAName": "Claudia",
+          "personBName": "Omar Gutiérrez",
+          "type": "parent",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-9",
+          "personBId": "person-11",
+          "personAName": "Claudia",
+          "personBName": "Valeria Gutiérrez",
+          "type": "parent",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-narrator-carlos",
+          "personBId": "person-10",
+          "personAName": "Carlos Bueso",
+          "personBName": "Omar Gutiérrez",
+          "type": "cousin",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-narrator-carlos",
+          "personBId": "person-11",
+          "personAName": "Carlos Bueso",
+          "personBName": "Valeria Gutiérrez",
+          "type": "cousin",
+          "confidence": 0.9,
+          "inferred": false
+        }
+      ],
+      "inferredRelationships": [
+        {
+          "personAId": "person-1",
+          "personBId": "person-3",
+          "type": "parent",
+          "confidence": 0.85,
+          "personAName": "Carlos José Bueso",
+          "personBName": "Marco Andrés Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-3",
+          "type": "parent",
+          "confidence": 0.85,
+          "personAName": "Alicia Rentería Montes de Oca",
+          "personBName": "Marco Andrés Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-1",
+          "personBId": "person-4",
+          "type": "parent",
+          "confidence": 0.85,
+          "personAName": "Carlos José Bueso",
+          "personBName": "Brisela Alessandra Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-4",
+          "type": "parent",
+          "confidence": 0.85,
+          "personAName": "Alicia Rentería Montes de Oca",
+          "personBName": "Brisela Alessandra Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-8",
+          "personBId": "person-9",
+          "type": "parent",
+          "confidence": 0.85,
+          "personAName": "Alicia Rentería",
+          "personBName": "Claudia",
+          "inferred": true
+        },
+        {
+          "personAId": "person-3",
+          "personBId": "person-4",
+          "type": "sibling",
+          "confidence": 0.85,
+          "personAName": "Marco Andrés Bueso",
+          "personBName": "Brisela Alessandra Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-narrator-carlos",
+          "personBId": "person-5",
+          "type": "half_sibling",
+          "confidence": 0.85,
+          "personAName": "Carlos Bueso",
+          "personBName": "Cristian Rentería",
+          "inferred": true
+        },
+        {
+          "personAId": "person-5",
+          "personBId": "person-3",
+          "type": "half_sibling",
+          "confidence": 0.85,
+          "personAName": "Cristian Rentería",
+          "personBName": "Marco Andrés Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-5",
+          "personBId": "person-4",
+          "type": "half_sibling",
+          "confidence": 0.85,
+          "personAName": "Cristian Rentería",
+          "personBName": "Brisela Alessandra Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-6",
+          "personBId": "person-7",
+          "type": "sibling",
+          "confidence": 0.85,
+          "personAName": "Mateo Renter",
+          "personBName": "Andr Renter",
+          "inferred": true
+        },
+        {
+          "personAId": "person-10",
+          "personBId": "person-11",
+          "type": "sibling",
+          "confidence": 0.85,
+          "personAName": "Omar Gutiérrez",
+          "personBName": "Valeria Gutiérrez",
+          "inferred": true
+        },
+        {
+          "personAId": "person-1",
+          "personBId": "person-2",
+          "type": "spouse",
+          "confidence": 0.85,
+          "personAName": "Carlos José Bueso",
+          "personBName": "Alicia Rentería Montes de Oca",
+          "inferred": true
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-6",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Alicia Rentería Montes de Oca",
+          "personBName": "Mateo Renter",
+          "inferred": true
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-7",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Alicia Rentería Montes de Oca",
+          "personBName": "Andr Renter",
+          "inferred": true
+        },
+        {
+          "personAId": "person-8",
+          "personBId": "person-narrator-carlos",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Alicia Rentería",
+          "personBName": "Carlos Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-8",
+          "personBId": "person-5",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Alicia Rentería",
+          "personBName": "Cristian Rentería",
+          "inferred": true
+        },
+        {
+          "personAId": "person-8",
+          "personBId": "person-3",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Alicia Rentería",
+          "personBName": "Marco Andrés Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-8",
+          "personBId": "person-4",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Alicia Rentería",
+          "personBName": "Brisela Alessandra Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-8",
+          "personBId": "person-10",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Alicia Rentería",
+          "personBName": "Omar Gutiérrez",
+          "inferred": true
+        },
+        {
+          "personAId": "person-8",
+          "personBId": "person-11",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Alicia Rentería",
+          "personBName": "Valeria Gutiérrez",
+          "inferred": true
+        },
+        {
+          "personAId": "person-8",
+          "personBId": "person-6",
+          "type": "great_grandparent",
+          "confidence": 0.85,
+          "personAName": "Alicia Rentería",
+          "personBName": "Mateo Renter",
+          "inferred": true
+        },
+        {
+          "personAId": "person-8",
+          "personBId": "person-7",
+          "type": "great_grandparent",
+          "confidence": 0.85,
+          "personAName": "Alicia Rentería",
+          "personBName": "Andr Renter",
+          "inferred": true
+        },
+        {
+          "personAId": "person-9",
+          "personBId": "person-narrator-carlos",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Claudia",
+          "personBName": "Carlos Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-9",
+          "personBId": "person-5",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Claudia",
+          "personBName": "Cristian Rentería",
+          "inferred": true
+        },
+        {
+          "personAId": "person-9",
+          "personBId": "person-3",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Claudia",
+          "personBName": "Marco Andrés Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-9",
+          "personBId": "person-4",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Claudia",
+          "personBName": "Brisela Alessandra Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-10",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Alicia Rentería Montes de Oca",
+          "personBName": "Omar Gutiérrez",
+          "inferred": true
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-11",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Alicia Rentería Montes de Oca",
+          "personBName": "Valeria Gutiérrez",
+          "inferred": true
+        },
+        {
+          "personAId": "person-narrator-carlos",
+          "personBId": "person-6",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Carlos Bueso",
+          "personBName": "Mateo Renter",
+          "inferred": true
+        },
+        {
+          "personAId": "person-narrator-carlos",
+          "personBId": "person-7",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Carlos Bueso",
+          "personBName": "Andr Renter",
+          "inferred": true
+        },
+        {
+          "personAId": "person-3",
+          "personBId": "person-6",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Marco Andrés Bueso",
+          "personBName": "Mateo Renter",
+          "inferred": true
+        },
+        {
+          "personAId": "person-3",
+          "personBId": "person-7",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Marco Andrés Bueso",
+          "personBName": "Andr Renter",
+          "inferred": true
+        },
+        {
+          "personAId": "person-4",
+          "personBId": "person-6",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Brisela Alessandra Bueso",
+          "personBName": "Mateo Renter",
+          "inferred": true
+        },
+        {
+          "personAId": "person-4",
+          "personBId": "person-7",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Brisela Alessandra Bueso",
+          "personBName": "Andr Renter",
+          "inferred": true
+        },
+        {
+          "personAId": "person-10",
+          "personBId": "person-5",
+          "type": "cousin",
+          "confidence": 0.85,
+          "personAName": "Omar Gutiérrez",
+          "personBName": "Cristian Rentería",
+          "inferred": true
+        },
+        {
+          "personAId": "person-10",
+          "personBId": "person-3",
+          "type": "cousin",
+          "confidence": 0.85,
+          "personAName": "Omar Gutiérrez",
+          "personBName": "Marco Andrés Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-10",
+          "personBId": "person-4",
+          "type": "cousin",
+          "confidence": 0.85,
+          "personAName": "Omar Gutiérrez",
+          "personBName": "Brisela Alessandra Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-11",
+          "personBId": "person-5",
+          "type": "cousin",
+          "confidence": 0.85,
+          "personAName": "Valeria Gutiérrez",
+          "personBName": "Cristian Rentería",
+          "inferred": true
+        },
+        {
+          "personAId": "person-11",
+          "personBId": "person-3",
+          "type": "cousin",
+          "confidence": 0.85,
+          "personAName": "Valeria Gutiérrez",
+          "personBName": "Marco Andrés Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-11",
+          "personBId": "person-4",
+          "type": "cousin",
+          "confidence": 0.85,
+          "personAName": "Valeria Gutiérrez",
+          "personBName": "Brisela Alessandra Bueso",
+          "inferred": true
+        }
+      ],
+      "peopleCountAfter": 12,
+      "relCountAfter": 57,
+      "timeSeconds": 11.3
+    },
+    {
+      "interviewId": "interview-2",
+      "label": "Interview 2 — Papá Carlos José (voice note)",
+      "narrator": {
+        "firstName": "Carlos José",
+        "lastName": "Bueso",
+        "gender": "male"
+      },
+      "language": "Spanish",
+      "audioFile": "papa-2.m4a",
+      "audioDuration": 67.54,
+      "sttLanguage": "Spanish",
+      "transcript": " Hola, me llamo Carlos José Bueso y nací en Puerto Rico el 16 de marzo de 1968. Yo tengo tres hijos con mi ex esposa Alicia Rentería. Mis hijos son Carlos, Marco y Bricel. Yo tengo mis papás en Puerto Rico Mi mamá se llama Lilian Mas Y mi papá biológico se llama Héctor Bueso Mi papá biológico Héctor falleció cuando yo tenía seis meses de edad En una exploración de cuevas en Puerto Rico Y mi abuela después se casó con mi padrastro que se llama José Virriel. También tengo un hermano que se llama Héctor Bueso y mi hermano está casado con su esposa que se llama Omaira Ortega.",
+      "extraction": {
+        "entities": [
+          {
+            "type": "person",
+            "value": "Carlos José Bueso",
+            "confidence": 0.9,
+            "context": "me llamo Carlos José Bueso"
+          },
+          {
+            "type": "location",
+            "value": "Puerto Rico",
+            "confidence": 0.9,
+            "context": "nací en Puerto Rico"
+          },
+          {
+            "type": "date",
+            "value": "1968-03-16",
+            "confidence": 0.9,
+            "context": "nací en Puerto Rico el 16 de marzo de 1968"
+          },
+          {
+            "type": "person",
+            "value": "Alicia Rentería",
+            "confidence": 0.9,
+            "context": "mi ex esposa Alicia Rentería"
+          },
+          {
+            "type": "person",
+            "value": "Carlos",
+            "confidence": 0.9,
+            "context": "Mis hijos son Carlos, Marco y Bricel"
+          },
+          {
+            "type": "person",
+            "value": "Marco",
+            "confidence": 0.9,
+            "context": "Mis hijos son Carlos, Marco y Bricel"
+          },
+          {
+            "type": "person",
+            "value": "Bricel",
+            "confidence": 0.9,
+            "context": "Mis hijos son Carlos, Marco y Bricel"
+          },
+          {
+            "type": "person",
+            "value": "Lilian Mas",
+            "confidence": 0.9,
+            "context": "Mi mamá se llama Lilian Mas"
+          },
+          {
+            "type": "person",
+            "value": "Héctor Bueso",
+            "confidence": 0.9,
+            "context": "mi papá biológico se llama Héctor Bueso"
+          },
+          {
+            "type": "event",
+            "value": "falleció",
+            "confidence": 0.9,
+            "context": "mi papá biológico Héctor falleció cuando yo tenía seis meses de edad"
+          },
+          {
+            "type": "location",
+            "value": "Puerto Rico",
+            "confidence": 0.9,
+            "context": "En una exploración de cuevas en Puerto Rico"
+          },
+          {
+            "type": "person",
+            "value": "José Virriel",
+            "confidence": 0.9,
+            "context": "mi abuela después se casó con mi padrastro que se llama José Virriel"
+          },
+          {
+            "type": "person",
+            "value": "Héctor Bueso",
+            "confidence": 0.9,
+            "context": "tengo un hermano que se llama Héctor Bueso"
+          },
+          {
+            "type": "person",
+            "value": "Omaira Ortega",
+            "confidence": 0.9,
+            "context": "mi hermano está casado con su esposa que se llama Omaira Ortega"
+          }
+        ],
+        "relationships": [
+          {
+            "personA": "Alicia Rentería",
+            "personB": "Carlos José Bueso",
+            "relationshipType": "ex_spouse",
+            "confidence": 0.9,
+            "context": "mi ex esposa Alicia Rentería"
+          },
+          {
+            "personA": "Carlos José Bueso",
+            "personB": "Carlos",
+            "relationshipType": "parent",
+            "confidence": 0.9,
+            "context": "Mis hijos son Carlos, Marco y Bricel"
+          },
+          {
+            "personA": "Carlos José Bueso",
+            "personB": "Marco",
+            "relationshipType": "parent",
+            "confidence": 0.9,
+            "context": "Mis hijos son Carlos, Marco y Bricel"
+          },
+          {
+            "personA": "Carlos José Bueso",
+            "personB": "Bricel",
+            "relationshipType": "parent",
+            "confidence": 0.9,
+            "context": "Mis hijos son Carlos, Marco y Bricel"
+          },
+          {
+            "personA": "Lilian Mas",
+            "personB": "Carlos José Bueso",
+            "relationshipType": "parent",
+            "confidence": 0.9,
+            "context": "Mi mamá se llama Lilian Mas"
+          },
+          {
+            "personA": "Héctor Bueso",
+            "personB": "Carlos José Bueso",
+            "relationshipType": "parent",
+            "confidence": 0.9,
+            "context": "mi papá biológico se llama Héctor Bueso"
+          },
+          {
+            "personA": "José Virriel",
+            "personB": "Carlos José Bueso",
+            "relationshipType": "step_parent",
+            "confidence": 0.9,
+            "context": "mi abuela después se casó con mi padrastro que se llama José Virriel"
+          },
+          {
+            "personA": "Héctor Bueso",
+            "personB": "Carlos José Bueso",
+            "relationshipType": "sibling",
+            "confidence": 0.9,
+            "context": "tengo un hermano que se llama Héctor Bueso"
+          },
+          {
+            "personA": "Héctor Bueso",
+            "personB": "Omaira Ortega",
+            "relationshipType": "spouse",
+            "confidence": 0.9,
+            "context": "mi hermano está casado con su esposa que se llama Omaira Ortega"
+          }
+        ],
+        "suggestedPeople": [
+          {
+            "firstName": "Carlos José",
+            "lastName": "Bueso",
+            "birthDate": "1968-03-16",
+            "birthPlace": "Puerto Rico",
+            "gender": "male"
+          },
+          {
+            "firstName": "Alicia",
+            "lastName": "Rentería",
+            "gender": "female"
+          },
+          {
+            "firstName": "Carlos",
+            "lastName": "Bueso",
+            "gender": "male"
+          },
+          {
+            "firstName": "Marco",
+            "lastName": "Bueso",
+            "gender": "male"
+          },
+          {
+            "firstName": "Bricel",
+            "lastName": "Bueso",
+            "gender": "female"
+          },
+          {
+            "firstName": "Lilian",
+            "lastName": "Mas",
+            "gender": "female"
+          },
+          {
+            "firstName": "Héctor",
+            "lastName": "Bueso",
+            "isDeceased": true,
+            "gender": "male"
+          },
+          {
+            "firstName": "José",
+            "lastName": "Virriel",
+            "gender": "male"
+          },
+          {
+            "firstName": "Héctor",
+            "lastName": "Bueso",
+            "nickname": "(hermano)",
+            "gender": "male"
+          },
+          {
+            "firstName": "Omaira",
+            "lastName": "Ortega",
+            "gender": "female"
+          }
+        ]
+      },
+      "summary": {
+        "summary": "Carlos José Bueso, nacido en Puerto Rico el 16 de marzo de 1968, comparte su historia familiar con cariño y nostalgia. Habla de sus tres hijos con su ex esposa Alicia Rentería: Carlos, Marco y Bricel. También recuerda a sus padres, Lilian Mas y Héctor Bueso, y la trágica pérdida de su padre biológico en una exploración de cuevas cuando apenas tenía seis meses de edad. Su abuela se casó posteriormente con José Virriel, quien se convirtió en su padrastro. Además, menciona a su hermano Héctor Bueso y su esposa Omaira Ortega, destacando la importancia de la familia en su vida.",
+        "keyTopics": [
+          "Infancia en Puerto Rico",
+          "Familia extendida",
+          "Pérdida y superación",
+          "Matrimonio y divorcio",
+          "Hermanos y herencias"
+        ],
+        "emotionalTone": "Reflexivo y emotivo",
+        "suggestedStories": [
+          {
+            "title": "La Infancia en la Isla del Encanto",
+            "content": "Carlos José Bueso recuerda su infancia en Puerto Rico, rodeado de amor y naturaleza. Describe las exploraciones en la isla y los momentos especiales con su familia. La pérdida de su padre biológico a temprana edad dejó una huella profunda en su vida, pero también le enseñó a valorar cada momento con sus seres queridos.",
+            "involvedPeople": [
+              "Carlos José Bueso",
+              "Lilian Mas",
+              "Héctor Bueso",
+              "José Virriel"
+            ],
+            "approximateDate": "1968-1975",
+            "location": "Puerto Rico",
+            "keyMoments": [
+              "Mi papá biológico Héctor falleció cuando yo tenía seis meses de edad",
+              "Mi abuela se casó con mi padrastro José Virriel"
+            ]
+          },
+          {
+            "title": "El Legado de la Familia Bueso",
+            "content": "Carlos José Bueso reflexiona sobre el legado de su familia y cómo ha influido en su vida y las vidas de sus hijos. Habla de la importancia de mantener vivas las tradiciones y los valores familiares, y cómo estos han sido transmitidos de generación en generación.",
+            "involvedPeople": [
+              "Carlos José Bueso",
+              "Alicia Rentería",
+              "Carlos",
+              "Marco",
+              "Bricel"
+            ],
+            "keyMoments": [
+              "Yo tengo tres hijos con mi ex esposa Alicia Rentería",
+              "Mis hijos son Carlos, Marco y Bricel"
+            ]
+          }
+        ]
+      },
+      "newRelationships": [
+        {
+          "personAId": "person-2",
+          "personBId": "person-1",
+          "personAName": "Alicia Rentería Montes de Oca",
+          "personBName": "Carlos José Bueso",
+          "type": "ex_spouse",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-1",
+          "personBId": "person-narrator-carlos",
+          "personAName": "Carlos José Bueso",
+          "personBName": "Carlos Bueso",
+          "type": "parent",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-1",
+          "personBId": "person-3",
+          "personAName": "Carlos José Bueso",
+          "personBName": "Marco Andrés Bueso",
+          "type": "parent",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-1",
+          "personBId": "person-4",
+          "personAName": "Carlos José Bueso",
+          "personBName": "Brisela Alessandra Bueso",
+          "type": "parent",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-13",
+          "personBId": "person-1",
+          "personAName": "Lilian Mas",
+          "personBName": "Carlos José Bueso",
+          "type": "parent",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-14",
+          "personBId": "person-1",
+          "personAName": "Héctor Bueso",
+          "personBName": "Carlos José Bueso",
+          "type": "parent",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-15",
+          "personBId": "person-1",
+          "personAName": "José Virriel",
+          "personBName": "Carlos José Bueso",
+          "type": "step_parent",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-16",
+          "personBId": "person-1",
+          "personAName": "Héctor Bueso",
+          "personBName": "Carlos José Bueso",
+          "type": "sibling",
+          "confidence": 0.9,
+          "inferred": false
+        },
+        {
+          "personAId": "person-16",
+          "personBId": "person-17",
+          "personAName": "Héctor Bueso",
+          "personBName": "Omaira Ortega",
+          "type": "spouse",
+          "confidence": 0.9,
+          "inferred": false
+        }
+      ],
+      "inferredRelationships": [
+        {
+          "personAId": "person-1",
+          "personBId": "person-3",
+          "type": "parent",
+          "confidence": 0.85,
+          "personAName": "Carlos José Bueso",
+          "personBName": "Marco Andrés Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-3",
+          "type": "parent",
+          "confidence": 0.85,
+          "personAName": "Alicia Rentería Montes de Oca",
+          "personBName": "Marco Andrés Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-1",
+          "personBId": "person-4",
+          "type": "parent",
+          "confidence": 0.85,
+          "personAName": "Carlos José Bueso",
+          "personBName": "Brisela Alessandra Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-4",
+          "type": "parent",
+          "confidence": 0.85,
+          "personAName": "Alicia Rentería Montes de Oca",
+          "personBName": "Brisela Alessandra Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-8",
+          "personBId": "person-9",
+          "type": "parent",
+          "confidence": 0.85,
+          "personAName": "Alicia Rentería",
+          "personBName": "Claudia",
+          "inferred": true
+        },
+        {
+          "personAId": "person-13",
+          "personBId": "person-16",
+          "type": "parent",
+          "confidence": 0.85,
+          "personAName": "Lilian Mas",
+          "personBName": "Héctor Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-14",
+          "personBId": "person-16",
+          "type": "parent",
+          "confidence": 0.85,
+          "personAName": "Héctor Bueso",
+          "personBName": "Héctor Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-3",
+          "personBId": "person-4",
+          "type": "sibling",
+          "confidence": 0.85,
+          "personAName": "Marco Andrés Bueso",
+          "personBName": "Brisela Alessandra Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-narrator-carlos",
+          "personBId": "person-5",
+          "type": "half_sibling",
+          "confidence": 0.85,
+          "personAName": "Carlos Bueso",
+          "personBName": "Cristian Rentería",
+          "inferred": true
+        },
+        {
+          "personAId": "person-5",
+          "personBId": "person-3",
+          "type": "half_sibling",
+          "confidence": 0.85,
+          "personAName": "Cristian Rentería",
+          "personBName": "Marco Andrés Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-5",
+          "personBId": "person-4",
+          "type": "half_sibling",
+          "confidence": 0.85,
+          "personAName": "Cristian Rentería",
+          "personBName": "Brisela Alessandra Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-6",
+          "personBId": "person-7",
+          "type": "sibling",
+          "confidence": 0.85,
+          "personAName": "Mateo Renter",
+          "personBName": "Andr Renter",
+          "inferred": true
+        },
+        {
+          "personAId": "person-10",
+          "personBId": "person-11",
+          "type": "sibling",
+          "confidence": 0.85,
+          "personAName": "Omar Gutiérrez",
+          "personBName": "Valeria Gutiérrez",
+          "inferred": true
+        },
+        {
+          "personAId": "person-1",
+          "personBId": "person-2",
+          "type": "spouse",
+          "confidence": 0.85,
+          "personAName": "Carlos José Bueso",
+          "personBName": "Alicia Rentería Montes de Oca",
+          "inferred": true
+        },
+        {
+          "personAId": "person-13",
+          "personBId": "person-14",
+          "type": "spouse",
+          "confidence": 0.85,
+          "personAName": "Lilian Mas",
+          "personBName": "Héctor Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-6",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Alicia Rentería Montes de Oca",
+          "personBName": "Mateo Renter",
+          "inferred": true
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-7",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Alicia Rentería Montes de Oca",
+          "personBName": "Andr Renter",
+          "inferred": true
+        },
+        {
+          "personAId": "person-8",
+          "personBId": "person-narrator-carlos",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Alicia Rentería",
+          "personBName": "Carlos Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-8",
+          "personBId": "person-5",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Alicia Rentería",
+          "personBName": "Cristian Rentería",
+          "inferred": true
+        },
+        {
+          "personAId": "person-8",
+          "personBId": "person-3",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Alicia Rentería",
+          "personBName": "Marco Andrés Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-8",
+          "personBId": "person-4",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Alicia Rentería",
+          "personBName": "Brisela Alessandra Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-8",
+          "personBId": "person-10",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Alicia Rentería",
+          "personBName": "Omar Gutiérrez",
+          "inferred": true
+        },
+        {
+          "personAId": "person-8",
+          "personBId": "person-11",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Alicia Rentería",
+          "personBName": "Valeria Gutiérrez",
+          "inferred": true
+        },
+        {
+          "personAId": "person-13",
+          "personBId": "person-narrator-carlos",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Lilian Mas",
+          "personBName": "Carlos Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-13",
+          "personBId": "person-3",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Lilian Mas",
+          "personBName": "Marco Andrés Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-13",
+          "personBId": "person-4",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Lilian Mas",
+          "personBName": "Brisela Alessandra Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-14",
+          "personBId": "person-narrator-carlos",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Héctor Bueso",
+          "personBName": "Carlos Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-14",
+          "personBId": "person-3",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Héctor Bueso",
+          "personBName": "Marco Andrés Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-14",
+          "personBId": "person-4",
+          "type": "grandparent",
+          "confidence": 0.85,
+          "personAName": "Héctor Bueso",
+          "personBName": "Brisela Alessandra Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-8",
+          "personBId": "person-6",
+          "type": "great_grandparent",
+          "confidence": 0.85,
+          "personAName": "Alicia Rentería",
+          "personBName": "Mateo Renter",
+          "inferred": true
+        },
+        {
+          "personAId": "person-8",
+          "personBId": "person-7",
+          "type": "great_grandparent",
+          "confidence": 0.85,
+          "personAName": "Alicia Rentería",
+          "personBName": "Andr Renter",
+          "inferred": true
+        },
+        {
+          "personAId": "person-9",
+          "personBId": "person-narrator-carlos",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Claudia",
+          "personBName": "Carlos Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-9",
+          "personBId": "person-5",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Claudia",
+          "personBName": "Cristian Rentería",
+          "inferred": true
+        },
+        {
+          "personAId": "person-9",
+          "personBId": "person-3",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Claudia",
+          "personBName": "Marco Andrés Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-9",
+          "personBId": "person-4",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Claudia",
+          "personBName": "Brisela Alessandra Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-10",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Alicia Rentería Montes de Oca",
+          "personBName": "Omar Gutiérrez",
+          "inferred": true
+        },
+        {
+          "personAId": "person-2",
+          "personBId": "person-11",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Alicia Rentería Montes de Oca",
+          "personBName": "Valeria Gutiérrez",
+          "inferred": true
+        },
+        {
+          "personAId": "person-16",
+          "personBId": "person-narrator-carlos",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Héctor Bueso",
+          "personBName": "Carlos Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-16",
+          "personBId": "person-3",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Héctor Bueso",
+          "personBName": "Marco Andrés Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-16",
+          "personBId": "person-4",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Héctor Bueso",
+          "personBName": "Brisela Alessandra Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-narrator-carlos",
+          "personBId": "person-6",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Carlos Bueso",
+          "personBName": "Mateo Renter",
+          "inferred": true
+        },
+        {
+          "personAId": "person-narrator-carlos",
+          "personBId": "person-7",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Carlos Bueso",
+          "personBName": "Andr Renter",
+          "inferred": true
+        },
+        {
+          "personAId": "person-3",
+          "personBId": "person-6",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Marco Andrés Bueso",
+          "personBName": "Mateo Renter",
+          "inferred": true
+        },
+        {
+          "personAId": "person-3",
+          "personBId": "person-7",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Marco Andrés Bueso",
+          "personBName": "Andr Renter",
+          "inferred": true
+        },
+        {
+          "personAId": "person-4",
+          "personBId": "person-6",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Brisela Alessandra Bueso",
+          "personBName": "Mateo Renter",
+          "inferred": true
+        },
+        {
+          "personAId": "person-4",
+          "personBId": "person-7",
+          "type": "uncle_aunt",
+          "confidence": 0.85,
+          "personAName": "Brisela Alessandra Bueso",
+          "personBName": "Andr Renter",
+          "inferred": true
+        },
+        {
+          "personAId": "person-10",
+          "personBId": "person-5",
+          "type": "cousin",
+          "confidence": 0.85,
+          "personAName": "Omar Gutiérrez",
+          "personBName": "Cristian Rentería",
+          "inferred": true
+        },
+        {
+          "personAId": "person-10",
+          "personBId": "person-3",
+          "type": "cousin",
+          "confidence": 0.85,
+          "personAName": "Omar Gutiérrez",
+          "personBName": "Marco Andrés Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-10",
+          "personBId": "person-4",
+          "type": "cousin",
+          "confidence": 0.85,
+          "personAName": "Omar Gutiérrez",
+          "personBName": "Brisela Alessandra Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-11",
+          "personBId": "person-5",
+          "type": "cousin",
+          "confidence": 0.85,
+          "personAName": "Valeria Gutiérrez",
+          "personBName": "Cristian Rentería",
+          "inferred": true
+        },
+        {
+          "personAId": "person-11",
+          "personBId": "person-3",
+          "type": "cousin",
+          "confidence": 0.85,
+          "personAName": "Valeria Gutiérrez",
+          "personBName": "Marco Andrés Bueso",
+          "inferred": true
+        },
+        {
+          "personAId": "person-11",
+          "personBId": "person-4",
+          "type": "cousin",
+          "confidence": 0.85,
+          "personAName": "Valeria Gutiérrez",
+          "personBName": "Brisela Alessandra Bueso",
+          "inferred": true
+        }
+      ],
+      "peopleCountAfter": 17,
+      "relCountAfter": 75,
+      "timeSeconds": 6.6
+    }
+  ]
+}
