@@ -116,15 +116,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   graceBanner: {
-    backgroundColor: Colors.accent.amber + '12',
-    borderColor: Colors.accent.amber + '35',
+    backgroundColor: '#FBF3E0',
+    borderColor: Colors.accent.amber + '40',
   },
   lapsedBanner: {
-    backgroundColor: Colors.accent.cyan + '08',
-    borderColor: Colors.accent.cyan + '25',
+    backgroundColor: '#FBF3E0',
+    borderColor: Colors.accent.amber + '40',
   },
   billingBanner: {
-    backgroundColor: Colors.accent.coral + '08',
+    backgroundColor: '#1f1210',
     borderColor: Colors.accent.coral + '25',
   },
   bannerContent: {
@@ -139,19 +139,19 @@ const styles = StyleSheet.create({
   graceText: {
     fontSize: Typography.sizes.body,
     fontFamily: Typography.fonts.bodyMedium,
-    color: Colors.accent.amber,
+    color: '#7A6520',
     lineHeight: Typography.sizes.body * Typography.lineHeights.relaxed,
   },
   lapsedText: {
     fontSize: Typography.sizes.body,
     fontFamily: Typography.fonts.bodyMedium,
-    color: Colors.text.starlight,
+    color: '#7A6520',
     lineHeight: Typography.sizes.body * Typography.lineHeights.relaxed,
   },
   exportHint: {
     fontSize: Typography.sizes.caption,
     fontFamily: Typography.fonts.body,
-    color: Colors.accent.coral,
+    color: '#996633',
     marginTop: Spacing.xs,
     lineHeight: Typography.sizes.caption * Typography.lineHeights.relaxed,
   },

@@ -141,25 +141,9 @@ export default function HomeScreen() {
           </Pressable>
         ))}
 
-        {/* First-time family setup prompt — shown when user just onboarded */}
-        {people.length <= 1 && interviews.length === 0 && (
-          <Card variant="glow" style={styles.ctaCard}>
-            <Text style={styles.ctaTitle}>{t('home.setupFamilyTitle')}</Text>
-            <Text style={styles.ctaDescription}>{t('home.setupFamilyDesc')}</Text>
-            <View style={{ gap: Spacing.sm, marginTop: Spacing.md }}>
-              <Button
-                title={t('home.setupFamilyAction')}
-                onPress={() => router.push('/family-group')}
-                variant="primary"
-                size="md"
-              />
-            </View>
-          </Card>
-        )}
-
         {/* First Conversation CTA — shown when no conversations exist */}
         {!hasConversations && (
-          <Card variant="glow" style={[styles.ctaCard, isPremium && styles.ctaCardPremium]}>
+          <Card variant="glow" style={[styles.ctaCard, isPremium ? styles.ctaCardPremium : styles.ctaCardGreen]}>
             <Text style={styles.ctaTitle}>{t('home.shareStoryFirst')}</Text>
             <Text style={styles.ctaDescription}>
               {t('home.shareStoryFirstDesc')}
@@ -182,6 +166,22 @@ export default function HomeScreen() {
               size="md"
               style={{ marginTop: Spacing.md }}
             />
+          </Card>
+        )}
+
+        {/* First-time family setup prompt — shown when user just onboarded */}
+        {people.length <= 1 && interviews.length === 0 && (
+          <Card variant="glow" style={styles.ctaCard}>
+            <Text style={styles.ctaTitle}>{t('home.setupFamilyTitle')}</Text>
+            <Text style={styles.ctaDescription}>{t('home.setupFamilyDesc')}</Text>
+            <View style={{ gap: Spacing.sm, marginTop: Spacing.md }}>
+              <Button
+                title={t('home.setupFamilyAction')}
+                onPress={() => router.push('/family-group')}
+                variant="primary"
+                size="md"
+              />
+            </View>
           </Card>
         )}
 
@@ -420,6 +420,15 @@ const styles = StyleSheet.create({
   },
   ctaCard: {
     marginBottom: Spacing.xl,
+  },
+  ctaCardGreen: {
+    backgroundColor: '#e8f5e0',
+    borderColor: Colors.accent.glow + '30',
+    shadowColor: Colors.accent.glow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 14,
+    elevation: 6,
   },
   ctaCardPremium: {
     borderColor: Colors.accent.amber + '25',

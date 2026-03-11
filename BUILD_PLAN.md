@@ -139,7 +139,7 @@ Local Supabase running, Expo dev client boots on simulator, all env vars set.
 - [ ] Grace period handling for billing issues
 
 ### Acceptance Criteria
-- Can purchase monthly ($9.99) and lifetime ($49.99) plans
+- Can purchase monthly ($9.99) and annual ($59.99) plans
 - Subscription status updates in DB within seconds
 - Feature gates unlock immediately after purchase
 - Restore purchases works for existing subscribers

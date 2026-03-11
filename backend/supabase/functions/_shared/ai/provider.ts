@@ -5,7 +5,7 @@
 // This allows swapping providers without touching business logic.
 // ============================================================
 
-import type { TranscriptionResult, ExtractionResult, SummaryResult, BiographyResult } from '../types.ts';
+import type { TranscriptionResult, ExtractionResult, SummaryResult, StoryResult, BiographyResult } from '../types.ts';
 
 /**
  * Speech-to-Text provider interface.
@@ -41,6 +41,11 @@ export interface LLMProvider {
    * Generate a summary of an interview transcript.
    */
   summarizeInterview(transcriptText: string, language?: string): Promise<SummaryResult>;
+
+  /**
+   * Generate standalone stories from a transcript.
+   */
+  generateStories(transcriptText: string, language?: string): Promise<StoryResult>;
 
   /**
    * Generate a biography for a person based on all known stories and information.

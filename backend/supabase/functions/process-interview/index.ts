@@ -1,5 +1,5 @@
 // ============================================================
-// Matra — Process Interview Edge Function
+// Matra — Process Interview Edge Function (v2 — dedicated story gen)
 // ============================================================
 // Orchestrates the full AI processing pipeline:
 // 1. Upload audio to storage
@@ -81,6 +81,84 @@ function matchQuotesToTimings(
 
   // Cap at 3 snippets per story to keep it digestible
   return results.slice(0, 3);
+}
+
+// ── Fallback Snippet Extraction ──
+// When the AI doesn't provide keyMoments or they fail to match word timings,
+// automatically extract meaningful sentences from the transcript that relate
+// to the story content. Picks sentences that mention people from the story
+// or share key words with the story text.
+function extractFallbackSnippets(
+  transcriptText: string,
+  storyContent: string,
+  involvedPeople: string[],
+): Array<{ quote: string; label: string }> {
+  // Split transcript into sentences
+  const sentences = transcriptText
+    .split(/[.!?]+/)
+    .map((s) => s.trim())
+    .filter((s) => {
+      const wordCount = s.split(/\s+/).length;
+      return wordCount >= 5 && wordCount <= 30;
+    });
+
+  if (sentences.length === 0) return [];
+
+  // Score each sentence by relevance to the story
+  const storyWords = new Set(
+    storyContent.toLowerCase().replace(/[^a-záéíóúüñ\s]/gi, '').split(/\s+/)
+      .filter((w) => w.length > 3)
+  );
+  const peopleNorms = involvedPeople.map((n) => n.toLowerCase());
+  // Common stop words to exclude from scoring
+  const stopWords = new Set(['that', 'this', 'with', 'from', 'have', 'been', 'were', 'they', 'their', 'there', 'also', 'about', 'would', 'como', 'para', 'pero', 'cuando', 'donde', 'tiene', 'están', 'estos']);
+
+  const scored = sentences.map((sentence) => {
+    const lower = sentence.toLowerCase();
+    let score = 0;
+
+    // Bonus for mentioning people in the story
+    for (const name of peopleNorms) {
+      const nameParts = name.split(/\s+/);
+      if (nameParts.some((part) => part.length >= 3 && lower.includes(part))) {
+        score += 3;
+      }
+    }
+
+    // Bonus for sharing content words with the story
+    const sentenceWords = lower.replace(/[^a-záéíóúüñ\s]/gi, '').split(/\s+/);
+    for (const w of sentenceWords) {
+      if (w.length > 3 && !stopWords.has(w) && storyWords.has(w)) {
+        score += 1;
+      }
+    }
+
+    // Prefer medium-length sentences (more likely to be meaningful quotes)
+    const wordCount = sentenceWords.length;
+    if (wordCount >= 8 && wordCount <= 20) score += 1;
+
+    return { sentence, score };
+  });
+
+  // Sort by score descending, take top 2
+  scored.sort((a, b) => b.score - a.score);
+  const top = scored.filter((s) => s.score >= 2).slice(0, 2);
+
+  if (top.length === 0) {
+    // Last resort: pick the longest sentence from the middle of the transcript
+    const mid = Math.floor(sentences.length / 2);
+    const midSentences = sentences.slice(Math.max(0, mid - 2), mid + 3);
+    midSentences.sort((a, b) => b.split(/\s+/).length - a.split(/\s+/).length);
+    if (midSentences[0]) {
+      return [{ quote: midSentences[0], label: 'A family moment' }];
+    }
+    return [];
+  }
+
+  return top.map((s, i) => ({
+    quote: s.sentence,
+    label: i === 0 ? 'A key moment' : 'In their words',
+  }));
 }
 
 serve(async (req: Request) => {
@@ -341,7 +419,8 @@ serve(async (req: Request) => {
           return `  - ${aName} is ${r.relationship_type} of ${bName}`;
         }).filter(Boolean).join('\n');
 
-        existingFamilyContext = `\n[EXISTING FAMILY TREE — These people already exist in the database. When extracting, use the EXACT same names for people who match. Do NOT create duplicates. If the transcript mentions someone who matches an existing person, use their name as listed here.\nKnown people:\n${peopleList}`;
+        existingFamilyContext = `\n[EXISTING FAMILY TREE — These people already exist in the database. When extracting, use the EXACT same names for people who match. Do NOT create duplicates. If the transcript mentions someone who matches an existing person, use their name as listed here.
+CRITICAL — VOICE RECOGNITION NAME MATCHING: This transcript comes from voice/speech recognition, which frequently MISSPELLS names. The same person's name may appear with different spellings across conversations (e.g., "Brizel" might be transcribed as "Brisela", "Bricel", "Brissel", or "Brisel" — these are ALL the same person). When you encounter a name in the transcript that SOUNDS SIMILAR (phonetically) to an existing person below, you MUST use the existing person's exact name in your output. Always prefer matching to an existing person over creating a new one when the names are phonetically similar. Pay special attention to consonant swaps (s/z, c/s, l/r), vowel variations, and extra/missing syllables that are common in speech-to-text errors.\nKnown people:\n${peopleList}`;
         if (relList) {
           existingFamilyContext += `\nKnown relationships:\n${relList}`;
         }
@@ -398,6 +477,41 @@ serve(async (req: Request) => {
       return (s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
     }
 
+    // Levenshtein edit distance for phonetic/fuzzy name matching.
+    // Catches voice recognition misspellings like "Brisela" vs "Bricel" vs "Brizel".
+    function editDistance(a: string, b: string): number {
+      const m = a.length, n = b.length;
+      const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+      for (let i = 0; i <= m; i++) dp[i][0] = i;
+      for (let j = 0; j <= n; j++) dp[0][j] = j;
+      for (let i = 1; i <= m; i++) {
+        for (let j = 1; j <= n; j++) {
+          dp[i][j] = a[i - 1] === b[j - 1]
+            ? dp[i - 1][j - 1]
+            : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+        }
+      }
+      return dp[m][n];
+    }
+
+    // Strip parenthetical disambiguators: "Héctor (padre)" → "Héctor"
+    function stripDisambiguator(name: string): string {
+      return (name || '').replace(/\s*\([^)]*\)\s*$/, '').trim();
+    }
+
+    // Check if a relationship name plausibly refers to a target person name.
+    // Requires all words of the shorter name to appear in the longer one,
+    // with at most 1 extra word difference. Ignores parenthetical disambiguators.
+    function nameRefersTo(refNorm: string, targetNorm: string): boolean {
+      if (refNorm === targetNorm) return true;
+      const rWords = refNorm.split(/\s+/).filter((w: string) => !w.startsWith('(') && !w.endsWith(')'));
+      const tWords = targetNorm.split(/\s+/).filter((w: string) => !w.startsWith('(') && !w.endsWith(')'));
+      const shorter = rWords.length <= tWords.length ? rWords : tWords;
+      const longer = rWords.length <= tWords.length ? tWords : rWords;
+      if (longer.length - shorter.length > 1) return false;
+      return shorter.length > 0 && shorter.every((w: string) => longer.includes(w));
+    }
+
     // Pre-seed the resolution map with the subject/self person so they are
     // NEVER duplicated. Any AI-suggested person matching the narrator's name
     // will resolve to their existing record.
@@ -425,6 +539,18 @@ serve(async (req: Request) => {
       if (!resolvedPeople.has(epKey)) {
         resolvedPeople.set(epKey, ep.id);
       }
+      // Map first word of first name for abbreviated lookups ("Marco" → "Marco Andrés Bueso")
+      const epFirstWord = normalize(ep.first_name || '').split(/\s+/)[0];
+      if (epFirstWord && !resolvedPeople.has(epFirstWord)) {
+        resolvedPeople.set(epFirstWord, ep.id);
+      }
+      // Map nickname for resolution ("Bricel" → Brisela)
+      if (ep.nickname) {
+        const nickKey = normalize(ep.nickname);
+        if (!resolvedPeople.has(nickKey)) {
+          resolvedPeople.set(nickKey, ep.id);
+        }
+      }
     }
 
     // Helper: check if a name looks like a variant of the narrator's name
@@ -451,6 +577,8 @@ serve(async (req: Request) => {
     //  3. It has any direct relationship with the narrator's exact stored name.
     function isDistinctFromNarrator(sugNormFull: string): boolean {
       const narratorName = normalize(`${subjectPerson!.first_name} ${subjectPerson!.last_name || ''}`);
+      // If the suggested name exactly matches the narrator, it IS the narrator
+      if (sugNormFull === narratorName) return false;
       const parentTypes = ['parent', 'grandparent', 'great_grandparent', 'great_great_grandparent'];
       for (const rel of extractionResult.relationships) {
         const normA = normalize(rel.personA);
@@ -512,6 +640,64 @@ serve(async (req: Request) => {
       return false;
     }
 
+    // Check if two people with the same name are actually different individuals
+    // (e.g., deceased father vs living brother both called "Héctor Bueso").
+    function shouldCreateSeparatePerson(
+      suggested: { firstName?: string; lastName?: string; isDeceased?: boolean; birthDate?: string },
+      existingPerson: { first_name: string; last_name?: string; metadata?: any; death_date?: string; birth_date?: string },
+      relationships: Array<{ personA: string; personB: string; relationshipType: string }>
+    ): boolean {
+      // Deceased mismatch → different people
+      const existingDeceased = !!existingPerson.death_date || !!existingPerson.metadata?.is_deceased;
+      if (suggested.isDeceased === true && !existingDeceased) return true;
+      if (!suggested.isDeceased && existingDeceased) return true;
+
+      // Birth date mismatch → different people
+      if (suggested.birthDate && existingPerson.birth_date &&
+          String(suggested.birthDate).slice(0, 4) !== String(existingPerson.birth_date).slice(0, 4)) return true;
+
+      // Direct ancestor relationship between them → different people
+      const sugName = normalize(`${suggested.firstName} ${suggested.lastName || ''}`);
+      const exName = normalize(`${existingPerson.first_name} ${existingPerson.last_name || ''}`);
+      const ancestorTypes = ['parent', 'grandparent', 'great_grandparent', 'great_great_grandparent'];
+      for (const rel of relationships) {
+        const nA = normalize(rel.personA);
+        const nB = normalize(rel.personB);
+        if (ancestorTypes.includes(rel.relationshipType)) {
+          if ((nA === sugName && nB === exName) || (nA === exName && nB === sugName)) return true;
+        }
+      }
+
+      // Contradictory relationship types to the same target (ancestor + peer)
+      const baseNorm = normalize(stripDisambiguator(suggested.firstName || '') + ' ' + stripDisambiguator(suggested.lastName || ''));
+      const baseFirst = baseNorm.split(/\s+/)[0];
+      const ancestorSet = new Set(['parent', 'grandparent', 'great_grandparent', 'step_parent']);
+      const peerSet = new Set(['sibling', 'half_sibling', 'step_sibling', 'spouse', 'ex_spouse']);
+      const byTarget = new Map<string, Set<string>>();
+      for (const rel of relationships) {
+        const nA = normalize(rel.personA);
+        const nB = normalize(rel.personB);
+        // Strict match: only match if nA/nB IS baseNorm or just the first name
+        const matchA = nA === baseNorm || nA === baseFirst;
+        const matchB = nB === baseNorm || nB === baseFirst;
+        if (matchA) {
+          if (!byTarget.has(nB)) byTarget.set(nB, new Set());
+          byTarget.get(nB)!.add(rel.relationshipType);
+        }
+        if (matchB) {
+          if (!byTarget.has(nA)) byTarget.set(nA, new Set());
+          byTarget.get(nA)!.add(rel.relationshipType);
+        }
+      }
+      for (const [, types] of byTarget) {
+        const hasAnc = [...types].some((t: string) => ancestorSet.has(t));
+        const hasPeer = [...types].some((t: string) => peerSet.has(t));
+        if (hasAnc && hasPeer) return true;
+      }
+
+      return false;
+    }
+
     // Track which name keys have been merged as narrator variants, so we don't
     // merge TWO entries with the same name (one might be a parent named after the child).
     const narratorVariantMergedKeys = new Set<string>();
@@ -521,6 +707,13 @@ serve(async (req: Request) => {
       const sugLast = normalize(suggested.lastName || '');
       const sugNick = normalize(suggested.nickname || '');
       const sugFullKey = normalize(`${suggested.firstName} ${suggested.lastName || ''}`);
+      // Strip parenthetical disambiguators for display and matching
+      const displayFirst = stripDisambiguator(suggested.firstName || '');
+      const displayLast = stripDisambiguator(suggested.lastName || '');
+      const cleanFirst = normalize(displayFirst);
+      const cleanLast = normalize(displayLast);
+      const cleanKey = normalize(`${displayFirst} ${displayLast}`);
+      const sugFirstWord = cleanFirst.split(/\s+/)[0];
 
       // ── Narrator variant check ──
       // If the suggested person is actually the narrator with a fuller/different
@@ -530,17 +723,17 @@ serve(async (req: Request) => {
         const subFirst = normalize(subjectPerson.first_name || '');
         const subLast = normalize(subjectPerson.last_name || '');
         const subLastWords = subLast ? subLast.split(/\s+/) : [];
-        const sugLastWords = sugLast ? sugLast.split(/\s+/) : [];
+        const cleanLastWords = cleanLast ? cleanLast.split(/\s+/) : [];
         // Match if first name matches (exact or compound: "Carlos Adrián" starts with "Carlos")
-        const sugFirstWords = sugFirst.split(/\s+/);
-        const firstNameMatches = sugFirst === subFirst || sugFirstWords[0] === subFirst;
+        const cleanFirstWords = cleanFirst.split(/\s+/);
+        const firstNameMatches = cleanFirst === subFirst || cleanFirstWords[0] === subFirst;
         // Match if they share at least one last-name word
-        const sharesLastName = subLastWords.length > 0 && sugLastWords.length > 0 &&
-          subLastWords.some((w: string) => sugLastWords.includes(w));
+        const sharesLastName = subLastWords.length > 0 && cleanLastWords.length > 0 &&
+          subLastWords.some((w: string) => cleanLastWords.includes(w));
         if (firstNameMatches && sharesLastName) {
           // Before resolving to narrator, check if this person is a distinct
           // family member (e.g., a parent of the narrator who shares the name).
-          const sugNormFull = normalize(`${suggested.firstName} ${suggested.lastName || ''}`);
+          const sugNormFull = normalize(`${displayFirst} ${displayLast}`);
 
           // Also check: if this person has birth data that CONTRADICTS the narrator's,
           // they're clearly a different person (e.g., father born in Puerto Rico vs
@@ -600,17 +793,21 @@ serve(async (req: Request) => {
       // If this person was already resolved (e.g. the subject/self, or existing person), skip.
       // EXCEPTIONS:
       //   1. If the match is to the subject/narrator, fall through for disambiguation.
-      //   2. If the AI has a direct relationship between this person and the matched
-      //      person, they are clearly different people (e.g., grandmother "Alicia Rentería"
-      //      is parent of mother "Alicia Rentería Montes de Oca") — fall through.
-      if (resolvedPeople.has(sugFullKey) || resolvedPeople.has(sugFirst)) {
-        const matchedId = resolvedPeople.get(sugFullKey) || resolvedPeople.get(sugFirst);
+      //   2. shouldCreateSeparatePerson detects them as different individuals.
+      //   3. If the AI has a direct relationship between this person and the matched
+      //      person, they are clearly different people — fall through.
+      if (resolvedPeople.has(sugFullKey) || resolvedPeople.has(sugFirstWord)) {
+        const matchedId = resolvedPeople.get(sugFullKey) || resolvedPeople.get(sugFirstWord);
         // Find the name of the person this matched to
         const matchedName = [...resolvedPeople.entries()].find(([, id]) => id === matchedId)?.[0] || '';
+        const matchedPerson = allExisting.find((p: any) => p.id === matchedId);
         const sugName = `${suggested.firstName} ${suggested.lastName || ''}`;
         if (subjectPerson && matchedId === subjectPerson.id) {
           console.log(`[process-interview] Suggested person "${sugName}" matches narrator name — checking if different person`);
           // Fall through to matching loop for careful disambiguation
+        } else if (matchedPerson && shouldCreateSeparatePerson(suggested, matchedPerson, extractionResult.relationships)) {
+          console.log(`[process-interview] Suggested person "${sugName}" matched to "${matchedName}" but detected as different person — treating as separate`);
+          // Fall through — these are different people
         } else if (aiHasRelationshipBetween(sugName, matchedName)) {
           console.log(`[process-interview] Suggested person "${sugName}" matched to "${matchedName}" but AI has a relationship between them — treating as separate person`);
           // Fall through — these are different people
@@ -619,9 +816,9 @@ serve(async (req: Request) => {
         }
       }
 
-      // Try to find a match among existing people
-      let matchId: string | null = null;
-      let bestScore = 0;
+      // Collect all candidates with score ≥ 3, then try each in score order,
+      // skipping any that shouldCreateSeparatePerson or aiHasRelationshipBetween rejects.
+      const candidates: Array<{ id: string; score: number }> = [];
 
       for (const existing of allExisting) {
         // Skip the subject/narrator as a matching candidate. The AI prompt
@@ -633,28 +830,41 @@ serve(async (req: Request) => {
         const exFirst = normalize(existing.first_name || '');
         const exLast = normalize(existing.last_name || '');
         const exNick = normalize(existing.nickname || '');
+        const exFirstWord = exFirst.split(/\s+/)[0]; // First word for multi-word first names
 
         let score = 0;
 
-        // Exact first name match (after normalization)
-        if (sugFirst && exFirst && sugFirst === exFirst) score += 3;
+        // Exact first name match (after normalization, using clean name without disambiguator)
+        if (cleanFirst && exFirst && cleanFirst === exFirst) score += 3;
+        // First word of compound first name matches
+        else if (cleanFirst && exFirstWord && exFirstWord !== exFirst && cleanFirst === exFirstWord) score += 3;
         // First name matches nickname
-        else if (sugFirst && exNick && sugFirst === exNick) score += 2;
+        else if (cleanFirst && exNick && cleanFirst === exNick) score += 2;
         // Nickname matches first name
         else if (sugNick && exFirst && sugNick === exFirst) score += 2;
+        // Nickname matches first word of first name
+        else if (sugNick && exFirstWord && exFirstWord !== exFirst && sugNick === exFirstWord) score += 2;
         // Nickname matches nickname
         else if (sugNick && exNick && sugNick === exNick) score += 2;
         // First name is a prefix (e.g. "Rose" matches "Rosemary")
-        else if (sugFirst && exFirst && (exFirst.startsWith(sugFirst) || sugFirst.startsWith(exFirst)) && Math.min(sugFirst.length, exFirst.length) >= 3) score += 1;
+        else if (cleanFirst && exFirst && (exFirst.startsWith(cleanFirst) || cleanFirst.startsWith(exFirst)) && Math.min(cleanFirst.length, exFirst.length) >= 3) score += 1;
+        // Phonetic/fuzzy match for voice recognition misspellings
+        // e.g. "brisela" vs "bricel" vs "brizel" (edit distance ≤ 2)
+        // Compare against first word of first name to handle multi-word names
+        else if (cleanFirst && exFirstWord && cleanFirst.length >= 4 && exFirstWord.length >= 4) {
+          const dist = editDistance(cleanFirst, exFirstWord);
+          const maxLen = Math.max(cleanFirst.length, exFirstWord.length);
+          if (dist <= 2 && dist / maxLen <= 0.35) score += 2;
+        }
 
         if (score === 0) continue; // No first-name-level match at all
 
         // Last name matching — with substring/containment support
-        if (sugLast && exLast) {
-          if (sugLast === exLast) {
+        if (cleanLast && exLast) {
+          if (cleanLast === exLast) {
             // Exact match
             score += 3;
-          } else if (sugLast.includes(exLast) || exLast.includes(sugLast)) {
+          } else if (cleanLast.includes(exLast) || exLast.includes(cleanLast)) {
             // One last name contains the other (e.g. "Smith" matches "Smith Johnson",
             // "Garcia" matches "Garcia Lopez")
             score += 2;
@@ -665,24 +875,31 @@ serve(async (req: Request) => {
         }
         // One side has no last name — don't penalize (score += 0)
 
-        if (score > bestScore) {
-          bestScore = score;
-          matchId = existing.id;
+        if (score >= 3) {
+          candidates.push({ id: existing.id, score });
         }
       }
 
-      // Before accepting a match, verify the AI doesn't have a direct relationship
-      // between the suggested person and the matched person. If it does, they're
-      // clearly different people (e.g., grandmother and granddaughter with same name).
-      if (matchId && bestScore >= 3) {
-        const matchPerson = allExisting.find((p: any) => p.id === matchId)!;
+      // Sort candidates by score descending, try each until one passes validation
+      candidates.sort((a, b) => b.score - a.score);
+      let matchId: string | null = null;
+      let bestScore = 0;
+
+      for (const candidate of candidates) {
+        const matchPerson = allExisting.find((p: any) => p.id === candidate.id)!;
         const sugName = `${suggested.firstName} ${suggested.lastName || ''}`;
         const matchName = `${matchPerson.first_name} ${matchPerson.last_name || ''}`;
-        if (aiHasRelationshipBetween(sugName, matchName)) {
-          console.log(`[process-interview] "${sugName}" scored ${bestScore} against existing "${matchName}" but AI has a relationship between them — creating as separate person`);
-          matchId = null;
-          bestScore = 0;
+        if (shouldCreateSeparatePerson(suggested, matchPerson, extractionResult.relationships)) {
+          console.log(`[process-interview] "${sugName}" scored ${candidate.score} against existing "${matchName}" but detected as different person — trying next`);
+          continue;
         }
+        if (aiHasRelationshipBetween(sugName, matchName)) {
+          console.log(`[process-interview] "${sugName}" scored ${candidate.score} against existing "${matchName}" but AI has a relationship between them — trying next`);
+          continue;
+        }
+        matchId = candidate.id;
+        bestScore = candidate.score;
+        break;
       }
 
       if (matchId && bestScore >= 3) {
@@ -718,8 +935,12 @@ serve(async (req: Request) => {
         if (!existingFullMapping || !(subjectPerson && existingFullMapping === subjectPerson.id)) {
           resolvedPeople.set(sugFullKey, matchId);
         }
-        // Also seed first-name-only so "Marco" resolves later if AI uses short form
-        if (!resolvedPeople.has(sugFirst)) resolvedPeople.set(sugFirst, matchId);
+        // Also seed clean key (without disambiguator) if different
+        if (cleanKey !== sugFullKey && !resolvedPeople.has(cleanKey)) {
+          resolvedPeople.set(cleanKey, matchId);
+        }
+        // Seed first-word-only so "Marco" resolves later if AI uses short form
+        if (sugFirstWord && !resolvedPeople.has(sugFirstWord)) resolvedPeople.set(sugFirstWord, matchId);
       } else {
         // No match — create new person
         const personMeta: Record<string, unknown> = {};
@@ -731,8 +952,8 @@ serve(async (req: Request) => {
           .from('people')
           .insert({
             family_group_id: familyGroupId,
-            first_name: suggested.firstName,
-            last_name: suggested.lastName,
+            first_name: displayFirst,
+            last_name: displayLast || suggested.lastName,
             nickname: suggested.nickname,
             birth_date: suggested.birthDate,
             death_date: suggested.deathDate,
@@ -751,8 +972,27 @@ serve(async (req: Request) => {
           if (!existingFullMapping || !(subjectPerson && existingFullMapping === subjectPerson.id)) {
             resolvedPeople.set(sugFullKey, newPerson.id);
           }
-          // Also seed first-name-only and normalized first name
-          if (!resolvedPeople.has(sugFirst)) resolvedPeople.set(sugFirst, newPerson.id);
+          // Also seed clean key (without disambiguator) if different
+          if (cleanKey !== sugFullKey) {
+            const cleanMapping = resolvedPeople.get(cleanKey);
+            if (!cleanMapping || !(subjectPerson && cleanMapping === subjectPerson.id)) {
+              resolvedPeople.set(cleanKey, newPerson.id);
+            }
+          }
+          // Seed first-word-only so abbreviated lookups work
+          if (sugFirstWord && !resolvedPeople.has(sugFirstWord)) resolvedPeople.set(sugFirstWord, newPerson.id);
+          // Key ownership swap: if this person's exact clean name matches a key
+          // but the current owner has a longer/different name, this person should own it
+          if (cleanKey !== sugFullKey && resolvedPeople.has(cleanKey)) {
+            const ownerId = resolvedPeople.get(cleanKey)!;
+            const owner = allExisting.find((p: any) => p.id === ownerId);
+            if (owner) {
+              const ownerFullKey = normalize(`${owner.first_name || ''} ${owner.last_name || ''}`);
+              if (ownerFullKey !== cleanKey) {
+                resolvedPeople.set(cleanKey, newPerson.id);
+              }
+            }
+          }
           allExisting.push(newPerson);
         }
       }
@@ -774,17 +1014,40 @@ serve(async (req: Request) => {
       // Direct key match (normalized)
       if (resolvedPeople.has(normName)) return resolvedPeople.get(normName)!;
 
-      // Try first-name-only match against resolved map, but only when
-      // last names are compatible (one is missing, or they share a word).
-      // Use scoring to prefer exact/best matches (e.g., "Carlos José Bueso"
-      // should match key "carlos jose bueso" over key "carlos bueso").
+      // Try stripped disambiguator version (e.g., "Héctor (padre) Bueso" → "hector bueso")
+      const stripped = normalize(stripDisambiguator(name));
+      if (stripped !== normName && resolvedPeople.has(stripped)) return resolvedPeople.get(stripped)!;
+
+      // Scoring-based fallback with prefix, nickname, and edit-distance matching
       let bestResolvedId: string | null = null;
       let bestResolvedScore = 0;
+      let bestResolvedKeyLen = 999;
       for (const [key, id] of resolvedPeople) {
         const keyParts = key.split(/\s+/);
         const keyFirst = keyParts[0];
         const keyLast = keyParts.length > 1 ? keyParts.slice(1).join(' ') : '';
-        if (keyFirst !== normFirst) continue;
+
+        // First name matching: exact, compound-name prefix, nickname, or edit-distance
+        let firstMatch = false;
+        if (keyFirst === normFirst) firstMatch = true;
+        else if (key.startsWith(normFirst + ' ') || normName.startsWith(keyFirst + ' ')) firstMatch = true;
+        else {
+          // Check nickname — look up the person for this key
+          const personForKey = allExisting.find((p: any) => p.id === id);
+          if (personForKey) {
+            const nick = normalize(personForKey.nickname || '');
+            if (nick && (nick === normFirst || nick === normName)) firstMatch = true;
+          }
+        }
+        // Edit-distance fallback for voice recognition errors ("Bricel" ↔ "Brisela")
+        if (!firstMatch && normFirst.length >= 3 && keyFirst.length >= 3) {
+          const dist = editDistance(normFirst, keyFirst);
+          if (dist <= 2 && dist / Math.max(normFirst.length, keyFirst.length) < 0.4) {
+            firstMatch = true;
+          }
+        }
+        if (!firstMatch) continue;
+
         // If both sides have last names, they must share at least one word
         if (normLast && keyLast) {
           const normLastWords = normLast.split(/\s+/);
@@ -793,29 +1056,40 @@ serve(async (req: Request) => {
           if (!hasOverlap) continue;
         }
         // Score: prefer keys that match more parts of the input name
-        // Exact full key match scores highest
         let score = 1;
         if (key === normName) score = 100;
         else {
-          // Count how many words in the key also appear in normName
           const normWords = normName.split(/\s+/);
           score = keyParts.filter((w: string) => normWords.includes(w)).length;
+          // Bonus for nickname match
+          const personForKey = allExisting.find((p: any) => p.id === id);
+          if (personForKey) {
+            const nick = normalize(personForKey.nickname || '');
+            if (nick && (nick === normFirst || nick === normName)) score += 2;
+          }
         }
-        if (score > bestResolvedScore) {
+        // Tie-break: prefer keys closer in word count to the input
+        if (score > bestResolvedScore || (score === bestResolvedScore && Math.abs(keyParts.length - normParts.length) < Math.abs(bestResolvedKeyLen - normParts.length))) {
           bestResolvedScore = score;
           bestResolvedId = id;
+          bestResolvedKeyLen = keyParts.length;
         }
       }
       if (bestResolvedId) return bestResolvedId;
 
-      // Fall back to DB existing people (also normalized), same scoring approach
+      // Fall back to DB existing people (also normalized), same enhanced scoring
       let bestExistingId: string | null = null;
       let bestExistingScore = 0;
       for (const p of allExisting) {
         const exFirst = normalize(p.first_name || '');
         const exLast = normalize(p.last_name || '');
         const exNick = normalize(p.nickname || '');
-        const firstMatch = exFirst === normFirst || exNick === normFirst;
+        let firstMatch = exFirst === normFirst || exNick === normFirst;
+        // Edit-distance fallback
+        if (!firstMatch && normFirst.length >= 3 && exFirst.length >= 3) {
+          const dist = editDistance(normFirst, exFirst);
+          if (dist <= 2 && dist / Math.max(normFirst.length, exFirst.length) < 0.4) firstMatch = true;
+        }
         if (!firstMatch) continue;
         if (normLast && exLast) {
           const normLastWords = normLast.split(/\s+/);
@@ -831,6 +1105,7 @@ serve(async (req: Request) => {
           const normWords = normName.split(/\s+/);
           const exWords = exFull.split(/\s+/);
           score = exWords.filter((w: string) => normWords.includes(w)).length;
+          if (exNick && (exNick === normFirst || exNick === normName)) score += 2;
         }
         if (score > bestExistingScore) {
           bestExistingScore = score;
@@ -891,8 +1166,42 @@ serve(async (req: Request) => {
     }
 
     for (const rel of extractionResult.relationships) {
-      const personAId = resolvePersonName(rel.personA);
-      const personBId = resolvePersonName(rel.personB);
+      let personAId = resolvePersonName(rel.personA);
+      let personBId = resolvePersonName(rel.personB);
+
+      // For spouse/ex_spouse, if one side resolved to a deceased person, check if
+      // there's a non-deceased person with the same base name (same base + more words).
+      // e.g., "Alicia Rentería" (deceased grandma) → swap to "Alicia Rentería Montes de Oca" (mom)
+      if (personAId && personBId && (rel.relationshipType === 'spouse' || rel.relationshipType === 'ex_spouse')) {
+        const personARecord = allExisting.find((p: any) => p.id === personAId);
+        const personBRecord = allExisting.find((p: any) => p.id === personBId);
+        if (personARecord && (personARecord.death_date || personARecord.metadata?.is_deceased)) {
+          const baseKey = normalize(`${personARecord.first_name} ${personARecord.last_name || ''}`);
+          for (const [k, pid] of resolvedPeople) {
+            if (pid !== personAId) {
+              const candidate = allExisting.find((p: any) => p.id === pid);
+              if (candidate && !candidate.death_date && !candidate.metadata?.is_deceased && k.startsWith(baseKey)) {
+                console.log(`[process-interview] Spouse swap: using "${candidate.first_name} ${candidate.last_name || ''}" instead of deceased "${personARecord.first_name} ${personARecord.last_name || ''}"`);
+                personAId = pid;
+                break;
+              }
+            }
+          }
+        }
+        if (personBRecord && (personBRecord.death_date || personBRecord.metadata?.is_deceased)) {
+          const baseKey = normalize(`${personBRecord.first_name} ${personBRecord.last_name || ''}`);
+          for (const [k, pid] of resolvedPeople) {
+            if (pid !== personBId) {
+              const candidate = allExisting.find((p: any) => p.id === pid);
+              if (candidate && !candidate.death_date && !candidate.metadata?.is_deceased && k.startsWith(baseKey)) {
+                console.log(`[process-interview] Spouse swap: using "${candidate.first_name} ${candidate.last_name || ''}" instead of deceased "${personBRecord.first_name} ${personBRecord.last_name || ''}"`);
+                personBId = pid;
+                break;
+              }
+            }
+          }
+        }
+      }
 
       if (personAId && personBId && personAId !== personBId) {
         // Validate that the relationship type is a known enum value
@@ -930,6 +1239,59 @@ serve(async (req: Request) => {
           personB: rel.personB, resolvedB: personBId,
           type: rel.relationshipType,
         });
+      }
+    }
+
+    // 8a. Fix same-name relationship conflicts
+    // When a person has both ancestor-type and peer-type relationships to the same target,
+    // reassign the peer relationships to the other person with the same name.
+    // (e.g., deceased Héctor Bueso is parent AND sibling of narrator → reassign sibling to living Héctor)
+    {
+      const ancestorTypes = new Set(['parent', 'grandparent', 'great_grandparent', 'step_parent']);
+      const peerTypes = new Set(['sibling', 'half_sibling', 'spouse', 'ex_spouse', 'step_sibling']);
+
+      // Group people by normalized base name
+      const nameGroups = new Map<string, Array<{ id: string; first_name: string; last_name?: string; death_date?: string; metadata?: any }>>();
+      for (const p of allExisting) {
+        const name = normalize(`${p.first_name} ${p.last_name || ''}`);
+        if (!nameGroups.has(name)) nameGroups.set(name, []);
+        nameGroups.get(name)!.push(p);
+      }
+
+      for (const [, group] of nameGroups) {
+        if (group.length < 2) continue;
+
+        // Load relationships for each person in the group
+        for (const person of group) {
+          const { data: personRels } = await supabase
+            .from('relationships')
+            .select('id, person_a_id, person_b_id, relationship_type')
+            .eq('family_group_id', familyGroupId)
+            .eq('person_a_id', person.id);
+
+          const rels = personRels || [];
+          const ancRels = rels.filter((r: any) => ancestorTypes.has(r.relationship_type));
+          const peerRelsData = rels.filter((r: any) => peerTypes.has(r.relationship_type));
+
+          if (ancRels.length > 0 && peerRelsData.length > 0) {
+            const isDeceased = !!person.death_date || !!person.metadata?.is_deceased;
+            const altPerson = isDeceased
+              ? group.find(p => p.id !== person.id && !p.death_date && !p.metadata?.is_deceased)
+              : group.find(p => p.id !== person.id && (!!p.death_date || !!p.metadata?.is_deceased));
+
+            if (altPerson) {
+              // Deceased person keeps ancestor rels, peer rels go to the alive one
+              const relsToReassign = isDeceased ? peerRelsData : ancRels;
+              const targetPerson = isDeceased ? altPerson : altPerson;
+              for (const pr of relsToReassign) {
+                console.log(`[process-interview] Reassigning ${pr.relationship_type} from ${person.first_name} (${person.id}) to ${targetPerson.first_name} (${targetPerson.id})`);
+                await supabase.from('relationships')
+                  .update({ person_a_id: targetPerson.id })
+                  .eq('id', pr.id);
+              }
+            }
+          }
+        }
       }
     }
 
@@ -1253,7 +1615,7 @@ serve(async (req: Request) => {
       summaryResult = null;
     }
 
-    // 10. Save summary and stories
+    // 10. Save summary and generate stories
     let storiesCreatedCount = 0;
     if (summaryResult) {
       await supabase
@@ -1263,77 +1625,111 @@ serve(async (req: Request) => {
           ai_key_topics: summaryResult.keyTopics,
         })
         .eq('id', interview.id);
+    }
 
-      // Determine how many stories to save based on subscription tier
-      const entitlements = await getUserEntitlements(userId);
-      const maxStories = entitlements.limits.maxStoriesPerInterview;
-      const suggestedStories = Array.isArray(summaryResult.suggestedStories)
-        ? summaryResult.suggestedStories
-        : [];
-      let storiesToSave = suggestedStories.slice(0, maxStories);
+    // 10a. Dedicated story generation — always run as a separate AI pass
+    const entitlements = await getUserEntitlements(userId);
+    const maxStories = entitlements.limits.maxStoriesPerInterview;
+    let storiesToSave: Array<{
+      title: string;
+      content: string;
+      involvedPeople: string[];
+      approximateDate?: string;
+      location?: string;
+      keyMoments?: Array<{ quote: string; label: string }>;
+    }> = [];
 
-      // Guarantee at least 1 story per conversation — synthesize from summary if AI returned none
-      if (storiesToSave.length === 0 && summaryResult.summary) {
-        // Generate a meaningful title from the summary instead of using the generic interview title
-        const firstSentence = summaryResult.summary.split(/[.!?]/)[0]?.trim();
-        const fallbackTitle = firstSentence && firstSentence.length > 10 && firstSentence.length < 80
-          ? firstSentence
-          : (summaryResult.keyTopics?.[0] || 'A Family Memory');
-        storiesToSave = [{
-          title: fallbackTitle,
-          content: summaryResult.summary,
-          involvedPeople: [],
-          approximateDate: undefined,
-          location: undefined,
-        }];
+    try {
+      console.log('[process-interview] Generating stories with dedicated story generator...');
+      const storyResult = await llmProvider.generateStories(transcriptText, language || undefined);
+      if (storyResult?.stories && Array.isArray(storyResult.stories) && storyResult.stories.length > 0) {
+        storiesToSave = storyResult.stories.slice(0, maxStories);
+        console.log(`[process-interview] Story generator produced ${storyResult.stories.length} stories, saving ${storiesToSave.length}`);
       }
+    } catch (err) {
+      console.error('[process-interview] Story generator failed:', err);
+    }
 
-      if (storiesToSave.length > 0) {
-        // Resolve audio snippets if we have word timings (premium feature)
-        const canUseSnippets = entitlements.limits.audioSnippets && wordTimings && wordTimings.length > 0;
+    // Fallback: if story generator returned nothing, use summary stories
+    if (storiesToSave.length === 0 && summaryResult?.suggestedStories?.length) {
+      console.log('[process-interview] Falling back to summary-generated stories');
+      storiesToSave = summaryResult.suggestedStories.slice(0, maxStories);
+    }
 
-        for (const story of storiesToSave) {
-          // Match key moments to audio timestamps via word timings
-          let audioSnippets: Array<{ label: string; quote: string; startMs: number; endMs: number }> = [];
-          if (canUseSnippets && story.keyMoments && story.keyMoments.length > 0) {
-            audioSnippets = matchQuotesToTimings(story.keyMoments, wordTimings!, transcriptText);
+    // Last resort: synthesize from summary text
+    if (storiesToSave.length === 0 && summaryResult?.summary) {
+      console.log('[process-interview] No stories from any source — synthesizing from summary');
+      const firstSentence = summaryResult.summary.split(/[.!?]/)[0]?.trim();
+      const fallbackTitle = firstSentence && firstSentence.length > 10 && firstSentence.length < 80
+        ? firstSentence
+        : (summaryResult.keyTopics?.[0] || 'A Family Memory');
+      storiesToSave = [{
+        title: fallbackTitle,
+        content: summaryResult.summary,
+        involvedPeople: [],
+        approximateDate: undefined,
+        location: undefined,
+      }];
+    }
+
+    if (storiesToSave.length > 0) {
+      // Resolve audio snippets if we have word timings (premium feature)
+      const canUseSnippets = entitlements.limits.audioSnippets && wordTimings && wordTimings.length > 0;
+
+      for (const story of storiesToSave) {
+        // Match key moments to audio timestamps via word timings
+        let audioSnippets: Array<{ label: string; quote: string; startMs: number; endMs: number }> = [];
+        if (canUseSnippets && story.keyMoments && story.keyMoments.length > 0) {
+          audioSnippets = matchQuotesToTimings(story.keyMoments, wordTimings!, transcriptText);
+          console.log(`[process-interview] Matched ${audioSnippets.length}/${story.keyMoments.length} keyMoments to audio for "${story.title}"`);
+        }
+
+        // Fallback: if no snippets matched (or AI didn't provide keyMoments),
+        // extract snippets automatically from the transcript by finding
+        // meaningful sentences that relate to the story content.
+        if (canUseSnippets && audioSnippets.length === 0) {
+          console.log(`[process-interview] No keyMoments matched for "${story.title}" — extracting fallback snippets from transcript`);
+          const fallbackMoments = extractFallbackSnippets(transcriptText, story.content, story.involvedPeople || []);
+          if (fallbackMoments.length > 0) {
+            audioSnippets = matchQuotesToTimings(fallbackMoments, wordTimings!, transcriptText);
+            console.log(`[process-interview] Fallback extracted ${audioSnippets.length} snippets for "${story.title}"`);
           }
+        }
 
-          const metadata: Record<string, unknown> = {};
-          if (audioSnippets.length > 0) {
-            metadata.audioSnippets = audioSnippets;
-          }
+        const metadata: Record<string, unknown> = {};
+        if (audioSnippets.length > 0) {
+          metadata.audioSnippets = audioSnippets;
+        }
 
-          const { data: storyRecord } = await supabase
-            .from('stories')
-            .insert({
-              family_group_id: familyGroupId,
-              interview_id: interview.id,
-              title: story.title,
-              content: story.content,
-              ai_generated: true,
-              event_date: story.approximateDate || null,
-              event_location: story.location || null,
-              metadata,
-              created_by: userId,
-            })
-            .select()
-            .single();
+        const { data: storyRecord } = await supabase
+          .from('stories')
+          .insert({
+            family_group_id: familyGroupId,
+            interview_id: interview.id,
+            title: story.title,
+            content: story.content,
+            ai_generated: true,
+            event_date: story.approximateDate || null,
+            event_location: story.location || null,
+            metadata,
+            created_by: userId,
+          })
+          .select()
+          .single();
 
-          if (storyRecord) {
-            storiesCreatedCount++;
+        if (storyRecord) {
+          storiesCreatedCount++;
 
-            // Link people to stories
-            if (story.involvedPeople && story.involvedPeople.length > 0) {
-              for (const personName of story.involvedPeople) {
-                const personId = resolvePersonName(personName);
+          // Link people to stories
+          if (story.involvedPeople && story.involvedPeople.length > 0) {
+            for (const personName of story.involvedPeople) {
+              const personId = resolvePersonName(personName);
 
-                if (personId) {
-                  await supabase.from('story_people').upsert(
-                    { story_id: storyRecord.id, person_id: personId, role: 'mentioned' },
-                    { onConflict: 'story_id,person_id' }
-                  );
-                }
+              if (personId) {
+                await supabase.from('story_people').upsert(
+                  { story_id: storyRecord.id, person_id: personId, role: 'mentioned' },
+                  { onConflict: 'story_id,person_id' }
+                );
               }
             }
           }

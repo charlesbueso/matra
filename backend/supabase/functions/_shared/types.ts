@@ -135,6 +135,20 @@ export interface SummaryResult {
   }>;
 }
 
+export interface StoryResult {
+  stories: Array<{
+    title: string;
+    content: string;
+    involvedPeople: string[];
+    approximateDate?: string;
+    location?: string;
+    keyMoments?: Array<{
+      quote: string;
+      label: string;
+    }>;
+  }>;
+}
+
 export interface BiographyResult {
   biography: string;
   wordCount: number;

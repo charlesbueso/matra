@@ -3,8 +3,8 @@
 // ============================================================
 
 import type { LLMProvider, PersonBiographyInput, FamilyDocumentaryInput } from './provider.ts';
-import type { ExtractionResult, SummaryResult, BiographyResult } from '../types.ts';
-import { getExtractionPrompt, getSummaryPrompt, getBiographyPrompt, getDocumentaryPrompt } from './prompts.ts';
+import type { ExtractionResult, SummaryResult, StoryResult, BiographyResult } from '../types.ts';
+import { getExtractionPrompt, getSummaryPrompt, getStoryGeneratorPrompt, getBiographyPrompt, getDocumentaryPrompt } from './prompts.ts';
 import { fetchWithRetry } from './fetch-retry.ts';
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1';
@@ -72,6 +72,17 @@ export class AnthropicLLMProvider implements LLMProvider {
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('Failed to parse summary result');
     return JSON.parse(jsonMatch[0]) as SummaryResult;
+  }
+
+  async generateStories(transcriptText: string, language?: string): Promise<StoryResult> {
+    const raw = await this.message(
+      getStoryGeneratorPrompt(language) + '\n\nIMPORTANT: Respond ONLY with valid JSON, no other text.',
+      transcriptText,
+      0.8
+    );
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Failed to parse story result');
+    return JSON.parse(jsonMatch[0]) as StoryResult;
   }
 
   async generateBiography(personInfo: PersonBiographyInput, language?: string): Promise<BiographyResult> {

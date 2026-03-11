@@ -3,8 +3,8 @@
 // ============================================================
 
 import type { STTProvider, LLMProvider, PersonBiographyInput, FamilyDocumentaryInput } from './provider.ts';
-import type { TranscriptionResult, ExtractionResult, SummaryResult, BiographyResult } from '../types.ts';
-import { getExtractionPrompt, getSummaryPrompt, getBiographyPrompt, getDocumentaryPrompt } from './prompts.ts';
+import type { TranscriptionResult, ExtractionResult, SummaryResult, StoryResult, BiographyResult } from '../types.ts';
+import { getExtractionPrompt, getSummaryPrompt, getStoryGeneratorPrompt, getBiographyPrompt, getDocumentaryPrompt } from './prompts.ts';
 import { fetchWithRetry } from './fetch-retry.ts';
 
 const OPENAI_API_URL = 'https://api.openai.com/v1';
@@ -208,6 +208,11 @@ export class OpenAILLMProvider implements LLMProvider {
   async summarizeInterview(transcriptText: string, language?: string): Promise<SummaryResult> {
     const raw = await this.chatCompletion(getSummaryPrompt(language), transcriptText, true, 0.7);
     return JSON.parse(raw) as SummaryResult;
+  }
+
+  async generateStories(transcriptText: string, language?: string): Promise<StoryResult> {
+    const raw = await this.chatCompletion(getStoryGeneratorPrompt(language), transcriptText, true, 0.7);
+    return JSON.parse(raw) as StoryResult;
   }
 
   async generateBiography(personInfo: PersonBiographyInput, language?: string): Promise<BiographyResult> {

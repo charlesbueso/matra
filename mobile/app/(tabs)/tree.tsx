@@ -54,6 +54,7 @@ function layoutNodes(
   const childrenOf = new Map<string, string[]>(); // parentId → childIds
   const parentOf = new Map<string, string[]>();    // childId → parentIds
   const spouseOf = new Map<string, Set<string>>(); // personId → spouseIds
+  const exSpousePairs = new Set<string>();          // "idA|idB" for ex_spouse links
 
   for (const rel of relationships) {
     const a = rel.person_a_id;
@@ -79,6 +80,21 @@ function layoutNodes(
       if (!spouseOf.has(b)) spouseOf.set(b, new Set());
       spouseOf.get(a)!.add(b);
       spouseOf.get(b)!.add(a);
+      if (type === 'ex_spouse') {
+        exSpousePairs.add([a, b].sort().join('|'));
+      }
+    } else if (type === 'step_parent') {
+      // A is step_parent of B — track as parent/child so step-parent connects to child
+      if (!childrenOf.has(a)) childrenOf.set(a, []);
+      childrenOf.get(a)!.push(b);
+      if (!parentOf.has(b)) parentOf.set(b, []);
+      parentOf.get(b)!.push(a);
+    } else if (type === 'step_child') {
+      // A is step_child of B — B is step_parent of A
+      if (!childrenOf.has(b)) childrenOf.set(b, []);
+      childrenOf.get(b)!.push(a);
+      if (!parentOf.has(a)) parentOf.set(a, []);
+      parentOf.get(a)!.push(b);
     } else if (type === 'sibling') {
       // Siblings share a generation — also track for adjacency in layout
       if (!spouseOf.has(a)) spouseOf.set(a, new Set());
@@ -161,6 +177,30 @@ function layoutNodes(
           }
         }
       }
+    }
+  }
+
+  // ── Infer spouse links from step_parent relationships ──
+  // If A is step_parent of B, and C is a biological parent of B, then A and C
+  // are likely partners. Add a spouse link so they appear as a couple in the layout.
+  for (const rel of relationships) {
+    if (rel.relationship_type !== 'step_parent' && rel.relationship_type !== 'step_child') continue;
+    const a = rel.person_a_id;
+    const b = rel.person_b_id;
+    if (!peopleById.has(a) || !peopleById.has(b)) continue;
+    // Determine step-parent and child
+    const stepParentId = rel.relationship_type === 'step_parent' ? a : b;
+    const childId = rel.relationship_type === 'step_parent' ? b : a;
+    // Find biological parents of this child
+    const bioParents = (parentOf.get(childId) || []).filter((p) => p !== stepParentId);
+    for (const bioParentId of bioParents) {
+      // Only link if they're not already spouse-linked
+      const existingSpouses = spouseOf.get(bioParentId);
+      if (existingSpouses && existingSpouses.has(stepParentId)) continue;
+      if (!spouseOf.has(bioParentId)) spouseOf.set(bioParentId, new Set());
+      if (!spouseOf.has(stepParentId)) spouseOf.set(stepParentId, new Set());
+      spouseOf.get(bioParentId)!.add(stepParentId);
+      spouseOf.get(stepParentId)!.add(bioParentId);
     }
   }
 
@@ -277,20 +317,61 @@ function layoutNodes(
   let maxRowWidth = 0;
   const PADDING = 80;
 
-  // Helper: build units (couples or singles) from a list of person IDs
+  // Helper: build units (couples, multi-spouse, or singles) from a list of person IDs.
+  // Multi-spouse: if a person has 2+ spouses in the row, create a 3-person unit
+  // [spouse1, person, spouse2] with width = 2 * COUPLE_GAP.
   function buildUnits(ids: string[]) {
     const placed = new Set<string>();
     const units: { ids: string[]; width: number }[] = [];
     for (const personId of ids) {
       if (placed.has(personId)) continue;
       const spouses = spouseOf.get(personId);
-      const spouseInRow = spouses
-        ? [...spouses].find((s) => ids.includes(s) && !placed.has(s))
-        : null;
-      if (spouseInRow) {
+      // Find ALL unplaced spouses in this row
+      const spousesInRow = spouses
+        ? [...spouses].filter((s) => ids.includes(s) && !placed.has(s))
+        : [];
+
+      if (spousesInRow.length >= 2) {
+        // Multi-spouse unit: [spouse1, person, spouse2]
+        // Put ex-spouses on the outer left, current spouse on outer right
+        placed.add(personId);
+        const exes: string[] = [];
+        const currents: string[] = [];
+        for (const sp of spousesInRow) {
+          placed.add(sp);
+          const pairKey = [personId, sp].sort().join('|');
+          if (exSpousePairs.has(pairKey)) {
+            exes.push(sp);
+          } else {
+            currents.push(sp);
+          }
+        }
+        // Layout: [ex-spouses..., person, current-spouses...]
+        const unitIds = [...exes, personId, ...currents];
+        // If all are exes or all are current, just put person in middle
+        if (exes.length === 0 && currents.length >= 2) {
+          // person in middle of current spouses
+          const mid = Math.floor(currents.length / 2);
+          unitIds.length = 0;
+          unitIds.push(...currents.slice(0, mid), personId, ...currents.slice(mid));
+        }
+        units.push({ ids: unitIds, width: (unitIds.length - 1) * COUPLE_GAP });
+      } else if (spousesInRow.length === 1) {
+        const spouseInRow = spousesInRow[0];
         placed.add(personId);
         placed.add(spouseInRow);
-        units.push({ ids: [personId, spouseInRow], width: COUPLE_GAP });
+        // Order couple so the member with siblings in the row is on the right
+        const personHasSib = siblingOf.get(personId)?.size
+          ? [...siblingOf.get(personId)!].some((s) => ids.includes(s))
+          : false;
+        const spouseHasSib = siblingOf.get(spouseInRow)?.size
+          ? [...siblingOf.get(spouseInRow)!].some((s) => ids.includes(s))
+          : false;
+        if (personHasSib && !spouseHasSib) {
+          units.push({ ids: [spouseInRow, personId], width: COUPLE_GAP });
+        } else {
+          units.push({ ids: [personId, spouseInRow], width: COUPLE_GAP });
+        }
       } else {
         placed.add(personId);
         units.push({ ids: [personId], width: 0 });
@@ -316,14 +397,10 @@ function layoutNodes(
 
       let x = PADDING + (Math.max(maxRowWidth, SCREEN_WIDTH) - totalWidth) / 2;
       for (const unit of units) {
-        if (unit.ids.length === 2) {
-          positions.set(unit.ids[0], { x, y });
-          positions.set(unit.ids[1], { x: x + COUPLE_GAP, y });
-          x += COUPLE_GAP + HORIZONTAL_SPACING;
-        } else {
-          positions.set(unit.ids[0], { x, y });
-          x += HORIZONTAL_SPACING;
+        for (let i = 0; i < unit.ids.length; i++) {
+          positions.set(unit.ids[i], { x: x + i * COUPLE_GAP, y });
         }
+        x += unit.width + HORIZONTAL_SPACING;
       }
       continue;
     }
@@ -363,7 +440,6 @@ function layoutNodes(
       let placed = false;
       if (sibs) {
         for (const sibId of sibs) {
-          // Find which parent group this sibling belongs to
           for (const [key, children] of parentUnitMap) {
             if (children.includes(sibId)) {
               children.push(orphanId);
@@ -372,6 +448,23 @@ function layoutNodes(
             }
           }
           if (placed) break;
+        }
+      }
+      // Also pull in orphan spouses: if this orphan's spouse is in a parent group,
+      // add the orphan to that group so they form a couple unit together.
+      if (!placed) {
+        const spouses = spouseOf.get(orphanId);
+        if (spouses) {
+          for (const spId of spouses) {
+            for (const [key, children] of parentUnitMap) {
+              if (children.includes(spId)) {
+                children.push(orphanId);
+                placed = true;
+                break;
+              }
+            }
+            if (placed) break;
+          }
         }
       }
       if (!placed) remainingOrphans.push(orphanId);
@@ -393,32 +486,132 @@ function layoutNodes(
     }
     orderedChildren.push(...remainingOrphans);
 
-    const units = buildUnits(orderedChildren);
-    const totalWidth = units.reduce((sum, u) => sum + u.width, 0) +
-      (units.length - 1) * HORIZONTAL_SPACING;
-    maxRowWidth = Math.max(maxRowWidth, totalWidth);
+    // Position each parent group's children centered under their parents,
+    // then resolve overlaps between groups.
+    // Build units per parent group so each group can be centered independently.
+    interface PlacedUnit { ids: string[]; width: number; x: number }
+    const groupPlacements: PlacedUnit[][] = [];
 
-    // Try to center sibling groups under their parents
-    // First pass: compute desired center for each group
-    let x = PADDING + (Math.max(maxRowWidth, SCREEN_WIDTH) - totalWidth) / 2;
-    for (const unit of units) {
-      // Find the parent center for this unit's first member
-      const firstChild = unit.ids[0];
-      const parents = parentOf.get(firstChild) || [];
-      const positionedParents = parents.filter((p) => positions.has(p));
-      if (positionedParents.length > 0) {
-        const parentCenterX = positionedParents.reduce((sum, p) => sum + positions.get(p)!.x, 0) / positionedParents.length;
-        // Nudge x toward parent center (but don't overlap with previous unit)
-        x = Math.max(x, parentCenterX - (unit.width / 2));
+    for (const key of sortedParentKeys) {
+      const groupChildren = parentUnitMap.get(key)!;
+      const groupUnits = buildUnits(groupChildren);
+
+      // Find the center x of the parent unit
+      const parentIds = key.split('|');
+      const parentXs = parentIds.map((id) => positions.get(id)?.x ?? 0);
+      const parentCenterX = parentXs.reduce((a, b) => a + b, 0) / parentXs.length;
+
+      // Compute total width of this group
+      const groupTotalWidth = groupUnits.reduce((sum, u) => sum + u.width, 0) +
+        (groupUnits.length - 1) * HORIZONTAL_SPACING;
+
+      // Center the group under the parent
+      let gx = parentCenterX - groupTotalWidth / 2;
+      const placed: PlacedUnit[] = [];
+      for (const unit of groupUnits) {
+        placed.push({ ids: unit.ids, width: unit.width, x: gx });
+        gx += unit.width + HORIZONTAL_SPACING;
       }
+      groupPlacements.push(placed);
+    }
 
-      if (unit.ids.length === 2) {
-        positions.set(unit.ids[0], { x, y });
-        positions.set(unit.ids[1], { x: x + COUPLE_GAP, y });
-        x += COUPLE_GAP + HORIZONTAL_SPACING;
+    // Also handle remaining orphans as their own group
+    if (remainingOrphans.length > 0) {
+      const orphanUnits = buildUnits(remainingOrphans);
+      // Place orphans starting after the last group
+      let ox = PADDING;
+      const placed: PlacedUnit[] = [];
+      for (const unit of orphanUnits) {
+        placed.push({ ids: unit.ids, width: unit.width, x: ox });
+        ox += unit.width + HORIZONTAL_SPACING;
+      }
+      groupPlacements.push(placed);
+    }
+
+    // Resolve overlaps group-by-group (preserving group order, never interleaving).
+    // Each group's leftmost unit must not overlap the previous group's rightmost unit.
+    for (let g = 0; g < groupPlacements.length; g++) {
+      const group = groupPlacements[g];
+      // Ensure minimum x is at least PADDING
+      if (group.length > 0 && group[0].x < PADDING) {
+        const shift = PADDING - group[0].x;
+        for (const pu of group) pu.x += shift;
+      }
+      if (g === 0) continue;
+      // Find rightmost edge of previous group
+      const prevGroup = groupPlacements[g - 1];
+      const prevLast = prevGroup[prevGroup.length - 1];
+      const prevRightEdge = prevLast.x + prevLast.width;
+      const minX = prevRightEdge + HORIZONTAL_SPACING;
+      if (group[0].x < minX) {
+        const shift = minX - group[0].x;
+        for (const pu of group) pu.x += shift;
+      }
+    }
+
+    // Now apply the computed positions (iterate groups in order, not sorted by x)
+    let rowWidth = 0;
+    for (const group of groupPlacements) {
+      for (const pu of group) {
+        for (let i = 0; i < pu.ids.length; i++) {
+          positions.set(pu.ids[i], { x: pu.x + i * COUPLE_GAP, y });
+        }
+        rowWidth = Math.max(rowWidth, pu.x + pu.width);
+      }
+    }
+
+    // Post-pass: shift single parents to center above their children group
+    for (const key of sortedParentKeys) {
+      const parentIds = key.split('|');
+      if (parentIds.length !== 1) continue; // skip couples
+      const parentId = parentIds[0];
+      const parentPos = positions.get(parentId);
+      if (!parentPos) continue;
+      const children = parentUnitMap.get(key)!;
+      const childXs = children.map((c) => positions.get(c)?.x ?? 0);
+      if (childXs.length === 0) continue;
+      const childCenter = (Math.min(...childXs) + Math.max(...childXs)) / 2;
+      // Only shift right (don't push back into previous sibling)
+      if (childCenter > parentPos.x) {
+        parentPos.x = childCenter;
+      }
+    }
+
+    maxRowWidth = Math.max(maxRowWidth, rowWidth + PADDING);
+  }
+
+  // Bottom-up re-centering: after all generations are placed (and single parents
+  // shifted to center above their children), propagate shifts upward so that
+  // grandparents re-center above their (now shifted) children.
+  for (let gi = sortedGens.length - 2; gi >= 0; gi--) {
+    const gen = sortedGens[gi];
+    const row = genGroups.get(gen)!;
+    for (const personId of row) {
+      const kids = childrenOf.get(personId);
+      if (!kids || kids.length === 0) continue;
+      const pos = positions.get(personId);
+      if (!pos) continue;
+      // Find positioned children
+      const kidXs = kids.map((c) => positions.get(c)?.x).filter((x): x is number => x !== undefined);
+      if (kidXs.length === 0) continue;
+      // Also include spouse position to compute couple center
+      const spouses = spouseOf.get(personId);
+      const spouseInRow = spouses ? [...spouses].find((s) => row.includes(s) && positions.has(s)) : null;
+      const childCenter = (Math.min(...kidXs) + Math.max(...kidXs)) / 2;
+      if (spouseInRow) {
+        // Couple: shift both so couple center aligns with children center
+        const spousePos = positions.get(spouseInRow)!;
+        const coupleCenter = (Math.min(pos.x, spousePos.x) + Math.max(pos.x, spousePos.x)) / 2;
+        const shift = childCenter - coupleCenter;
+        if (shift > 0) {
+          pos.x += shift;
+          spousePos.x += shift;
+        }
       } else {
-        positions.set(unit.ids[0], { x, y });
-        x += HORIZONTAL_SPACING;
+        // Single parent: center above children
+        if (childCenter > pos.x) {
+          pos.x = childCenter;
+        }
       }
     }
   }
@@ -785,7 +978,8 @@ export default function TreeScreen() {
 
             // Only draw ancestor-type lines (parent, grandparent, etc.)
             const ancestorTypes = ['parent', 'child', 'grandparent', 'grandchild',
-              'great_grandparent', 'great_grandchild', 'great_great_grandparent', 'great_great_grandchild'];
+              'great_grandparent', 'great_grandchild', 'great_great_grandparent', 'great_great_grandchild',
+              'step_parent', 'step_child'];
             if (!ancestorTypes.includes(type)) return null;
 
             // For multi-gen links (grandparent+), skip if there's an intermediate

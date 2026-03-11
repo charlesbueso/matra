@@ -158,6 +158,7 @@ export function getLLMProviderWithFallback(): LLMProvider {
     name: `${primaryProvider.name} (with fallback)`,
     extractEntities: withFallback('extractEntities'),
     summarizeInterview: withFallback('summarizeInterview'),
+    generateStories: withFallback('generateStories'),
     generateBiography: withFallback('generateBiography'),
     generateDocumentaryScript: withFallback('generateDocumentaryScript'),
   };

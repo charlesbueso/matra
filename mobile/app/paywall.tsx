@@ -63,23 +63,25 @@ export default function PaywallScreen() {
     return () => { mounted = false; };
   }, []);
 
-  // If already premium, show confirmation and go back
+  const downgrade = useSubscriptionStore((s) => s.downgrade);
+
+  // If already premium AND not in grace/lapsed state, show confirmation and go back
   useEffect(() => {
-    if (tier === 'premium') {
+    if (tier === 'premium' && !downgrade.inGracePeriod && !downgrade.isLapsed) {
       Alert.alert(
         t('paywall.alreadyPremiumTitle'),
         t('paywall.alreadyPremiumMessage'),
         [{ text: 'OK', onPress: () => router.back() }],
       );
     }
-  }, [tier]);
+  }, [tier, downgrade.inGracePeriod, downgrade.isLapsed]);
 
   const selectedPackage = packages[selectedPlan];
 
   const getDisplayPrice = (plan: PlanType): string => {
     const pkg = packages[plan];
     if (pkg) return pkg.product.priceString;
-    return plan === 'monthly' ? '$6.99' : '$49.99';
+    return plan === 'monthly' ? '$9.99' : '$59.99';
   };
 
   const getDisplayPeriod = (plan: PlanType): string => {
@@ -226,13 +228,15 @@ export default function PaywallScreen() {
         </Animated.View>
 
         {/* Restore */}
-        <Button
-          title={isRestoring ? t('paywall.restoring') : t('paywall.restorePurchases')}
+        <Pressable
           onPress={handleRestore}
-          variant="ghost"
-          size="sm"
           disabled={isRestoring || isPurchasing}
-        />
+          style={{ alignSelf: 'center', paddingVertical: Spacing.sm }}
+        >
+          <Text style={styles.restoreText}>
+            {isRestoring ? t('paywall.restoring') : t('paywall.restorePurchases')}
+          </Text>
+        </Pressable>
       </ScrollView>
     </StarField>
   );
@@ -360,5 +364,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: Spacing.md,
     marginBottom: Spacing.lg,
+  },
+  restoreText: {
+    fontSize: Typography.sizes.body,
+    fontFamily: Typography.fonts.bodySemiBold,
+    color: Colors.accent.amber,
+    textAlign: 'center',
   },
 });

@@ -734,7 +734,6 @@ export default function RecordScreen() {
                 <Text style={styles.tip}>{t('record.tipOneSpeaker')}</Text>
                 <Text style={styles.tip}>{t('record.tipOther2')}</Text>
                 <Text style={styles.tip}>{t('record.tipOther3')}</Text>
-                <Text style={styles.tip}>{t('record.tipOther4')}</Text>
               </>
             )}
           </View>

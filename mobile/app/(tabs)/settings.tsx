@@ -104,9 +104,11 @@ export default function SettingsScreen() {
   const [isExportingData, setIsExportingData] = useState(false);
   const [isExportingMemoryBook, setIsExportingMemoryBook] = useState(false);
   const [isChangingEmail, setIsChangingEmail] = useState(false);
-  const [showEmailInput, setShowEmailInput] = useState(false);
+  const [showProfileEdit, setShowProfileEdit] = useState(false);
   const [showSubscriptionInfo, setShowSubscriptionInfo] = useState(false);
   const [newEmail, setNewEmail] = useState('');
+  const [newDisplayName, setNewDisplayName] = useState('');
+  const [isSavingName, setIsSavingName] = useState(false);
   const avatarUrl = useSignedUrl(profile?.avatar_url);
   const downgrade = useSubscriptionStore((s) => s.downgrade);
 
@@ -187,6 +189,25 @@ export default function SettingsScreen() {
     ? interviews.filter((i) => new Date(i.created_at) >= dayStart).length
     : 0;
 
+  const handleChangeName = async () => {
+    const trimmed = newDisplayName.trim();
+    if (!trimmed) return;
+    if (trimmed === profile?.display_name) {
+      setShowProfileEdit(false);
+      return;
+    }
+    setIsSavingName(true);
+    try {
+      await updateProfile({ display_name: trimmed });
+      setShowProfileEdit(false);
+      setNewDisplayName('');
+    } catch (err: any) {
+      Alert.alert(t('common.error'), err.message);
+    } finally {
+      setIsSavingName(false);
+    }
+  };
+
   const handleChangeEmail = async () => {
     const trimmed = newEmail.trim().toLowerCase();
     if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
@@ -198,7 +219,7 @@ export default function SettingsScreen() {
     setIsChangingEmail(true);
     try {
       await updateEmail(trimmed);
-      setShowEmailInput(false);
+      setShowProfileEdit(false);
       setNewEmail('');
       Alert.alert(
         t('settings.changeEmailSent'),
@@ -438,39 +459,59 @@ export default function SettingsScreen() {
             </View>
           </Pressable>
           <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>{profile?.display_name || t('settings.explorer')}</Text>
+            <Text style={styles.profileName} numberOfLines={1}>{profile?.display_name || t('settings.explorer')}</Text>
             <View style={styles.tierBadge}>
               <Text style={styles.tierText}>{tierLabel}</Text>
             </View>
-            <Pressable style={styles.profileEmailRow} onPress={() => setShowEmailInput(true)}>
-              <Text style={styles.profileEmail} numberOfLines={1}>
-                {useAuthStore.getState().user?.email || '—'}
-              </Text>
-              <Text style={styles.profileEmailEdit}>✏️</Text>
-            </Pressable>
+            <Text style={styles.profileEmail} numberOfLines={1}>
+              {useAuthStore.getState().user?.email || '—'}
+            </Text>
           </View>
+          <Pressable
+            style={styles.profileEditButton}
+            onPress={() => {
+              setShowProfileEdit(!showProfileEdit);
+              setNewDisplayName(profile?.display_name || '');
+              setNewEmail('');
+            }}
+          >
+            <Ionicons name={showProfileEdit ? 'close-outline' : 'create-outline'} size={20} color={Colors.text.twilight} />
+          </Pressable>
         </Card>
 
-        {showEmailInput && (
-          <Card variant="elevated" style={{ marginBottom: Spacing.md, padding: Spacing.md }}>
-            <TextInput
-              style={styles.emailInput}
-              value={newEmail}
-              onChangeText={setNewEmail}
-              placeholder={t('settings.newEmailPlaceholder')}
-              placeholderTextColor={Colors.text.shadow}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              autoFocus
-            />
-            <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.sm }}>
+        {showProfileEdit && (
+          <Card variant="elevated" style={{ marginBottom: Spacing.xl, padding: Spacing.lg, gap: Spacing.md }}>
+            <View>
+              <Text style={styles.editLabel}>{t('settings.nameLabel')}</Text>
+              <TextInput
+                style={styles.emailInput}
+                value={newDisplayName}
+                onChangeText={setNewDisplayName}
+                placeholder={t('settings.newNamePlaceholder')}
+                placeholderTextColor={Colors.text.shadow}
+                autoCapitalize="words"
+                autoCorrect={false}
+              />
               <Button
-                title={t('common.cancel')}
-                onPress={() => { setShowEmailInput(false); setNewEmail(''); }}
-                variant="ghost"
+                title={isSavingName ? t('settings.savingName') : t('settings.confirmChangeName')}
+                onPress={handleChangeName}
                 size="sm"
-                style={{ flex: 1 }}
+                loading={isSavingName}
+                disabled={isSavingName || !newDisplayName.trim()}
+                style={{ marginTop: Spacing.sm }}
+              />
+            </View>
+            <View>
+              <Text style={styles.editLabel}>{t('settings.email')}</Text>
+              <TextInput
+                style={styles.emailInput}
+                value={newEmail}
+                onChangeText={setNewEmail}
+                placeholder={t('settings.newEmailPlaceholder')}
+                placeholderTextColor={Colors.text.shadow}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
               />
               <Button
                 title={isChangingEmail ? t('settings.changingEmail') : t('settings.confirmChangeEmail')}
@@ -478,7 +519,7 @@ export default function SettingsScreen() {
                 size="sm"
                 loading={isChangingEmail}
                 disabled={isChangingEmail || !newEmail.trim()}
-                style={{ flex: 1 }}
+                style={{ marginTop: Spacing.sm }}
               />
             </View>
           </Card>
@@ -505,7 +546,7 @@ export default function SettingsScreen() {
                 onPress={() => router.push('/paywall')}
                 variant="premium"
                 size="sm"
-                style={{ marginTop: Spacing.sm }}
+                style={{ marginTop: Spacing.sm, alignSelf: 'flex-end' }}
               />
             )}
 
@@ -516,7 +557,7 @@ export default function SettingsScreen() {
                 onPress={() => router.push('/paywall')}
                 variant="premium"
                 size="sm"
-                style={{ marginTop: Spacing.sm }}
+                style={{ marginTop: Spacing.sm, alignSelf: 'flex-end' }}
               />
             )}
           </Card>
@@ -875,10 +916,30 @@ const styles = StyleSheet.create({
   profileEmailEdit: {
     fontSize: 12,
   },
+  profileNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  profileEditButton: {
+    position: 'absolute',
+    top: Spacing.md,
+    right: Spacing.md,
+    padding: Spacing.xs,
+  },
+  editLabel: {
+    fontSize: Typography.sizes.caption,
+    fontFamily: Typography.fonts.bodySemiBold,
+    color: Colors.text.twilight,
+    marginBottom: Spacing.xs,
+    textTransform: 'uppercase',
+    letterSpacing: Typography.letterSpacing.wide,
+  },
   profileName: {
     fontSize: Typography.sizes.h3,
     fontFamily: Typography.fonts.heading,
     color: Colors.text.starlight,
+    flexShrink: 1,
   },
   tierBadge: {
     alignSelf: 'flex-start',

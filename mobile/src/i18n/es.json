@@ -227,7 +227,13 @@
     "premiumMoreStories": "Más Historias/Sesión",
     "setupFamilyTitle": "Configura Tu Familia",
     "setupFamilyDesc": "Nombra tu grupo familiar, agrega miembros y comienza a grabar conversaciones para construir tu árbol familiar.",
-    "setupFamilyAction": "Configurar Grupo Familiar"
+    "setupFamilyAction": "Configurar Grupo Familiar",
+    "gracePeriodBanner": "Tu suscripción terminó. Tienes {{days}} días de acceso completo restantes.",
+    "gracePeriodAction": "Renovar Ahora",
+    "lapsedBanner": "¡Bienvenido de vuelta! Tus recuerdos están seguros. Mejora para desbloquear todas las funciones de nuevo.",
+    "lapsedExportBanner": "Aún puedes exportar tu libro de recuerdos por {{days}} días más.",
+    "billingRetryBanner": "Tuvimos un problema con tu pago. Tu acceso continúa mientras reintentamos.",
+    "resubscribe": "Re-suscribirse"
   },
   "record": {
     "whoSharing": "¿Quién comparte hoy?",
@@ -272,7 +278,6 @@
     "tipOther1": "• Busca un lugar tranquilo",
     "tipOther2": "• Anímale a compartir libremente",
     "tipOther3": "• Deja que cuente las historias con sus propias palabras",
-    "tipOther4": "• Pregunta sobre recuerdos y personas específicas",
     "discardTitle": "¿Descartar Grabación?",
     "discardMessage": "Esto eliminará la nota de voz. ¿Estás seguro de que quieres volver a grabar?",
     "keep": "Conservar",
@@ -488,6 +493,10 @@
     "account": "Cuenta",
     "email": "Correo electrónico",
     "changeEmail": "Cambiar correo",
+    "nameLabel": "Nombre",
+    "newNamePlaceholder": "Ingresa tu nombre",
+    "confirmChangeName": "Guardar Nombre",
+    "savingName": "Guardando...",
     "newEmailPlaceholder": "Ingresa el nuevo correo electrónico",
     "confirmChangeEmail": "Actualizar correo",
     "changingEmail": "Actualizando...",
