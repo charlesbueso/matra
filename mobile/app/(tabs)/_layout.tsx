@@ -1,23 +1,33 @@
 // ============================================================
-// MATRA — Tab Layout
+// Matra — Tab Layout
 // ============================================================
 
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { View, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Typography } from '../../src/theme/tokens';
 import { useNotificationStore } from '../../src/stores/notificationStore';
+import { useSubscriptionStore } from '../../src/stores/subscriptionStore';
+import { useFamilyStore } from '../../src/stores/familyStore';
+import { useTranslation } from 'react-i18next';
 
 export default function TabLayout() {
+  const insets = useSafeAreaInsets();
+  const bottomPadding = Math.max(insets.bottom, 8);
+  const { t } = useTranslation();
   const unreadLineage = useNotificationStore((s) => s.unreadLineageCount);
   const unreadStories = useNotificationStore((s) => s.unreadStoryCount);
+  const isPremium = useSubscriptionStore((s) => s.tier) === 'premium';
+  const familyGroups = useFamilyStore((s) => s.familyGroups);
+  const needsFamilySetup = !familyGroups[0] || familyGroups[0].name === 'My Family' || !familyGroups[0].name.trim();
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [styles.tabBar, { height: 57 + bottomPadding, paddingBottom: bottomPadding }],
         tabBarActiveTintColor: Colors.accent.cyan,
         tabBarInactiveTintColor: Colors.text.twilight,
         tabBarLabelStyle: styles.tabLabel,
@@ -26,7 +36,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="home"
         options={{
-          title: 'Home',
+          title: t('tabs.home'),
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="water-outline" size={size} color={color} />
           ),
@@ -35,7 +45,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="tree"
         options={{
-          title: 'Lineage',
+          title: t('tabs.lineage'),
           tabBarIcon: ({ color, size }) => (
             <View>
               <Ionicons name="git-network-outline" size={size} color={color} />
@@ -51,12 +61,12 @@ export default function TabLayout() {
       <Tabs.Screen
         name="record"
         options={{
-          title: 'Record',
+          title: t('tabs.record'),
           tabBarLabel: () => null,
           tabBarIcon: ({ size }) => (
-            <View style={styles.recordButton}>
+            <View style={[styles.recordButton, isPremium && styles.recordButtonPremium]}>
               <Ionicons name="mic" size={size + 4} color="#FFFFFF" />
-              <Text style={styles.recordLabel}>Record</Text>
+              <Text style={styles.recordLabel}>{t('tabs.record')}</Text>
             </View>
           ),
         }}
@@ -64,7 +74,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="stories"
         options={{
-          title: 'Stories',
+          title: t('tabs.stories'),
           tabBarIcon: ({ color, size }) => (
             <View>
               <Ionicons name="book-outline" size={size} color={color} />
@@ -80,9 +90,16 @@ export default function TabLayout() {
       <Tabs.Screen
         name="settings"
         options={{
-          title: 'Settings',
+          title: t('tabs.settings'),
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="settings-outline" size={size} color={color} />
+            <View>
+              <Ionicons name="settings-outline" size={size} color={color} />
+              {needsFamilySetup && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>1</Text>
+                </View>
+              )}
+            </View>
           ),
         }}
       />
@@ -95,9 +112,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderTopColor: 'rgba(139, 115, 85, 0.10)',
     borderTopWidth: 1,
-    height: 85,
     paddingTop: 8,
-    paddingBottom: 28,
     shadowColor: '#8B7355',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.06,
@@ -121,6 +136,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.5,
     shadowRadius: 16,
     elevation: 12,
+  },
+  recordButtonPremium: {
+    backgroundColor: Colors.accent.amber,
+    shadowColor: Colors.accent.amber,
+    shadowOpacity: 0.45,
   },
   recordLabel: {
     color: '#FFFFFF',

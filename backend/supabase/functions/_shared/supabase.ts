@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Supabase Client Factory
+// Matra — Supabase Client Factory
 // ============================================================
 
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -46,8 +46,12 @@ export function getServiceClient(): SupabaseClient {
  * Get the authenticated user's ID from the request.
  */
 export async function getAuthUserId(req: Request): Promise<string> {
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader) throw new Error('Unauthorized');
+
+  const token = authHeader.replace('Bearer ', '');
   const client = getUserClient(req);
-  const { data: { user }, error } = await client.auth.getUser();
+  const { data: { user }, error } = await client.auth.getUser(token);
 
   if (error || !user) {
     throw new Error('Unauthorized');

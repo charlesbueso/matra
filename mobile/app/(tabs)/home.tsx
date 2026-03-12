@@ -1,24 +1,40 @@
 // ============================================================
-// MATRA — Home Tab
+// Matra — Home Tab
 // ============================================================
 
 import React, { useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, RefreshControl, ActivityIndicator, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { StarField, BioAlgae, Card, Button, TreeTrunk } from '../../src/components/ui';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useFamilyStore } from '../../src/stores/familyStore';
-import { Colors, Typography, Spacing } from '../../src/theme/tokens';
+import { useSubscriptionStore } from '../../src/stores/subscriptionStore';
+import { useTranslation } from 'react-i18next';
+import { Colors, Typography, Spacing, BorderRadius } from '../../src/theme/tokens';
+import { SubscriptionStatusBanner } from '../../src/components/SubscriptionStatusBanner';
 
 export default function HomeScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const profile = useAuthStore((s) => s.profile);
   const selfPersonId = useAuthStore((s) => s.profile?.self_person_id);
   const { people, interviews, stories, isLoading, fetchAllFamilyData, fetchFamilyGroups } = useFamilyStore();
+  const isProcessingInterview = useFamilyStore((s) => s.isProcessingInterview);
+  const backgroundJobs = useFamilyStore((s) => s.backgroundJobs);
+  const dismissJob = useFamilyStore((s) => s.dismissJob);
+  const fetchEntitlements = useSubscriptionStore((s) => s.fetchEntitlements);
+  const tier = useSubscriptionStore((s) => s.tier);
+  const downgrade = useSubscriptionStore((s) => s.downgrade);
   const [refreshing, setRefreshing] = React.useState(false);
+
+  const isPremium = tier === 'premium';
+  const familyGroups = useFamilyStore((s) => s.familyGroups);
+  const relationships = useFamilyStore((s) => s.relationships);
 
   useEffect(() => {
     fetchFamilyGroups().then(() => fetchAllFamilyData());
+    fetchEntitlements();
   }, []);
 
   const onRefresh = async () => {
@@ -32,6 +48,10 @@ export default function HomeScreen() {
     : null;
 
   const hasConversations = interviews.length > 0;
+
+  // Family setup is needed if the group name is still default AND no interviews recorded
+  const needsFamilySetup = interviews.length === 0
+    && (!familyGroups[0] || familyGroups[0].name === 'My Family' || !familyGroups[0].name.trim());
 
   // People who don't have a conversation yet (excluding self)
   const peopleWithoutConversation = people.filter((p) => p.id !== selfPersonId);
@@ -49,35 +69,83 @@ export default function HomeScreen() {
       >
         {/* Greeting */}
         <View style={styles.greeting}>
-          <Text style={styles.greetingText}>
-            Welcome back, {profile?.display_name || 'Explorer'}
-          </Text>
+          <View style={styles.greetingRow}>
+            <Text style={styles.greetingText}>
+              {t('home.welcomeBack', { name: profile?.display_name || 'Explorer' })}
+            </Text>
+            {isPremium && (
+              <LinearGradient
+                colors={Colors.gradients.premium as any}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.premiumBadge}
+              >
+                <Text style={styles.premiumBadgeText}>◈ {t('home.premium')}</Text>
+              </LinearGradient>
+            )}
+          </View>
           <Text style={styles.greetingSubtext}>
-            {people.length <= 1 ? 'Start a conversation to grow your tree' : 'Your family tree is growing'}
+            {people.length <= 1 ? t('home.startConversation') : t('home.treeGrowing')}
           </Text>
         </View>
+
+        {/* Subscription Status Banners (grace period / lapsed / billing retry) */}
+        <SubscriptionStatusBanner />
 
         {/* Quick Stats */}
         <View style={styles.statsRow}>
-          <StatCard label="People" value={people.length} icon="🌳" onPress={() => router.push('/(tabs)/tree')} />
-          <StatCard label="Sessions" value={interviews.length} icon="🎙" onPress={() => router.push({ pathname: '/(tabs)/settings', params: { scrollTo: 'conversations' } })} />
-          <StatCard label="Stories" value={stories.length} icon="📖" onPress={() => router.push('/(tabs)/stories')} />
+          <StatCard label={t('home.people', { count: people.length })} value={people.length} icon="🌳" onPress={() => router.push('/(tabs)/tree')} isPremium={isPremium} />
+          <StatCard label={t('home.sessions', { count: interviews.length })} value={interviews.length} icon="🎙" onPress={() => router.push({ pathname: '/(tabs)/settings', params: { scrollTo: 'conversations' } })} isPremium={isPremium} />
+          <StatCard label={t('home.stories', { count: stories.length })} value={stories.length} icon="📖" onPress={() => router.push('/(tabs)/stories')} isPremium={isPremium} />
         </View>
+
+        {/* Processing / Completed Job Banners */}
+        {backgroundJobs.filter((j) => j.status === 'processing').length > 0 && (
+          <Card variant="glow" style={styles.processingBanner} onPress={() => router.push('/(tabs)/record')}>
+            <View style={styles.processingBannerContent}>
+              <ActivityIndicator size="small" color={Colors.accent.glow} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.processingBannerTitle}>
+                  {t('home.processingCount', { count: backgroundJobs.filter((j) => j.status === 'processing').length })}
+                </Text>
+                <Text style={styles.processingBannerDetail}>
+                  {t('home.processingDetail')}
+                </Text>
+              </View>
+            </View>
+          </Card>
+        )}
+        {backgroundJobs.filter((j) => j.status === 'completed').map((job) => (
+          <Pressable
+            key={job.id}
+            style={styles.completedBanner}
+            onPress={() => {
+              dismissJob(job.id);
+              if (job.interviewId) router.push(`/interview/${job.interviewId}`);
+            }}
+          >
+            <Text style={styles.completedBannerIcon}>✅</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.completedBannerTitle}>{t('home.jobReady', { title: job.title })}</Text>
+              <Text style={styles.completedBannerDetail}>{t('home.jobReadyDetail')}</Text>
+            </View>
+          </Pressable>
+        ))}
 
         {/* First Conversation CTA — shown when no conversations exist */}
         {!hasConversations && (
-          <Card variant="glow" style={styles.ctaCard}>
-            <Text style={styles.ctaTitle}>Share Your Story First</Text>
+          <Card variant="glow" style={[styles.ctaCard, isPremium ? styles.ctaCardPremium : styles.ctaCardGreen]}>
+            <Text style={styles.ctaTitle}>{t('home.shareStoryFirst')}</Text>
             <Text style={styles.ctaDescription}>
-              Start by recording your own memories and family lore. This helps the AI understand your family tree so future conversations are even richer.
+              {t('home.shareStoryFirstDesc')}
             </Text>
             {conversationsRemaining !== null && (
               <Text style={styles.ctaLimit}>
-                {conversationsRemaining} free session{conversationsRemaining !== 1 ? 's' : ''} remaining
+                {t('home.freeSessionsRemaining', { count: conversationsRemaining })}
               </Text>
             )}
             <Button
-              title="Share My Story"
+              title={t('home.shareMyStory')}
               onPress={() => {
                 if (selfPersonId) {
                   router.push({ pathname: '/(tabs)/record', params: { personId: selfPersonId } });
@@ -85,29 +153,45 @@ export default function HomeScreen() {
                   router.push('/(tabs)/record');
                 }
               }}
-              variant="primary"
+              variant={isPremium ? 'premium' : 'primary'}
               size="md"
               style={{ marginTop: Spacing.md }}
             />
           </Card>
         )}
 
+        {/* First-time family setup prompt — shown when family name not configured */}
+        {needsFamilySetup && (
+          <Card variant="glow" style={styles.ctaCard}>
+            <Text style={styles.ctaTitle}>{t('home.setupFamilyTitle')}</Text>
+            <Text style={styles.ctaDescription}>{t('home.setupFamilyDesc')}</Text>
+            <View style={{ gap: Spacing.sm, marginTop: Spacing.md }}>
+              <Button
+                title={t('home.setupFamilyAction')}
+                onPress={() => router.push('/family-group')}
+                variant="primary"
+                size="md"
+              />
+            </View>
+          </Card>
+        )}
+
         {/* General Record CTA — shown when conversations exist */}
         {hasConversations && (
-          <Card variant="glow" style={styles.ctaCard}>
-            <Text style={styles.ctaTitle}>Record a Conversation</Text>
+          <Card variant="glow" style={[styles.ctaCard, isPremium && styles.ctaCardPremium]}>
+            <Text style={styles.ctaTitle}>{t('home.recordConversation')}</Text>
             <Text style={styles.ctaDescription}>
-              Sit down with a family member and let their stories become branches in your living tree.
+              {t('home.recordConversationDesc')}
             </Text>
             {conversationsRemaining !== null && (
               <Text style={styles.ctaLimit}>
-                {conversationsRemaining} free session{conversationsRemaining !== 1 ? 's' : ''} remaining
+                {t('home.freeSessionsRemaining', { count: conversationsRemaining })}
               </Text>
             )}
             <Button
-              title="Start Recording"
+              title={t('home.startRecording')}
               onPress={() => router.push('/(tabs)/record')}
-              variant="primary"
+              variant={isPremium ? 'premium' : 'primary'}
               size="md"
               style={{ marginTop: Spacing.md }}
             />
@@ -117,9 +201,9 @@ export default function HomeScreen() {
         {/* Quick Record for Existing People */}
         {hasConversations && peopleWithoutConversation.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Capture More Stories</Text>
+            <Text style={styles.sectionTitle}>{t('home.captureMoreStories')}</Text>
             <Text style={styles.sectionSubtitle}>
-              Record a conversation with a family member to grow their branch.
+              {t('home.captureMoreStoriesDesc')}
             </Text>
             <ScrollView
               horizontal
@@ -141,7 +225,7 @@ export default function HomeScreen() {
                       </Text>
                     </View>
                     <Text style={styles.personChipName} numberOfLines={1}>{name}</Text>
-                    <Text style={styles.personChipAction}>Record 🎙</Text>
+                    <Text style={styles.personChipAction}>{t('home.recordEmoji')}</Text>
                   </Card>
                 );
               })}
@@ -152,7 +236,7 @@ export default function HomeScreen() {
         {/* Recent Conversations */}
         {interviews.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Recent Conversations</Text>
+            <Text style={styles.sectionTitle}>{t('home.recentConversations')}</Text>
             {interviews.slice(0, 3).map((interview) => (
               <Card
                 key={interview.id}
@@ -160,7 +244,7 @@ export default function HomeScreen() {
                 style={styles.interviewCard}
                 onPress={() => router.push(`/interview/${interview.id}`)}
               >
-                <Text style={styles.interviewTitle}>{interview.title || 'Untitled Conversation'}</Text>
+                <Text style={styles.interviewTitle}>{interview.title || t('common.untitledConversation')}</Text>
                 <Text style={styles.interviewDate}>
                   {new Date(interview.created_at).toLocaleDateString()}
                 </Text>
@@ -171,7 +255,7 @@ export default function HomeScreen() {
                 )}
                 <View style={styles.interviewMeta}>
                   <Text style={styles.statusBadge}>
-                    {interview.status === 'completed' ? '✓ Processed' : '⏳ Processing...'}
+                    {interview.status === 'completed' ? t('common.processed') : t('common.processing')}
                   </Text>
                 </View>
               </Card>
@@ -179,19 +263,55 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* Upgrade Banner (free tier only) */}
-        {profile?.subscription_tier === 'free' && (
+        {/* Premium Features Section (premium users) */}
+        {isPremium && (
+          <View style={styles.premiumFeaturesCard}>
+            <View style={styles.premiumFeaturesHeader}>
+              <Text style={styles.premiumFeaturesIcon}>◈</Text>
+              <Text style={styles.premiumFeaturesTitle}>{t('home.premiumFeatures')}</Text>
+            </View>
+            <View style={styles.premiumFeaturesGrid}>
+              <View style={styles.premiumFeatureItem}>
+                <Text style={styles.premiumFeatureEmoji}>🎙️</Text>
+                <Text style={styles.premiumFeatureLabel}>{t('home.premium30mo')}</Text>
+              </View>
+              <View style={styles.premiumFeatureItem}>
+                <Text style={styles.premiumFeatureEmoji}>✨</Text>
+                <Text style={styles.premiumFeatureLabel}>{t('home.premiumAI')}</Text>
+              </View>
+              <View style={styles.premiumFeatureItem}>
+                <Text style={styles.premiumFeatureEmoji}>📖</Text>
+                <Text style={styles.premiumFeatureLabel}>{t('home.premiumExport')}</Text>
+              </View>
+              <View style={styles.premiumFeatureItem}>
+                <Text style={styles.premiumFeatureEmoji}>👨‍👩‍👧‍👦</Text>
+                <Text style={styles.premiumFeatureLabel}>{t('home.premiumSharing')}</Text>
+              </View>
+              <View style={styles.premiumFeatureItem}>
+                <Text style={styles.premiumFeatureEmoji}>🔊</Text>
+                <Text style={styles.premiumFeatureLabel}>{t('home.premiumAudioSnippets')}</Text>
+              </View>
+              <View style={styles.premiumFeatureItem}>
+                <Text style={styles.premiumFeatureEmoji}>🌟</Text>
+                <Text style={styles.premiumFeatureLabel}>{t('home.premiumMoreStories')}</Text>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Upgrade Banner (free tier only, not shown for lapsed users who already see their banner) */}
+        {!isPremium && !downgrade.isLapsed && !downgrade.inGracePeriod && (
           <Card
             variant="elevated"
             style={styles.upgradeCard}
             onPress={() => router.push('/paywall')}
           >
-            <Text style={styles.upgradeTitle}>◈ Unlock Premium</Text>
+            <Text style={styles.upgradeTitle}>{t('home.unlockPremium')}</Text>
             <Text style={styles.upgradeDescription}>
-              Unlimited conversations, AI biographies, memory book exports, and more.
+              {t('home.unlockPremiumDesc')}
             </Text>
             <Button
-              title="See Plans"
+              title={t('home.seePlans')}
               onPress={() => router.push('/paywall')}
               variant="premium"
               size="sm"
@@ -204,12 +324,12 @@ export default function HomeScreen() {
   );
 }
 
-function StatCard({ label, value, icon, onPress }: { label: string; value: number; icon: string; onPress?: () => void }) {
+function StatCard({ label, value, icon, onPress, isPremium }: { label: string; value: number; icon: string; onPress?: () => void; isPremium?: boolean }) {
   return (
-    <Card variant="default" style={styles.statCard} onPress={onPress}>
+    <Card variant="default" style={[styles.statCard, isPremium && styles.statCardPremium]} onPress={onPress}>
       <Text style={styles.statIcon}>{icon}</Text>
       <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+      <Text style={[styles.statLabel, isPremium && styles.statLabelPremium]}>{label}</Text>
     </Card>
   );
 }
@@ -226,10 +346,28 @@ const styles = StyleSheet.create({
   greeting: {
     marginBottom: Spacing.xxl,
   },
+  greetingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
   greetingText: {
     fontSize: Typography.sizes.h2,
     fontFamily: Typography.fonts.heading,
     color: Colors.text.starlight,
+  },
+  premiumBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xxs,
+    borderRadius: BorderRadius.sm,
+    alignSelf: 'center',
+  },
+  premiumBadgeText: {
+    fontSize: Typography.sizes.small,
+    fontFamily: Typography.fonts.bodySemiBold,
+    color: '#FFFFFF',
+    letterSpacing: Typography.letterSpacing.wide,
   },
   greetingSubtext: {
     fontSize: Typography.sizes.body,
@@ -246,6 +384,10 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     padding: Spacing.md,
+  },
+  statCardPremium: {
+    borderColor: Colors.accent.amber + '30',
+    borderWidth: 1,
   },
   statIcon: {
     fontSize: 20,
@@ -264,8 +406,28 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: Typography.letterSpacing.wider,
   },
+  statLabelPremium: {
+    color: Colors.accent.amber,
+  },
   ctaCard: {
     marginBottom: Spacing.xl,
+  },
+  ctaCardGreen: {
+    backgroundColor: '#e8f5e0',
+    borderColor: Colors.accent.glow + '30',
+    shadowColor: Colors.accent.glow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 14,
+    elevation: 6,
+  },
+  ctaCardPremium: {
+    borderColor: Colors.accent.amber + '25',
+    shadowColor: Colors.accent.amber,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    elevation: 6,
   },
   ctaTitle: {
     fontSize: Typography.sizes.h3,
@@ -331,6 +493,53 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fonts.bodyMedium,
     color: Colors.semantic.success,
   },
+  premiumFeaturesCard: {
+    backgroundColor: Colors.accent.amber + '08',
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: Colors.accent.amber + '20',
+    padding: Spacing.lg,
+    marginBottom: Spacing.xl,
+  },
+  premiumFeaturesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  premiumFeaturesIcon: {
+    fontSize: 18,
+    color: Colors.accent.amber,
+  },
+  premiumFeaturesTitle: {
+    fontSize: Typography.sizes.caption,
+    fontFamily: Typography.fonts.subheading,
+    color: Colors.accent.amber,
+    letterSpacing: Typography.letterSpacing.wide,
+    textTransform: 'uppercase',
+  },
+  premiumFeaturesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.sm,
+  },
+  premiumFeatureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    backgroundColor: Colors.accent.amber + '10',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    borderRadius: BorderRadius.sm,
+  },
+  premiumFeatureEmoji: {
+    fontSize: 14,
+  },
+  premiumFeatureLabel: {
+    fontSize: Typography.sizes.small,
+    fontFamily: Typography.fonts.bodyMedium,
+    color: Colors.text.moonlight,
+  },
   upgradeCard: {
     borderColor: Colors.accent.amber,
     borderWidth: 1,
@@ -383,5 +592,50 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.small,
     fontFamily: Typography.fonts.bodyMedium,
     color: Colors.accent.cyan,
+  },
+  // ── Processing Banner ──
+  processingBanner: {
+    marginBottom: Spacing.lg,
+  },
+  processingBannerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  processingBannerTitle: {
+    fontSize: Typography.sizes.body,
+    fontFamily: Typography.fonts.subheading,
+    color: Colors.accent.glow,
+  },
+  processingBannerDetail: {
+    fontSize: Typography.sizes.caption,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.moonlight,
+    marginTop: 2,
+  },
+  completedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    backgroundColor: Colors.background.trench,
+    borderRadius: 12,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.accent.cyan,
+    marginBottom: Spacing.sm,
+  },
+  completedBannerIcon: {
+    fontSize: 20,
+  },
+  completedBannerTitle: {
+    fontSize: Typography.sizes.body,
+    fontFamily: Typography.fonts.subheading,
+    color: Colors.text.starlight,
+  },
+  completedBannerDetail: {
+    fontSize: Typography.sizes.caption,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.twilight,
+    marginTop: 2,
   },
 });

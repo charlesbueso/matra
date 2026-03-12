@@ -1,10 +1,11 @@
 // ============================================================
-// MATRA — Anthropic Provider (Claude)
+// Matra — Anthropic Provider (Claude)
 // ============================================================
 
 import type { LLMProvider, PersonBiographyInput, FamilyDocumentaryInput } from './provider.ts';
-import type { ExtractionResult, SummaryResult, BiographyResult } from '../types.ts';
-import { EXTRACTION_PROMPT, SUMMARY_PROMPT, BIOGRAPHY_PROMPT, DOCUMENTARY_PROMPT } from './prompts.ts';
+import type { ExtractionResult, SummaryResult, StoryResult, BiographyResult, VerificationResult } from '../types.ts';
+import { getExtractionPrompt, getSummaryPrompt, getStoryGeneratorPrompt, getBiographyPrompt, getDocumentaryPrompt, getVerificationPrompt } from './prompts.ts';
+import { fetchWithRetry } from './fetch-retry.ts';
 
 const ANTHROPIC_API_URL = 'https://api.anthropic.com/v1';
 
@@ -21,9 +22,10 @@ export class AnthropicLLMProvider implements LLMProvider {
 
   private async message(
     systemPrompt: string,
-    userMessage: string
+    userMessage: string,
+    temperature = 0.3
   ): Promise<string> {
-    const response = await fetch(`${ANTHROPIC_API_URL}/messages`, {
+    const response = await fetchWithRetry(`${ANTHROPIC_API_URL}/messages`, {
       method: 'POST',
       headers: {
         'x-api-key': getApiKey(),
@@ -33,7 +35,7 @@ export class AnthropicLLMProvider implements LLMProvider {
       body: JSON.stringify({
         model: this.model,
         max_tokens: 4096,
-        temperature: 0.3,
+        temperature,
         system: systemPrompt,
         messages: [
           { role: 'user', content: userMessage },
@@ -50,10 +52,11 @@ export class AnthropicLLMProvider implements LLMProvider {
     return result.content[0].text;
   }
 
-  async extractEntities(transcriptText: string): Promise<ExtractionResult> {
+  async extractEntities(transcriptText: string, language?: string): Promise<ExtractionResult> {
     const raw = await this.message(
-      EXTRACTION_PROMPT + '\n\nIMPORTANT: Respond ONLY with valid JSON, no other text.',
-      transcriptText
+      getExtractionPrompt(language) + '\n\nIMPORTANT: Respond ONLY with valid JSON, no other text.',
+      transcriptText,
+      0.1
     );
     // Extract JSON from response (Claude may wrap in markdown code blocks)
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
@@ -61,20 +64,32 @@ export class AnthropicLLMProvider implements LLMProvider {
     return JSON.parse(jsonMatch[0]) as ExtractionResult;
   }
 
-  async summarizeInterview(transcriptText: string): Promise<SummaryResult> {
+  async summarizeInterview(transcriptText: string, language?: string): Promise<SummaryResult> {
     const raw = await this.message(
-      SUMMARY_PROMPT + '\n\nIMPORTANT: Respond ONLY with valid JSON, no other text.',
-      transcriptText
+      getSummaryPrompt(language) + '\n\nIMPORTANT: Respond ONLY with valid JSON, no other text.',
+      transcriptText,
+      0.7
     );
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('Failed to parse summary result');
     return JSON.parse(jsonMatch[0]) as SummaryResult;
   }
 
-  async generateBiography(personInfo: PersonBiographyInput): Promise<BiographyResult> {
+  async generateStories(transcriptText: string, language?: string): Promise<StoryResult> {
+    const raw = await this.message(
+      getStoryGeneratorPrompt(language) + '\n\nIMPORTANT: Respond ONLY with valid JSON, no other text.',
+      transcriptText,
+      0.8
+    );
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Failed to parse story result');
+    return JSON.parse(jsonMatch[0]) as StoryResult;
+  }
+
+  async generateBiography(personInfo: PersonBiographyInput, language?: string): Promise<BiographyResult> {
     const input = JSON.stringify(personInfo);
     const raw = await this.message(
-      BIOGRAPHY_PROMPT + '\n\nIMPORTANT: Respond ONLY with valid JSON, no other text.',
+      getBiographyPrompt(language) + '\n\nIMPORTANT: Respond ONLY with valid JSON, no other text.',
       input
     );
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
@@ -82,8 +97,20 @@ export class AnthropicLLMProvider implements LLMProvider {
     return JSON.parse(jsonMatch[0]) as BiographyResult;
   }
 
-  async generateDocumentaryScript(familyInfo: FamilyDocumentaryInput): Promise<string> {
+  async generateDocumentaryScript(familyInfo: FamilyDocumentaryInput, language?: string): Promise<string> {
     const input = JSON.stringify(familyInfo);
-    return await this.message(DOCUMENTARY_PROMPT, input);
+    return await this.message(getDocumentaryPrompt(language), input);
+  }
+
+  async verifyExtraction(transcriptText: string, extraction: ExtractionResult, language?: string): Promise<VerificationResult> {
+    const userMessage = `TRANSCRIPT:\n${transcriptText}\n\nEXTRACTION RESULT:\n${JSON.stringify(extraction, null, 2)}`;
+    const raw = await this.message(
+      getVerificationPrompt(language) + '\n\nIMPORTANT: Respond ONLY with valid JSON, no other text.',
+      userMessage,
+      0.1
+    );
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('Failed to parse verification result');
+    return JSON.parse(jsonMatch[0]) as VerificationResult;
   }
 }

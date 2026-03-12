@@ -1,28 +1,35 @@
 // ============================================================
-// MATRA — Stories Tab
+// Matra — Stories Tab
 // ============================================================
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, Pressable } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { StarField, Card, BioAlgae, CornerBush } from '../../src/components/ui';
 import { useFamilyStore } from '../../src/stores/familyStore';
+import { useAuthStore } from '../../src/stores/authStore';
+import { useTranslation } from 'react-i18next';
 import { useNotificationStore } from '../../src/stores/notificationStore';
 import { Colors, Typography, Spacing } from '../../src/theme/tokens';
 
 export default function StoriesScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
   const { stories, fetchStories } = useFamilyStore();
+  const { profile } = useAuthStore();
+  const isFree = profile?.subscription_tier !== 'premium';
 
   useEffect(() => {
     fetchStories();
   }, []);
 
   // Mark stories as read when this tab is viewed
-  useEffect(() => {
-    useNotificationStore.getState().markStoriesRead();
-  }, [stories.length]);
+  useFocusEffect(
+    useCallback(() => {
+      useNotificationStore.getState().markStoriesRead();
+    }, [])
+  );
 
   if (stories.length === 0) {
     return (
@@ -31,9 +38,9 @@ export default function StoriesScreen() {
         <CornerBush />
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyIcon}>📖</Text>
-          <Text style={styles.emptyTitle}>No stories yet</Text>
+          <Text style={styles.emptyTitle}>{t('stories.noStories')}</Text>
           <Text style={styles.emptySubtitle}>
-            Record a conversation and AI will extract stories from your family's memories.
+            {t('stories.noStoriesDesc')}
           </Text>
         </View>
       </StarField>
@@ -45,8 +52,8 @@ export default function StoriesScreen() {
       <BioAlgae strandCount={30} height={0.15} />
       <CornerBush />
       <View style={styles.container}>
-        <Text style={styles.title}>Stories</Text>
-        <Text style={styles.subtitle}>{stories.length} memories preserved</Text>
+        <Text style={styles.title}>{t('stories.title')}</Text>
+        <Text style={styles.subtitle}>{t('stories.memoriesPreserved', { count: stories.length })}</Text>
 
         <FlatList
           data={stories}
@@ -63,7 +70,7 @@ export default function StoriesScreen() {
                 <View style={styles.storyHeader}>
                   <Text style={styles.storyTitle}>{item.title}</Text>
                   {item.ai_generated && (
-                    <Text style={styles.aiBadge}>✨ AI</Text>
+                    <Text style={styles.aiBadge}>{t('stories.aiBadge')}</Text>
                   )}
                 </View>
                 <Text style={styles.storyContent} numberOfLines={3}>
@@ -79,6 +86,16 @@ export default function StoriesScreen() {
                     <Text style={styles.storyLocation}>📍 {item.event_location}</Text>
                   )}
                 </View>
+                <Text style={styles.storyGenerated}>
+                  {t('stories.generatedOn', { date: new Date(item.created_at).toLocaleDateString() })}
+                </Text>
+                {isFree && (
+                  <View style={styles.snippetHint}>
+                    <Text style={styles.snippetHintText}>
+                      {t('stories.premiumAudioHint')}
+                    </Text>
+                  </View>
+                )}
               </Card>
             </Animated.View>
           )}
@@ -153,6 +170,25 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.small,
     fontFamily: Typography.fonts.body,
     color: Colors.text.twilight,
+  },
+  storyGenerated: {
+    fontSize: Typography.sizes.small,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.twilight,
+    marginTop: Spacing.sm,
+    opacity: 0.7,
+  },
+  snippetHint: {
+    marginTop: Spacing.sm,
+    paddingTop: Spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(139, 115, 85, 0.08)',
+  },
+  snippetHintText: {
+    fontSize: Typography.sizes.small,
+    fontFamily: Typography.fonts.body,
+    color: Colors.accent.amber,
+    opacity: 0.8,
   },
   emptyContainer: {
     flex: 1,

@@ -1,11 +1,11 @@
 // ============================================================
-// MATRA — AI Provider Interface
+// Matra — AI Provider Interface
 // ============================================================
 // All AI providers must implement these interfaces.
 // This allows swapping providers without touching business logic.
 // ============================================================
 
-import type { TranscriptionResult, ExtractionResult, SummaryResult, BiographyResult } from '../types.ts';
+import type { TranscriptionResult, ExtractionResult, SummaryResult, StoryResult, BiographyResult, VerificationResult } from '../types.ts';
 
 /**
  * Speech-to-Text provider interface.
@@ -35,22 +35,34 @@ export interface LLMProvider {
   /**
    * Extract entities and relationships from transcript text.
    */
-  extractEntities(transcriptText: string): Promise<ExtractionResult>;
+  extractEntities(transcriptText: string, language?: string): Promise<ExtractionResult>;
 
   /**
    * Generate a summary of an interview transcript.
    */
-  summarizeInterview(transcriptText: string): Promise<SummaryResult>;
+  summarizeInterview(transcriptText: string, language?: string): Promise<SummaryResult>;
+
+  /**
+   * Generate standalone stories from a transcript.
+   */
+  generateStories(transcriptText: string, language?: string): Promise<StoryResult>;
 
   /**
    * Generate a biography for a person based on all known stories and information.
    */
-  generateBiography(personInfo: PersonBiographyInput): Promise<BiographyResult>;
+  generateBiography(personInfo: PersonBiographyInput, language?: string): Promise<BiographyResult>;
 
   /**
    * Generate a documentary script for a family group.
    */
-  generateDocumentaryScript(familyInfo: FamilyDocumentaryInput): Promise<string>;
+  generateDocumentaryScript(familyInfo: FamilyDocumentaryInput, language?: string): Promise<string>;
+
+  /**
+   * Verify and correct an extraction result against the original transcript.
+   * Acts as an AI "code review" of the extraction to catch directionality errors,
+   * missing relationships, contradictions, and other common mistakes.
+   */
+  verifyExtraction(transcriptText: string, extraction: ExtractionResult, language?: string): Promise<VerificationResult>;
 }
 
 /**
@@ -59,12 +71,17 @@ export interface LLMProvider {
 export interface PersonBiographyInput {
   firstName: string;
   lastName?: string;
+  gender?: string;
   birthDate?: string;
   deathDate?: string;
   birthPlace?: string;
+  currentLocation?: string;
+  profession?: string;
+  isDeceased?: boolean;
   relationships: Array<{
     type: string;
     relatedPersonName: string;
+    description: string;
   }>;
   stories: Array<{
     title: string;

@@ -1,40 +1,159 @@
 // ============================================================
-// MATRA — Paywall Screen
+// Matra — Paywall Screen
 // ============================================================
 
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Image } from 'expo-image';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { StarField, Button, Card, BioAlgae, CornerBush } from '../src/components/ui';
+import { StarField, Button, BioAlgae, CornerBush } from '../src/components/ui';
+import { useTranslation } from 'react-i18next';
 import { Colors, Typography, Spacing, BorderRadius } from '../src/theme/tokens';
+import { useSubscriptionStore } from '../src/stores/subscriptionStore';
+import { trackEvent, AnalyticsEvents } from '../src/services/analytics';
+import { useSignedUrls } from '../src/hooks';
+import {
+  getOfferings,
+  purchasePackage,
+  restorePurchases,
+  isPremiumActive,
+  isUserCancellation,
+} from '../src/services/purchases';
+import type { PurchasesPackage } from 'react-native-purchases';
 
-type PlanType = 'monthly' | 'lifetime';
+type PlanType = 'monthly' | 'annual';
+
+const BRAND_KEYS = {
+  chairGold: 'matra/assets/icon-chair-gold-nobg.png',
+} as const;
 
 export default function PaywallScreen() {
+  const { t } = useTranslation();
   const router = useRouter();
-  const [selectedPlan, setSelectedPlan] = useState<PlanType>('monthly');
+  const tier = useSubscriptionStore((s) => s.tier);
+  const fetchEntitlements = useSubscriptionStore((s) => s.fetchEntitlements);
+  const brandUrls = useSignedUrls([BRAND_KEYS.chairGold]);
+  const [selectedPlan, setSelectedPlan] = useState<PlanType>('annual');
+  const [isLoadingOfferings, setIsLoadingOfferings] = useState(true);
+  const [isPurchasing, setIsPurchasing] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [packages, setPackages] = useState<Record<PlanType, PurchasesPackage | null>>({
+    monthly: null,
+    annual: null,
+  });
 
-  const plans: Record<PlanType, { price: string; period: string; savings?: string }> = {
-    monthly: { price: '$9.99', period: '/month', savings: undefined },
-    lifetime: { price: '$49.99', period: 'one time', savings: 'Best Value' },
+  // Load offerings from RevenueCat (prices from App Store / Play Store)
+  useEffect(() => {
+    trackEvent(AnalyticsEvents.PAYWALL_VIEWED);
+    let mounted = true;
+    (async () => {
+      try {
+        const offering = await getOfferings();
+        if (!mounted || !offering) {
+          setIsLoadingOfferings(false);
+          return;
+        }
+        const monthly = offering.monthly ?? offering.availablePackages.find(
+          (p) => p.packageType === 'MONTHLY'
+        ) ?? null;
+        const annual = offering.annual ?? offering.availablePackages.find(
+          (p) => p.packageType === 'ANNUAL'
+        ) ?? null;
+        setPackages({ monthly, annual });
+      } catch (err) {
+        console.warn('[Paywall] Failed to load offerings:', err);
+      } finally {
+        if (mounted) setIsLoadingOfferings(false);
+      }
+    })();
+    return () => { mounted = false; };
+  }, []);
+
+  const downgrade = useSubscriptionStore((s) => s.downgrade);
+
+  // If already premium AND not in grace/lapsed state, show confirmation and go back
+  useEffect(() => {
+    if (tier === 'premium' && !downgrade.inGracePeriod && !downgrade.isLapsed) {
+      Alert.alert(
+        t('paywall.alreadyPremiumTitle'),
+        t('paywall.alreadyPremiumMessage'),
+        [{ text: 'OK', onPress: () => router.back() }],
+      );
+    }
+  }, [tier, downgrade.inGracePeriod, downgrade.isLapsed]);
+
+  const selectedPackage = packages[selectedPlan];
+
+  const getDisplayPrice = (plan: PlanType): string => {
+    const pkg = packages[plan];
+    if (pkg) return pkg.product.priceString;
+    return plan === 'monthly' ? '$9.99' : '$59.99';
+  };
+
+  const getDisplayPeriod = (plan: PlanType): string => {
+    return plan === 'monthly' ? t('paywall.perMonth') : t('paywall.perYear');
   };
 
   const handlePurchase = async () => {
-    // TODO: Integrate with RevenueCat
-    // Purchases.purchasePackage(package)
-    Alert.alert('Coming Soon', 'In-app purchases will be available when the app is published.');
+    if (!selectedPackage) {
+      Alert.alert(t('common.error'), t('paywall.noPackageAvailable'));
+      return;
+    }
+
+    setIsPurchasing(true);
+    try {
+      const customerInfo = await purchasePackage(selectedPackage);
+      if (isPremiumActive(customerInfo)) {
+        // Sync with backend
+        await fetchEntitlements();
+        Alert.alert(
+          t('paywall.purchaseSuccessTitle'),
+          t('paywall.purchaseSuccessMessage'),
+          [{ text: 'OK', onPress: () => router.back() }],
+        );
+      }
+    } catch (error: any) {
+      if (!isUserCancellation(error)) {
+        Alert.alert(t('common.error'), t('paywall.purchaseError'));
+        console.error('[Paywall] Purchase error:', error);
+      }
+    } finally {
+      setIsPurchasing(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    setIsRestoring(true);
+    try {
+      const customerInfo = await restorePurchases();
+      if (isPremiumActive(customerInfo)) {
+        await fetchEntitlements();
+        Alert.alert(
+          t('paywall.restoreSuccessTitle'),
+          t('paywall.restoreSuccessMessage'),
+          [{ text: 'OK', onPress: () => router.back() }],
+        );
+      } else {
+        Alert.alert(t('paywall.noSubscriptionFound'), t('paywall.noSubscriptionFoundMessage'));
+      }
+    } catch (error) {
+      Alert.alert(t('common.error'), t('paywall.restoreError'));
+      console.error('[Paywall] Restore error:', error);
+    } finally {
+      setIsRestoring(false);
+    }
   };
 
   const features = [
-    { icon: '∞', title: 'Unlimited Conversations', description: 'No more limits on recording' },
-    { icon: '✨', title: 'AI Story Summarization', description: 'Beautiful summaries of every conversation' },
-    { icon: '📖', title: 'AI Biography Generation', description: 'Auto-written bios for each family member' },
-    { icon: '📚', title: 'Memory Book Export', description: 'Beautiful PDF family memory books' },
-    { icon: '👨‍👩‍👧‍👦', title: 'Family Sharing', description: 'Invite family members to collaborate' },
-    { icon: '🔒', title: 'Encrypted Cloud Archive', description: 'Your stories, safe forever' },
-    { icon: '🎬', title: 'Documentary Script', description: 'AI-generated family documentary script' },
+    { icon: '🎙️', title: t('paywall.feature1Title'), description: t('paywall.feature1Desc') },
+    { icon: '⏱️', title: t('paywall.feature2Title'), description: t('paywall.feature2Desc') },
+    { icon: '✨', title: t('paywall.feature3Title'), description: t('paywall.feature3Desc') },
+    { icon: '🔊', title: t('paywall.feature4Title'), description: t('paywall.feature4Desc') },
+    { icon: '📖', title: t('paywall.feature5Title'), description: t('paywall.feature5Desc') },
+    { icon: '📚', title: t('paywall.feature6Title'), description: t('paywall.feature6Desc') },
+    { icon: '👨‍👩‍👧‍👦', title: t('paywall.feature7Title'), description: t('paywall.feature7Desc') },
+    { icon: '🔒', title: t('paywall.feature8Title'), description: t('paywall.feature8Desc') },
   ];
 
   return (
@@ -49,10 +168,14 @@ export default function PaywallScreen() {
 
         {/* Hero */}
         <Animated.View entering={FadeInDown.delay(100)} style={styles.hero}>
-          <Text style={styles.heroIcon}>◈</Text>
-          <Text style={styles.heroTitle}>Unlock the Full Canopy</Text>
+          <Image
+            source={brandUrls.get(BRAND_KEYS.chairGold) ? { uri: brandUrls.get(BRAND_KEYS.chairGold)! } : undefined}
+            style={styles.heroIcon}
+            contentFit="contain"
+          />
+          <Text style={styles.heroTitle}>{t('paywall.title')}</Text>
           <Text style={styles.heroSubtitle}>
-            Preserve every story, every branch, every memory.
+            {t('paywall.subtitle')}
           </Text>
         </Animated.View>
 
@@ -62,21 +185,19 @@ export default function PaywallScreen() {
             onPress={() => setSelectedPlan('monthly')}
             style={[styles.planOption, selectedPlan === 'monthly' && styles.planOptionSelected]}
           >
-            <Text style={styles.planPrice}>{plans.monthly.price}</Text>
-            <Text style={styles.planPeriod}>{plans.monthly.period}</Text>
+            <Text style={styles.planPrice}>{getDisplayPrice('monthly')}</Text>
+            <Text style={styles.planPeriod}>{getDisplayPeriod('monthly')}</Text>
           </Pressable>
 
           <Pressable
-            onPress={() => setSelectedPlan('lifetime')}
-            style={[styles.planOption, selectedPlan === 'lifetime' && styles.planOptionSelected]}
+            onPress={() => setSelectedPlan('annual')}
+            style={[styles.planOption, selectedPlan === 'annual' && styles.planOptionSelected]}
           >
-            {plans.lifetime.savings && (
-              <View style={styles.savingsBadge}>
-                <Text style={styles.savingsText}>{plans.lifetime.savings}</Text>
-              </View>
-            )}
-            <Text style={styles.planPrice}>{plans.lifetime.price}</Text>
-            <Text style={styles.planPeriod}>{plans.lifetime.period}</Text>
+            <View style={styles.savingsBadge}>
+              <Text style={styles.savingsText}>{t('paywall.save40')}</Text>
+            </View>
+            <Text style={styles.planPrice}>{getDisplayPrice('annual')}</Text>
+            <Text style={styles.planPeriod}>{getDisplayPeriod('annual')}</Text>
           </Pressable>
         </Animated.View>
 
@@ -95,26 +216,38 @@ export default function PaywallScreen() {
 
         {/* CTA */}
         <Animated.View entering={FadeInDown.delay(700)}>
-          <Button
-            title={`Subscribe for ${plans[selectedPlan].price}${selectedPlan === 'monthly' ? '/mo' : ''}`}
-            onPress={handlePurchase}
-            variant="premium"
-            size="lg"
-          />
+          {isLoadingOfferings ? (
+            <ActivityIndicator size="large" color={Colors.accent.amber} style={{ marginVertical: Spacing.lg }} />
+          ) : (
+            <Button
+              title={isPurchasing
+                ? t('paywall.purchasing')
+                : t('paywall.subscribeFor', {
+                    price: getDisplayPrice(selectedPlan),
+                    period: selectedPlan === 'annual' ? '/yr' : '/mo',
+                  })
+              }
+              onPress={handlePurchase}
+              variant="premium"
+              size="lg"
+              disabled={isPurchasing || !selectedPackage}
+            />
+          )}
           <Text style={styles.legalText}>
-            {selectedPlan === 'monthly'
-              ? 'Cancel anytime. Subscription auto-renews monthly.'
-              : 'One-time purchase. Yours forever.'}
+            {t('paywall.cancelAnytime', { frequency: selectedPlan === 'annual' ? t('paywall.annually') : t('paywall.monthly') })}
           </Text>
         </Animated.View>
 
         {/* Restore */}
-        <Button
-          title="Restore Purchases"
-          onPress={() => Alert.alert('Restore', 'Checking previous purchases...')}
-          variant="ghost"
-          size="sm"
-        />
+        <Pressable
+          onPress={handleRestore}
+          disabled={isRestoring || isPurchasing}
+          style={{ alignSelf: 'center', paddingVertical: Spacing.sm }}
+        >
+          <Text style={styles.restoreText}>
+            {isRestoring ? t('paywall.restoring') : t('paywall.restorePurchases')}
+          </Text>
+        </Pressable>
       </ScrollView>
     </StarField>
   );
@@ -148,8 +281,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xxl,
   },
   heroIcon: {
-    fontSize: 48,
-    color: Colors.accent.amber,
+    width: 80,
+    height: 80,
     marginBottom: Spacing.md,
   },
   heroTitle: {
@@ -242,5 +375,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: Spacing.md,
     marginBottom: Spacing.lg,
+  },
+  restoreText: {
+    fontSize: Typography.sizes.body,
+    fontFamily: Typography.fonts.bodySemiBold,
+    color: Colors.accent.amber,
+    textAlign: 'center',
   },
 });

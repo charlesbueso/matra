@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Upload Person Avatar Edge Function
+// Matra — Upload Person Avatar Edge Function
 // ============================================================
 // Accepts a person photo via multipart form data, uploads it
 // to DigitalOcean Spaces (S3-compatible), and updates the
@@ -82,25 +82,26 @@ serve(async (req: Request) => {
     }
 
     // Upload to DO Spaces (under matra/avatars/)
+    // Include timestamp so each upload produces a unique key,
+    // which busts both client-side signed URL and image caches.
     const imageBytes = new Uint8Array(await imageFile.arrayBuffer());
-    const avatarUrl = await uploadToSpaces(
-      `avatars/${personId}.${ext}`,
+    const avatarKey = await uploadToSpaces(
+      `avatars/${personId}_${Date.now()}.${ext}`,
       imageBytes,
       imageFile.type,
-      { cacheBust: true },
     );
 
-    // Update the person's avatar_url in the database
+    // Update the person's avatar_url in the database (stores the S3 key)
     const { error: updateError } = await supabase
       .from('people')
-      .update({ avatar_url: avatarUrl })
+      .update({ avatar_url: avatarKey })
       .eq('id', personId);
 
     if (updateError) {
       return errorResponse('Failed to update person record', 'DB_ERROR', 500, updateError);
     }
 
-    return jsonResponse({ avatar_url: avatarUrl });
+    return jsonResponse({ avatar_url: avatarKey });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Unknown error';
     console.error('upload-person-avatar error:', message);

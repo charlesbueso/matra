@@ -3,9 +3,12 @@
 // ============================================================
 
 import { create } from 'zustand';
+import i18next from 'i18next';
 import { supabase, invokeFunction } from '../services/supabase';
+import { invalidateSignedUrl } from '../services/signedUrl';
 import { useAuthStore } from './authStore';
 import { useNotificationStore } from './notificationStore';
+import { trackEvent, captureError, AnalyticsEvents } from '../services/analytics';
 
 export interface Person {
   id: string;
@@ -22,7 +25,10 @@ export interface Person {
   ai_summary: string | null;
   graph_x: number | null;
   graph_y: number | null;
+  metadata: Record<string, any> | null;
   created_at: string;
+  updated_at: string;
+  ai_biography_generated_at: string | null;
 }
 
 export interface Relationship {
@@ -32,6 +38,7 @@ export interface Relationship {
   relationship_type: string;
   confidence: number;
   verified: boolean;
+  created_at: string;
 }
 
 export interface Interview {
@@ -42,11 +49,20 @@ export interface Interview {
   ai_summary: string | null;
   ai_key_topics: string[] | null;
   audio_duration_seconds: number | null;
+  audio_size_bytes: number | null;
+  audio_storage_path: string | null;
   subject_person_id: string | null;
   person_id: string | null;
   recorded_at: string | null;
   duration_seconds: number | null;
   created_at: string;
+}
+
+export interface AudioSnippet {
+  label: string;
+  quote: string;
+  startMs: number;
+  endMs: number;
 }
 
 export interface Story {
@@ -59,6 +75,7 @@ export interface Story {
   event_date: string | null;
   event_location: string | null;
   time_period: string | null;
+  metadata: { audioSnippets?: AudioSnippet[] } | null;
   created_at: string;
 }
 
@@ -66,7 +83,17 @@ export interface FamilyGroup {
   id: string;
   name: string;
   description: string | null;
+  cover_image_url: string | null;
   created_at: string;
+}
+
+export interface BackgroundJob {
+  id: string;
+  title: string;
+  status: 'processing' | 'completed' | 'failed';
+  interviewId: string | null;
+  error: string | null;
+  processingStage: 'uploading' | 'transcribing' | 'extracting' | 'summarizing' | 'completed' | null;
 }
 
 interface FamilyState {
@@ -77,23 +104,32 @@ interface FamilyState {
   relationships: Relationship[];
   interviews: Interview[];
   stories: Story[];
+  mediaStorageBytes: number;
 
   // Loading states
   isLoading: boolean;
+  isProcessingInterview: boolean;
+  processingInterviewId: string | null;
+  processingError: string | null;
+  backgroundJobs: BackgroundJob[];
 
   // Actions
   fetchFamilyGroups: () => Promise<void>;
   createFamilyGroup: (name: string, description?: string) => Promise<FamilyGroup>;
+  updateFamilyGroup: (id: string, updates: Partial<Pick<FamilyGroup, 'name' | 'description' | 'cover_image_url'>>) => Promise<void>;
   setActiveFamilyGroup: (id: string) => void;
   fetchPeople: () => Promise<void>;
   fetchRelationships: () => Promise<void>;
   fetchInterviews: () => Promise<void>;
   fetchStories: () => Promise<void>;
+  fetchMediaStorage: () => Promise<void>;
   fetchAllFamilyData: () => Promise<void>;
 
   // Person actions
   createPerson: (person: Partial<Person>) => Promise<Person>;
   updatePerson: (id: string, updates: Partial<Person>) => Promise<void>;
+  deletePerson: (id: string) => Promise<void>;
+  mergePeople: (keepId: string, mergeId: string) => Promise<void>;
   renamePerson: (id: string, newFirstName: string, newLastName: string | null) => Promise<void>;
 
   // Relationship actions
@@ -104,6 +140,8 @@ interface FamilyState {
 
   // Interview actions
   processInterview: (audioUri: string | null, familyGroupId: string, title?: string, devTranscript?: string, subjectPersonId?: string) => Promise<any>;
+  processInterviewInBackground: (audioUri: string | null, familyGroupId: string, title?: string, devTranscript?: string, subjectPersonId?: string) => void;
+  dismissJob: (jobId: string) => void;
   deleteInterview: (id: string) => Promise<void>;
   deleteAllInterviews: () => Promise<void>;
 
@@ -121,7 +159,12 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
   relationships: [],
   interviews: [],
   stories: [],
+  mediaStorageBytes: 0,
   isLoading: false,
+  isProcessingInterview: false,
+  processingInterviewId: null,
+  processingError: null,
+  backgroundJobs: [],
 
   fetchFamilyGroups: async () => {
     const { data, error } = await supabase
@@ -169,6 +212,21 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
     }));
 
     return data;
+  },
+
+  updateFamilyGroup: async (id, updates) => {
+    const { error } = await supabase
+      .from('family_groups')
+      .update(updates)
+      .eq('id', id);
+
+    if (error) throw error;
+
+    set((state) => ({
+      familyGroups: state.familyGroups.map((g) =>
+        g.id === id ? { ...g, ...updates } : g
+      ),
+    }));
   },
 
   setActiveFamilyGroup: (id) => {
@@ -230,6 +288,20 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
     if (!error && data) set({ stories: data });
   },
 
+  fetchMediaStorage: async () => {
+    const groupId = get().activeFamilyGroupId;
+    if (!groupId) return;
+
+    const { data } = await supabase
+      .from('media_assets')
+      .select('file_size_bytes')
+      .eq('family_group_id', groupId);
+
+    if (data) {
+      set({ mediaStorageBytes: data.reduce((sum, r) => sum + (r.file_size_bytes || 0), 0) });
+    }
+  },
+
   fetchAllFamilyData: async () => {
     set({ isLoading: true });
     try {
@@ -238,10 +310,11 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
         get().fetchRelationships(),
         get().fetchInterviews(),
         get().fetchStories(),
+        get().fetchMediaStorage(),
       ]);
       // Update unread badge counts
-      const { people, stories } = get();
-      useNotificationStore.getState().updateUnreadCounts(stories.length, people.length);
+      const { people, stories, relationships } = get();
+      useNotificationStore.getState().updateUnreadCounts(stories.length, people.length, relationships.length);
     } finally {
       set({ isLoading: false });
     }
@@ -280,6 +353,143 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
     set((state) => ({
       people: state.people.map((p) => (p.id === id ? { ...p, ...updates } : p)),
     }));
+  },
+
+  deletePerson: async (id) => {
+    // Delete relationships referencing this person first
+    const { error: relError } = await supabase
+      .from('relationships')
+      .delete()
+      .or(`person_a_id.eq.${id},person_b_id.eq.${id}`);
+
+    if (relError) throw relError;
+
+    const { error } = await supabase
+      .from('people')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (error) throw error;
+
+    set((state) => ({
+      people: state.people.filter((p) => p.id !== id),
+      relationships: state.relationships.filter(
+        (r) => r.person_a_id !== id && r.person_b_id !== id
+      ),
+    }));
+  },
+
+  mergePeople: async (keepId, mergeId) => {
+    const keep = get().people.find((p) => p.id === keepId);
+    const merge = get().people.find((p) => p.id === mergeId);
+    if (!keep || !merge) throw new Error('Person not found');
+
+    // 1. Merge person fields: fill in blanks on keep from merge
+    const updates: Partial<Person> = {};
+    if (!keep.last_name && merge.last_name) updates.last_name = merge.last_name;
+    if (!keep.nickname && merge.nickname) updates.nickname = merge.nickname;
+    if (!keep.birth_date && merge.birth_date) updates.birth_date = merge.birth_date;
+    if (!keep.death_date && merge.death_date) updates.death_date = merge.death_date;
+    if (!keep.birth_place && merge.birth_place) updates.birth_place = merge.birth_place;
+    if (!keep.current_location && merge.current_location) updates.current_location = merge.current_location;
+    if (!keep.avatar_url && merge.avatar_url) updates.avatar_url = merge.avatar_url;
+    if (!keep.ai_biography && merge.ai_biography) updates.ai_biography = merge.ai_biography;
+    if (!keep.ai_summary && merge.ai_summary) updates.ai_summary = merge.ai_summary;
+
+    // Merge metadata (keep takes priority)
+    const mergedMeta = { ...(merge.metadata || {}), ...(keep.metadata || {}) };
+    if (Object.keys(mergedMeta).length > 0) updates.metadata = mergedMeta;
+
+    if (Object.keys(updates).length > 0) {
+      const { error } = await supabase.from('people').update(updates).eq('id', keepId);
+      if (error) throw error;
+    }
+
+    // 2. Re-point relationships from merge → keep (skip duplicates / self-refs)
+    const allRels = get().relationships;
+    const mergeRels = allRels.filter(
+      (r) => r.person_a_id === mergeId || r.person_b_id === mergeId
+    );
+
+    for (const rel of mergeRels) {
+      const newA = rel.person_a_id === mergeId ? keepId : rel.person_a_id;
+      const newB = rel.person_b_id === mergeId ? keepId : rel.person_b_id;
+
+      // Skip self-references (keep ↔ merge were connected)
+      if (newA === newB) {
+        await supabase.from('relationships').delete().eq('id', rel.id);
+        continue;
+      }
+
+      // Check if keep already has a relationship with the same person & type
+      const duplicate = allRels.some(
+        (r) => r.id !== rel.id &&
+          ((r.person_a_id === newA && r.person_b_id === newB) ||
+           (r.person_a_id === newB && r.person_b_id === newA)) &&
+          r.relationship_type === rel.relationship_type
+      );
+
+      if (duplicate) {
+        await supabase.from('relationships').delete().eq('id', rel.id);
+      } else {
+        await supabase.from('relationships')
+          .update({ person_a_id: newA, person_b_id: newB })
+          .eq('id', rel.id);
+      }
+    }
+
+    // 3. Re-point interviews subject_person_id
+    await supabase
+      .from('interviews')
+      .update({ subject_person_id: keepId })
+      .eq('subject_person_id', mergeId);
+
+    // 4. Re-point story_people (delete if duplicate pair exists)
+    const { data: mergeStoryPeople } = await supabase
+      .from('story_people')
+      .select('story_id, person_id')
+      .eq('person_id', mergeId);
+
+    if (mergeStoryPeople && mergeStoryPeople.length > 0) {
+      const { data: keepStoryPeople } = await supabase
+        .from('story_people')
+        .select('story_id')
+        .eq('person_id', keepId);
+
+      const keepStoryIds = new Set((keepStoryPeople || []).map((sp: any) => sp.story_id));
+
+      for (const sp of mergeStoryPeople) {
+        if (keepStoryIds.has(sp.story_id)) {
+          // Keep already linked to this story – remove duplicate
+          await supabase
+            .from('story_people')
+            .delete()
+            .eq('story_id', sp.story_id)
+            .eq('person_id', mergeId);
+        } else {
+          await supabase
+            .from('story_people')
+            .update({ person_id: keepId })
+            .eq('story_id', sp.story_id)
+            .eq('person_id', mergeId);
+        }
+      }
+    }
+
+    // 5. Re-point media_assets
+    await supabase
+      .from('media_assets')
+      .update({ person_id: keepId })
+      .eq('person_id', mergeId);
+
+    // 6. Soft-delete the merged person
+    await supabase
+      .from('people')
+      .update({ deleted_at: new Date().toISOString() })
+      .eq('id', mergeId);
+
+    // 7. Refresh all data
+    await get().fetchAllFamilyData();
   },
 
   renamePerson: async (id, newFirstName, newLastName) => {
@@ -429,23 +639,40 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
 
     const { data, error } = await supabase
       .from('relationships')
-      .insert({
+      .upsert({
         family_group_id: groupId,
         person_a_id: personAId,
         person_b_id: personBId,
         relationship_type: relationshipType,
         verified: true,
         confidence: 1.0,
-      })
+      }, { onConflict: 'person_a_id,person_b_id,relationship_type' })
       .select()
       .single();
 
     if (error) throw error;
 
-    set((state) => ({ relationships: [...state.relationships, data] }));
+    // Clear any prior rejection for this pair so it won't be blocked
+    await supabase.from('rejected_relationships')
+      .delete()
+      .eq('family_group_id', groupId)
+      .eq('person_a_id', personAId)
+      .eq('person_b_id', personBId)
+      .eq('relationship_type', relationshipType);
+
+    set((state) => ({
+      relationships: state.relationships
+        .filter((r) => r.id !== data.id)
+        .concat(data),
+    }));
   },
 
   deleteRelationship: async (id) => {
+    // Find the relationship being deleted so we can remove its inverse too
+    const rel = get().relationships.find((r) => r.id === id);
+    const groupId = get().activeFamilyGroupId;
+    const userId = useAuthStore.getState().profile?.id;
+
     const { error } = await supabase
       .from('relationships')
       .delete()
@@ -453,8 +680,70 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
 
     if (error) throw error;
 
+    const removedIds = new Set<string>([id]);
+
+    // Record this as a user-rejected relationship so AI inference won't recreate it
+    if (rel && groupId && userId) {
+      await supabase.from('rejected_relationships').upsert({
+        family_group_id: groupId,
+        person_a_id: rel.person_a_id,
+        person_b_id: rel.person_b_id,
+        relationship_type: rel.relationship_type,
+        rejected_by: userId,
+      }, { onConflict: 'family_group_id,person_a_id,person_b_id,relationship_type' });
+    }
+
+    // Also delete the inverse/symmetric counterpart — query the DATABASE
+    // directly instead of the local store, which may be out of sync.
+    if (rel) {
+      const inverseType: Record<string, string> = {
+        parent: 'child', child: 'parent',
+        grandparent: 'grandchild', grandchild: 'grandparent',
+        great_grandparent: 'great_grandchild', great_grandchild: 'great_grandparent',
+        great_great_grandparent: 'great_great_grandchild', great_great_grandchild: 'great_great_grandparent',
+        uncle_aunt: 'nephew_niece', nephew_niece: 'uncle_aunt',
+        step_parent: 'step_child', step_child: 'step_parent',
+        parent_in_law: 'child_in_law', child_in_law: 'parent_in_law',
+        adopted_parent: 'adopted_child', adopted_child: 'adopted_parent',
+        godparent: 'godchild', godchild: 'godparent',
+      };
+      const symmetricTypes = ['spouse', 'ex_spouse', 'sibling', 'half_sibling', 'step_sibling', 'cousin', 'in_law', 'other'];
+      const counterType = inverseType[rel.relationship_type] ||
+        (symmetricTypes.includes(rel.relationship_type) ? rel.relationship_type : null);
+
+      if (counterType) {
+        // Query DB for the inverse relationship
+        const { data: counterRows } = await supabase
+          .from('relationships')
+          .select('id')
+          .eq('person_a_id', rel.person_b_id)
+          .eq('person_b_id', rel.person_a_id)
+          .eq('relationship_type', counterType);
+
+        if (counterRows && counterRows.length > 0) {
+          const counterIds = counterRows.map((r) => r.id);
+          await supabase
+            .from('relationships')
+            .delete()
+            .in('id', counterIds);
+          counterIds.forEach((cid) => removedIds.add(cid));
+        }
+
+        // Also reject the inverse direction
+        if (groupId && userId) {
+          await supabase.from('rejected_relationships').upsert({
+            family_group_id: groupId,
+            person_a_id: rel.person_b_id,
+            person_b_id: rel.person_a_id,
+            relationship_type: counterType,
+            rejected_by: userId,
+          }, { onConflict: 'family_group_id,person_a_id,person_b_id,relationship_type' });
+        }
+      }
+    }
+
     set((state) => ({
-      relationships: state.relationships.filter((r) => r.id !== id),
+      relationships: state.relationships.filter((r) => !removedIds.has(r.id)),
     }));
   },
 
@@ -476,8 +765,12 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
     formData.append('familyGroupId', familyGroupId);
     if (title) formData.append('title', title);
     if (subjectPersonId) formData.append('subjectPersonId', subjectPersonId);
+    const language = useAuthStore.getState().profile?.preferences?.language;
+    if (language) formData.append('language', language);
 
     const result = await invokeFunction('process-interview', undefined, { formData });
+
+    trackEvent(AnalyticsEvents.INTERVIEW_PROCESSING_COMPLETED);
 
     // Refresh all data after processing
     await get().fetchAllFamilyData();
@@ -485,55 +778,161 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
     return result;
   },
 
+  processInterviewInBackground: (audioUri, familyGroupId, title, devTranscript, subjectPersonId) => {
+    const jobId = Date.now().toString();
+    const jobTitle = title || 'Conversation';
+    const newJob: BackgroundJob = { id: jobId, title: jobTitle, status: 'processing', interviewId: null, error: null, processingStage: 'uploading' };
+    set((state) => ({
+      backgroundJobs: [...state.backgroundJobs, newJob],
+      isProcessingInterview: true,
+      processingInterviewId: null,
+      processingError: null,
+    }));
+    trackEvent(AnalyticsEvents.INTERVIEW_PROCESSING_STARTED, { title: jobTitle });
+
+    // Poll the DB for real-time processing stage updates
+    const userId = useAuthStore.getState().session?.user?.id;
+    let pollInterval: ReturnType<typeof setInterval> | null = null;
+    if (userId) {
+      pollInterval = setInterval(async () => {
+        try {
+          const { data } = await supabase
+            .from('interviews')
+            .select('id, status, processing_stage')
+            .eq('conducted_by', userId)
+            .in('status', ['uploading', 'transcribing', 'processing'])
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single();
+          if (data) {
+            // Map DB state to UI stage: processing_stage may be null during upload
+            const stage = data.processing_stage || (data.status === 'uploading' ? 'uploading' : 'transcribing');
+            set((state) => ({
+              backgroundJobs: state.backgroundJobs.map((j) =>
+                j.id === jobId ? { ...j, processingStage: stage, interviewId: data.id } : j
+              ),
+            }));
+          }
+        } catch (_) { /* ignore poll errors */ }
+      }, 2000);
+    }
+
+    get()
+      .processInterview(audioUri, familyGroupId, title, devTranscript, subjectPersonId)
+      .then((result) => {
+        const interviewId = result?.interview?.id || null;
+        set((state) => ({
+          backgroundJobs: state.backgroundJobs.map((j) =>
+            j.id === jobId ? { ...j, status: 'completed' as const, interviewId } : j
+          ),
+          processingInterviewId: interviewId,
+        }));
+        useNotificationStore.getState().sendLocalNotification(
+          i18next.t('notifications.lineageReady'),
+          i18next.t('notifications.lineageReadyBody'),
+        );
+      })
+      .catch((err) => {
+        trackEvent(AnalyticsEvents.INTERVIEW_PROCESSING_FAILED, { error: err?.message });
+        captureError(err instanceof Error ? err : new Error(err?.message || 'Interview processing failed'));
+        set((state) => ({
+          backgroundJobs: state.backgroundJobs.filter((j) => j.id !== jobId),
+          processingError: err?.message || 'Processing failed. Please try again.',
+        }));
+        useNotificationStore.getState().sendLocalNotification(
+          i18next.t('notifications.processingFailed'),
+          i18next.t('notifications.processingFailedBody'),
+        );
+      })
+      .finally(() => {
+        if (pollInterval) clearInterval(pollInterval);
+        // isProcessingInterview is true if any job is still processing
+        const stillProcessing = get().backgroundJobs.some((j) => j.id !== jobId && j.status === 'processing');
+        set({ isProcessingInterview: stillProcessing });
+      });
+  },
+
+  dismissJob: (jobId) => {
+    set((state) => ({
+      backgroundJobs: state.backgroundJobs.filter((j) => j.id !== jobId),
+    }));
+  },
+
   deleteInterview: async (id) => {
     const now = new Date().toISOString();
+    const interview = get().interviews.find((i) => i.id === id);
+    const groupId = interview?.family_group_id || get().activeFamilyGroupId;
+    const selfPersonId = useAuthStore.getState().profile?.self_person_id;
 
-    // Soft-delete stories from this interview
+    // 1. Hard-delete ALL relationships sourced from this interview
+    const { error: relDeleteError } = await supabase
+      .from('relationships')
+      .delete()
+      .eq('source_interview_id', id);
+
+    if (relDeleteError) {
+      captureError(new Error(`Failed to delete relationships for interview ${id}: ${relDeleteError.message}`));
+      throw new Error('Failed to delete interview relationships');
+    }
+
+    // 2. Soft-delete stories from this interview
     await supabase
       .from('stories')
       .update({ deleted_at: now })
       .eq('interview_id', id)
       .is('deleted_at', null);
 
-    // Collect ALL people associated with this interview:
-    // 1) People linked via story_people
-    const { data: interviewStoryPeople } = await supabase
-      .from('story_people')
-      .select('person_id, stories!inner(id, interview_id, deleted_at)')
-      .eq('stories.interview_id', id);
+    // 3. Find orphaned people: query DB for all remaining relationships
+    //    to determine which people are still referenced
+    const { data: remainingRels } = await supabase
+      .from('relationships')
+      .select('person_a_id, person_b_id')
+      .eq('family_group_id', groupId || '');
 
-    const personIdsFromInterview = new Set(
-      (interviewStoryPeople || []).map((sp: any) => sp.person_id)
-    );
-
-    // 2) The subject person of the interview
-    const interview = get().interviews.find((i) => i.id === id);
-    if (interview?.subject_person_id) {
-      personIdsFromInterview.add(interview.subject_person_id);
+    const referencedPersonIds = new Set<string>();
+    for (const r of (remainingRels || [])) {
+      referencedPersonIds.add(r.person_a_id);
+      referencedPersonIds.add(r.person_b_id);
     }
+    // Self-person is always protected
+    if (selfPersonId) referencedPersonIds.add(selfPersonId);
 
-    // Never delete the user's self person
-    const selfPersonId = useAuthStore.getState().profile?.self_person_id;
-    const personIdsToDelete = [...personIdsFromInterview].filter(
-      (pid) => pid !== selfPersonId
+    // Get all non-deleted people from DB (not store)
+    const { data: dbPeople } = await supabase
+      .from('people')
+      .select('id, avatar_url')
+      .eq('family_group_id', groupId || '')
+      .is('deleted_at', null);
+
+    const orphanedPeople = (dbPeople || []).filter(
+      (p) => !referencedPersonIds.has(p.id)
     );
 
-    // Soft-delete all people from this conversation and remove their relationships
-    if (personIdsToDelete.length > 0) {
-      // Clean up avatar images from DO Spaces before soft-deleting
-      try {
-        await invokeFunction('cleanup-person-avatars', { personIds: personIdsToDelete });
-      } catch {
-        // Best-effort: don't block deletion if cleanup fails
+    // 4. Clean up orphaned people
+    if (orphanedPeople.length > 0) {
+      const orphanIds = orphanedPeople.map((p) => p.id);
+
+      // Clean up avatar images from DO Spaces
+      const avatarPersonIds = orphanedPeople
+        .filter((p) => p.avatar_url)
+        .map((p) => p.id);
+      if (avatarPersonIds.length > 0) {
+        try {
+          await invokeFunction('cleanup-person-avatars', { personIds: avatarPersonIds });
+        } catch {
+          // Best-effort
+        }
       }
 
+      // Soft-delete orphaned people
       await supabase
         .from('people')
         .update({ deleted_at: now })
-        .in('id', personIdsToDelete);
+        .in('id', orphanIds);
 
-      // Hard-delete relationships involving deleted people
-      for (const pid of personIdsToDelete) {
+      // Hard-delete any stale relationships still referencing orphaned people
+      // (catches relationships where source_interview_id was overwritten by a later interview)
+      for (const pid of orphanIds) {
         await supabase
           .from('relationships')
           .delete()
@@ -541,13 +940,15 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
       }
     }
 
-    // Soft-delete the interview itself
+    // 5. Soft-delete the interview itself
     const { error } = await supabase
       .from('interviews')
       .update({ deleted_at: now })
       .eq('id', id);
 
     if (error) throw error;
+
+    trackEvent(AnalyticsEvents.INTERVIEW_DELETED);
 
     // Refresh all data to get consistent state
     await get().fetchAllFamilyData();
@@ -557,54 +958,54 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
     const groupId = get().activeFamilyGroupId;
     if (!groupId) return;
     const now = new Date().toISOString();
+    const selfPersonId = useAuthStore.getState().profile?.self_person_id;
 
-    // Soft-delete all stories from interviews in this group
-    const interviewIds = get().interviews.map((i) => i.id);
-    if (interviewIds.length > 0) {
-      await supabase
-        .from('stories')
-        .update({ deleted_at: now })
-        .in('interview_id', interviewIds)
-        .is('deleted_at', null);
+    // 1. Hard-delete ALL relationships in this family group
+    await supabase
+      .from('relationships')
+      .delete()
+      .eq('family_group_id', groupId);
 
-      // Clean up avatar images from DO Spaces before soft-deleting
-      const selfPersonId = useAuthStore.getState().profile?.self_person_id;
-      const peopleToDelete = get().people.filter((p) => p.id !== selfPersonId);
-      const avatarPersonIds = peopleToDelete
-        .filter((p) => p.avatar_url)
-        .map((p) => p.id);
-      if (avatarPersonIds.length > 0) {
-        try {
-          await invokeFunction('cleanup-person-avatars', { personIds: avatarPersonIds });
-        } catch {
-          // Best-effort: don't block deletion if cleanup fails
-        }
-      }
+    // 2. Get ALL non-deleted people from DB (not store) for avatar cleanup
+    const { data: dbPeople } = await supabase
+      .from('people')
+      .select('id, avatar_url')
+      .eq('family_group_id', groupId)
+      .is('deleted_at', null);
 
-      // Soft-delete all people in this group EXCEPT the user's self person
-      let peopleQuery = supabase
-        .from('people')
-        .update({ deleted_at: now })
-        .eq('family_group_id', groupId)
-        .is('deleted_at', null);
-      if (selfPersonId) {
-        peopleQuery = peopleQuery.neq('id', selfPersonId);
-      }
-      await peopleQuery;
+    const peopleToDelete = (dbPeople || []).filter((p) => p.id !== selfPersonId);
 
-      // Hard-delete relationships involving deleted people
-      const deletedPersonIds = get().people
-        .filter((p) => p.id !== selfPersonId)
-        .map((p) => p.id);
-      for (const pid of deletedPersonIds) {
-        await supabase
-          .from('relationships')
-          .delete()
-          .or(`person_a_id.eq.${pid},person_b_id.eq.${pid}`);
+    // 3. Clean up avatar images from DO Spaces
+    const avatarPersonIds = peopleToDelete
+      .filter((p) => p.avatar_url)
+      .map((p) => p.id);
+    if (avatarPersonIds.length > 0) {
+      try {
+        await invokeFunction('cleanup-person-avatars', { personIds: avatarPersonIds });
+      } catch {
+        // Best-effort: don't block deletion if cleanup fails
       }
     }
 
-    // Soft-delete all interviews
+    // 4. Soft-delete ALL people except self-person
+    let peopleQuery = supabase
+      .from('people')
+      .update({ deleted_at: now })
+      .eq('family_group_id', groupId)
+      .is('deleted_at', null);
+    if (selfPersonId) {
+      peopleQuery = peopleQuery.neq('id', selfPersonId);
+    }
+    await peopleQuery;
+
+    // 5. Soft-delete ALL stories in this family group
+    await supabase
+      .from('stories')
+      .update({ deleted_at: now })
+      .eq('family_group_id', groupId)
+      .is('deleted_at', null);
+
+    // 6. Soft-delete ALL interviews in this family group
     const { error } = await supabase
       .from('interviews')
       .update({ deleted_at: now })
@@ -618,6 +1019,10 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
   },
 
   uploadPersonAvatar: async (personId, imageUri) => {
+    // Invalidate the old signed URL cache entry before uploading
+    const oldKey = get().people.find((p) => p.id === personId)?.avatar_url;
+    if (oldKey) invalidateSignedUrl(oldKey);
+
     const formData = new FormData();
     // React Native FormData needs {uri, type, name} — not a Blob
     formData.append('image', {
@@ -643,12 +1048,15 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
   },
 
   generateBiography: async (personId) => {
-    const result = await invokeFunction<{ biography: string }>('generate-biography', { personId });
+    const language = useAuthStore.getState().profile?.preferences?.language;
+    const result = await invokeFunction<{ biography: string }>('generate-biography', { personId, language });
+    trackEvent(AnalyticsEvents.BIOGRAPHY_GENERATED);
     
-    // Update local state
+    // Update local state with biography and generation timestamp
+    const now = new Date().toISOString();
     set((state) => ({
       people: state.people.map((p) =>
-        p.id === personId ? { ...p, ai_biography: result.biography } : p
+        p.id === personId ? { ...p, ai_biography: result.biography, ai_biography_generated_at: now } : p
       ),
     }));
 

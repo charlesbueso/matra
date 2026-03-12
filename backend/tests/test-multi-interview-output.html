@@ -1,0 +1,1885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Matra — Multi-Interview Pipeline Test Results</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0a1628; color: #e8e0d4; }
+  .header { text-align: center; padding: 24px; background: linear-gradient(135deg, #0d1f3c, #1a3a5c); border-bottom: 2px solid #2a5a8a; }
+  .header h1 { font-size: 28px; color: #7ec8e3; }
+  .header p { color: #8b9baa; margin-top: 4px; }
+  .container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px; max-width: 1600px; margin: 0 auto; }
+  .full-width { grid-column: 1 / -1; }
+  .card { background: #111d2e; border: 1px solid #1e3a5f; border-radius: 12px; padding: 20px; }
+  .card h2 { color: #7ec8e3; margin-bottom: 12px; font-size: 18px; }
+  .person { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 8px; margin-bottom: 6px; background: #0d1a2d; }
+  .person.deceased { opacity: 0.7; }
+  .person .avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .person .avatar.male { background: #1e3a5f; }
+  .person .avatar.female { background: #5f1e3a; }
+  .person .avatar.unknown { background: #3a3a1e; }
+  .person .info { flex: 1; }
+  .person .name { font-weight: 600; color: #e8e0d4; }
+  .person .meta { font-size: 12px; color: #8b9baa; }
+  .rel { padding: 6px 10px; margin-bottom: 4px; border-radius: 6px; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+  .rel.direct { background: #0d2a1a; border-left: 2px solid #4ade80; }
+  .rel.inferred { background: #2a1a0d; border-left: 2px solid #f59e0b; }
+  .rel .type { font-weight: 600; color: #7ec8e3; min-width: 120px; }
+  .rel .arrow { color: #4a5568; }
+  .rel .conf { font-size: 11px; color: #8b9baa; margin-left: auto; }
+  .story { margin-bottom: 16px; padding: 14px; background: #0d1a2d; border-radius: 8px; }
+  .story h3 { color: #d4a574; margin-bottom: 8px; }
+  .story p { line-height: 1.6; color: #c4b8a8; font-size: 14px; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; background: #1e3a5f; color: #7ec8e3; margin: 2px; }
+  .interview-card { background: #0d1a2d; border: 1px solid #1e3a5f; border-radius: 8px; padding: 14px; margin-bottom: 10px; }
+  .interview-card h3 { color: #d4a574; margin-bottom: 6px; }
+  .interview-card .stats { font-size: 12px; color: #8b9baa; }
+  .legend { display: flex; gap: 16px; margin-top: 10px; font-size: 12px; color: #8b9baa; }
+  .legend span { display: flex; align-items: center; gap: 4px; }
+  .legend .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .progress { display: flex; gap: 4px; margin: 10px 0; }
+  .progress .step { flex: 1; height: 4px; border-radius: 2px; }
+  .progress .step.done { background: #4ade80; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>🌳 Matra — Multi-Interview Pipeline Test</h1>
+  <p>4 interviews · 29 people · 209 relationships (156 inferred) · 12 stories</p>
+  <div class="progress">
+    <div class="step done"></div><div class="step done"></div><div class="step done"></div><div class="step done"></div>
+  </div>
+</div>
+<div class="container">
+  <!-- Interview Timeline -->
+  <div class="card full-width">
+    <h2>📅 Interview Timeline</h2>
+    
+      <div class="interview-card">
+        <h3>1. Interview 1 — Valentina (primary user)</h3>
+        <div class="stats">
+          ⏱️ 10s · 
+          👥 22 people extracted · 
+          🔗 22 direct + 72 inferred rels · 
+          📖 3 stories ·
+          📊 Cumulative: 22 people, 94 rels
+        </div>
+      </div>
+    
+      <div class="interview-card">
+        <h3>2. Interview 2 — Jorge (father)</h3>
+        <div class="stats">
+          ⏱️ 12.9s · 
+          👥 22 people extracted · 
+          🔗 31 direct + 110 inferred rels · 
+          📖 3 stories ·
+          📊 Cumulative: 22 people, 147 rels
+        </div>
+      </div>
+    
+      <div class="interview-card">
+        <h3>3. Interview 3 — Diego (brother)</h3>
+        <div class="stats">
+          ⏱️ 11.7s · 
+          👥 23 people extracted · 
+          🔗 21 direct + 144 inferred rels · 
+          📖 3 stories ·
+          📊 Cumulative: 25 people, 191 rels
+        </div>
+      </div>
+    
+      <div class="interview-card">
+        <h3>4. Interview 4 — Patricia (aunt)</h3>
+        <div class="stats">
+          ⏱️ 8.9s · 
+          👥 21 people extracted · 
+          🔗 19 direct + 156 inferred rels · 
+          📖 3 stories ·
+          📊 Cumulative: 29 people, 209 rels
+        </div>
+      </div>
+    
+  </div>
+
+  <!-- People -->
+  <div class="card" style="max-height: 800px; overflow-y: auto;">
+    <h2>👥 People (29)</h2>
+    
+      <div class="person">
+        <div class="avatar female">♀</div>
+        <div class="info">
+          <div class="name">Valentina Rodriguez Chen</div>
+          <div class="meta">b.1998 · Ciudad de México</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar male">♂</div>
+        <div class="info">
+          <div class="name">Jorge Rodriguez Vega</div>
+          <div class="meta">b.1970 · Guadalajara · ingeniero civil · Ciudad de México</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar female">♀</div>
+        <div class="info">
+          <div class="name">Sofía Chen Fernández</div>
+          <div class="meta">b.1973 · Ciudad de México · doctora</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar male">♂</div>
+        <div class="info">
+          <div class="name">Diego Rodriguez Chen</div>
+          <div class="meta">b.1995 · Ciudad de México · médico</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar female">♀</div>
+        <div class="info">
+          <div class="name">Ana López</div>
+          <div class="meta">Puebla</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar male">♂</div>
+        <div class="info">
+          <div class="name">Matías</div>
+          <div class="meta">b.2025</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar female">♀</div>
+        <div class="info">
+          <div class="name">Isabella ("Isa")</div>
+          <div class="meta">b.2001</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar male">♂</div>
+        <div class="info">
+          <div class="name">Roberto Rodriguez</div>
+          <div class="meta">b.1945 · Guadalajara</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar female">♀</div>
+        <div class="info">
+          <div class="name">Carmen Vega</div>
+          <div class="meta">b.1948 · maestra de primaria</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar female">♀</div>
+        <div class="info">
+          <div class="name">Marta Ruiz</div>
+          <div class="meta">Puebla</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar male">♂</div>
+        <div class="info">
+          <div class="name">Andrés Rodriguez</div>
+          <div class="meta">b.1965 · arquitecto · Monterrey</div>
+        </div>
+      </div>
+    
+      <div class="person deceased">
+        <div class="avatar male">♂✝</div>
+        <div class="info">
+          <div class="name">Antonio Rodriguez</div>
+          <div class="meta">b.1920 · d.1995 · Guadalajara · panadero</div>
+        </div>
+      </div>
+    
+      <div class="person deceased">
+        <div class="avatar female">♀✝</div>
+        <div class="info">
+          <div class="name">Elena Morales</div>
+          <div class="meta">b.1923 · d.2010</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar male">♂</div>
+        <div class="info">
+          <div class="name">Miguel Chen</div>
+          <div class="meta">b.1947</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar female">♀</div>
+        <div class="info">
+          <div class="name">Lucía Fernández</div>
+          <div class="meta">b.1950 · Oaxaca</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar female">♀</div>
+        <div class="info">
+          <div class="name">Patricia Rodriguez Vega</div>
+          <div class="meta">b.1968 · Guadalajara</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar male">♂</div>
+        <div class="info">
+          <div class="name">Ricardo Mendoza</div>
+          <div class="meta">contador</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar male">♂</div>
+        <div class="info">
+          <div class="name">Lucas Mendoza Rodriguez Vega</div>
+          <div class="meta">b.1997</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar female">♀</div>
+        <div class="info">
+          <div class="name">Camila Mendoza Rodriguez Vega</div>
+          <div class="meta">b.2000</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar male">♂</div>
+        <div class="info">
+          <div class="name">Eduardo Chen Fernández</div>
+          <div class="meta">b.1975 · Canadá</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar female">♀</div>
+        <div class="info">
+          <div class="name">Teresa Gutiérrez</div>
+          <div class="meta">Canadá</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar male">♂</div>
+        <div class="info">
+          <div class="name">Daniel Chen Gutiérrez</div>
+          <div class="meta">estudiante de ingeniería informática · Canadá</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar male">♂</div>
+        <div class="info">
+          <div class="name">Fernando López Martínez</div>
+          <div class="meta">abogado</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar female">♀</div>
+        <div class="info">
+          <div class="name">Rosa García de López</div>
+          <div class="meta">enfermera</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar female">♀</div>
+        <div class="info">
+          <div class="name">Mónica López García</div>
+          <div class="meta">estudiante de psicología</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar male">♂</div>
+        <div class="info">
+          <div class="name">Héctor Mendoza</div>
+          <div class="meta">No details</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar female">♀</div>
+        <div class="info">
+          <div class="name">Gloria Estrada</div>
+          <div class="meta">No details</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar female">♀</div>
+        <div class="info">
+          <div class="name">Laura Sánchez</div>
+          <div class="meta">No details</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar female">♀</div>
+        <div class="info">
+          <div class="name">Sofía Valentina Rodriguez Sánchez</div>
+          <div class="meta">No details</div>
+        </div>
+      </div>
+    
+  </div>
+
+  <!-- Relationships -->
+  <div class="card" style="max-height: 800px; overflow-y: auto;">
+    <h2>🔗 Relationships (209)</h2>
+    
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Valentina Rodriguez Chen</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Sofía Chen Fernández</span>
+        <span class="arrow">→</span>
+        <span>Valentina Rodriguez Chen</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">sibling</span>
+        <span>Diego Rodriguez Chen</span>
+        <span class="arrow">→</span>
+        <span>Valentina Rodriguez Chen</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">sibling</span>
+        <span>Isabella</span>
+        <span class="arrow">→</span>
+        <span>Valentina Rodriguez Chen</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Roberto Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Carmen Vega</span>
+        <span class="arrow">→</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Marta Ruiz</span>
+        <span class="arrow">→</span>
+        <span>Andrés Rodriguez</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Roberto Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Andrés Rodriguez</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">half_sibling</span>
+        <span>Andrés Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Antonio Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Roberto Rodriguez</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Elena Morales</span>
+        <span class="arrow">→</span>
+        <span>Roberto Rodriguez</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Miguel Chen</span>
+        <span class="arrow">→</span>
+        <span>Sofía Chen Fernández</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Lucía Fernández</span>
+        <span class="arrow">→</span>
+        <span>Sofía Chen Fernández</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">sibling</span>
+        <span>Patricia Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">spouse</span>
+        <span>Ricardo Mendoza</span>
+        <span class="arrow">→</span>
+        <span>Patricia Rodriguez Vega</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">child</span>
+        <span>Lucas Mendoza Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Patricia Rodriguez Vega</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">child</span>
+        <span>Camila Mendoza Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Patricia Rodriguez Vega</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">sibling</span>
+        <span>Eduardo Chen Fernández</span>
+        <span class="arrow">→</span>
+        <span>Sofía Chen Fernández</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">spouse</span>
+        <span>Teresa Gutiérrez</span>
+        <span class="arrow">→</span>
+        <span>Eduardo Chen Fernández</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">child</span>
+        <span>Daniel Chen Gutiérrez</span>
+        <span class="arrow">→</span>
+        <span>Eduardo Chen Fernández</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">spouse</span>
+        <span>Ana López</span>
+        <span class="arrow">→</span>
+        <span>Diego Rodriguez Chen</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">child</span>
+        <span>Matías</span>
+        <span class="arrow">→</span>
+        <span>Diego Rodriguez Chen</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Roberto Rodriguez</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Carmen Vega</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">sibling</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Patricia Rodriguez Vega</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">spouse</span>
+        <span>Patricia Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Ricardo Mendoza</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Ricardo Mendoza</span>
+        <span class="arrow">→</span>
+        <span>Lucas Mendoza Rodriguez Vega</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Ricardo Mendoza</span>
+        <span class="arrow">→</span>
+        <span>Camila Mendoza Rodriguez Vega</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">half_sibling</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Andrés Rodriguez</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">ex_spouse</span>
+        <span>Roberto Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Marta Ruiz</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">spouse</span>
+        <span>Diego Rodriguez Chen</span>
+        <span class="arrow">→</span>
+        <span>Ana López</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Diego Rodriguez Chen</span>
+        <span class="arrow">→</span>
+        <span>Matías</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Ana López</span>
+        <span class="arrow">→</span>
+        <span>Matías</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">sibling</span>
+        <span>Sofía Chen Fernández</span>
+        <span class="arrow">→</span>
+        <span>Eduardo Chen Fernández</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">spouse</span>
+        <span>Eduardo Chen Fernández</span>
+        <span class="arrow">→</span>
+        <span>Teresa Gutiérrez</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Eduardo Chen Fernández</span>
+        <span class="arrow">→</span>
+        <span>Daniel Chen Gutiérrez</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Teresa Gutiérrez</span>
+        <span class="arrow">→</span>
+        <span>Daniel Chen Gutiérrez</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">sibling</span>
+        <span>Valentina Rodriguez Chen</span>
+        <span class="arrow">→</span>
+        <span>Diego Rodriguez Chen</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">sibling</span>
+        <span>Isabella</span>
+        <span class="arrow">→</span>
+        <span>Diego Rodriguez Chen</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Fernando López Martínez</span>
+        <span class="arrow">→</span>
+        <span>Ana López</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Rosa García de López</span>
+        <span class="arrow">→</span>
+        <span>Ana López</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">sibling</span>
+        <span>Mónica López García</span>
+        <span class="arrow">→</span>
+        <span>Ana López</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Antonio Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Elena Morales</span>
+        <span class="arrow">→</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">child</span>
+        <span>Lucas Mendoza Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Ricardo Mendoza</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">child</span>
+        <span>Camila Mendoza Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Ricardo Mendoza</span>
+        <span class="conf">80%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">spouse</span>
+        <span>Lucía Fernández</span>
+        <span class="arrow">→</span>
+        <span>Miguel Chen</span>
+        <span class="conf">80%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">child</span>
+        <span>Andrés Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Roberto Rodriguez</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Héctor Mendoza</span>
+        <span class="arrow">→</span>
+        <span>Ricardo Mendoza</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Gloria Estrada</span>
+        <span class="arrow">→</span>
+        <span>Ricardo Mendoza</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">child</span>
+        <span>Valentina Rodriguez Chen</span>
+        <span class="arrow">→</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">spouse</span>
+        <span>Andrés Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Laura Sánchez</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">child</span>
+        <span>Sofía Valentina Rodriguez Sánchez</span>
+        <span class="arrow">→</span>
+        <span>Andrés Rodriguez</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">parent</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Diego Rodriguez Chen</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">parent</span>
+        <span>Sofía Chen Fernández</span>
+        <span class="arrow">→</span>
+        <span>Diego Rodriguez Chen</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">parent</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Isabella</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">parent</span>
+        <span>Sofía Chen Fernández</span>
+        <span class="arrow">→</span>
+        <span>Isabella</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">parent</span>
+        <span>Roberto Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Patricia Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">parent</span>
+        <span>Carmen Vega</span>
+        <span class="arrow">→</span>
+        <span>Patricia Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">parent</span>
+        <span>Miguel Chen</span>
+        <span class="arrow">→</span>
+        <span>Eduardo Chen Fernández</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">parent</span>
+        <span>Lucía Fernández</span>
+        <span class="arrow">→</span>
+        <span>Eduardo Chen Fernández</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">parent</span>
+        <span>Fernando López Martínez</span>
+        <span class="arrow">→</span>
+        <span>Mónica López García</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">parent</span>
+        <span>Rosa García de López</span>
+        <span class="arrow">→</span>
+        <span>Mónica López García</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">half_sibling</span>
+        <span>Valentina Rodriguez Chen</span>
+        <span class="arrow">→</span>
+        <span>Roberto Rodriguez</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">half_sibling</span>
+        <span>Valentina Rodriguez Chen</span>
+        <span class="arrow">→</span>
+        <span>Carmen Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">half_sibling</span>
+        <span>Roberto Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Carmen Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">half_sibling</span>
+        <span>Roberto Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Diego Rodriguez Chen</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">half_sibling</span>
+        <span>Roberto Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Isabella</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">half_sibling</span>
+        <span>Carmen Vega</span>
+        <span class="arrow">→</span>
+        <span>Diego Rodriguez Chen</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">half_sibling</span>
+        <span>Carmen Vega</span>
+        <span class="arrow">→</span>
+        <span>Isabella</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">half_sibling</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Patricia Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">half_sibling</span>
+        <span>Andrés Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Patricia Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">half_sibling</span>
+        <span>Roberto Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">sibling</span>
+        <span>Lucas Mendoza Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Camila Mendoza Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">spouse</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Sofía Chen Fernández</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">spouse</span>
+        <span>Roberto Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Carmen Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">spouse</span>
+        <span>Roberto Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Antonio Rodriguez</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">spouse</span>
+        <span>Roberto Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Elena Morales</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">spouse</span>
+        <span>Carmen Vega</span>
+        <span class="arrow">→</span>
+        <span>Antonio Rodriguez</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">spouse</span>
+        <span>Carmen Vega</span>
+        <span class="arrow">→</span>
+        <span>Elena Morales</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">spouse</span>
+        <span>Antonio Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Elena Morales</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">spouse</span>
+        <span>Marta Ruiz</span>
+        <span class="arrow">→</span>
+        <span>Roberto Rodriguez</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">spouse</span>
+        <span>Antonio Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">spouse</span>
+        <span>Elena Morales</span>
+        <span class="arrow">→</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">spouse</span>
+        <span>Fernando López Martínez</span>
+        <span class="arrow">→</span>
+        <span>Rosa García de López</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">spouse</span>
+        <span>Héctor Mendoza</span>
+        <span class="arrow">→</span>
+        <span>Gloria Estrada</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Andrés Rodriguez</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Patricia Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Matías</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Sofía Chen Fernández</span>
+        <span class="arrow">→</span>
+        <span>Matías</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Roberto Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Valentina Rodriguez Chen</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Roberto Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Carmen Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Roberto Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Diego Rodriguez Chen</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Roberto Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Isabella</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Roberto Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Sofía Valentina Rodriguez Sánchez</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Roberto Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Lucas Mendoza Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Roberto Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Camila Mendoza Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Carmen Vega</span>
+        <span class="arrow">→</span>
+        <span>Valentina Rodriguez Chen</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Carmen Vega</span>
+        <span class="arrow">→</span>
+        <span>Diego Rodriguez Chen</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Carmen Vega</span>
+        <span class="arrow">→</span>
+        <span>Isabella</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Carmen Vega</span>
+        <span class="arrow">→</span>
+        <span>Lucas Mendoza Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Carmen Vega</span>
+        <span class="arrow">→</span>
+        <span>Camila Mendoza Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Marta Ruiz</span>
+        <span class="arrow">→</span>
+        <span>Sofía Valentina Rodriguez Sánchez</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Antonio Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Antonio Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Andrés Rodriguez</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Antonio Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Patricia Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Antonio Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Valentina Rodriguez Chen</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Antonio Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Roberto Rodriguez</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Antonio Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Carmen Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Antonio Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Diego Rodriguez Chen</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Antonio Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Isabella</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Elena Morales</span>
+        <span class="arrow">→</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Elena Morales</span>
+        <span class="arrow">→</span>
+        <span>Andrés Rodriguez</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Elena Morales</span>
+        <span class="arrow">→</span>
+        <span>Patricia Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Elena Morales</span>
+        <span class="arrow">→</span>
+        <span>Valentina Rodriguez Chen</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Elena Morales</span>
+        <span class="arrow">→</span>
+        <span>Roberto Rodriguez</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Elena Morales</span>
+        <span class="arrow">→</span>
+        <span>Carmen Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Elena Morales</span>
+        <span class="arrow">→</span>
+        <span>Diego Rodriguez Chen</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Elena Morales</span>
+        <span class="arrow">→</span>
+        <span>Isabella</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Miguel Chen</span>
+        <span class="arrow">→</span>
+        <span>Valentina Rodriguez Chen</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Miguel Chen</span>
+        <span class="arrow">→</span>
+        <span>Diego Rodriguez Chen</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Miguel Chen</span>
+        <span class="arrow">→</span>
+        <span>Isabella</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Miguel Chen</span>
+        <span class="arrow">→</span>
+        <span>Daniel Chen Gutiérrez</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Lucía Fernández</span>
+        <span class="arrow">→</span>
+        <span>Valentina Rodriguez Chen</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Lucía Fernández</span>
+        <span class="arrow">→</span>
+        <span>Diego Rodriguez Chen</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Lucía Fernández</span>
+        <span class="arrow">→</span>
+        <span>Isabella</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Lucía Fernández</span>
+        <span class="arrow">→</span>
+        <span>Daniel Chen Gutiérrez</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Fernando López Martínez</span>
+        <span class="arrow">→</span>
+        <span>Matías</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Rosa García de López</span>
+        <span class="arrow">→</span>
+        <span>Matías</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Héctor Mendoza</span>
+        <span class="arrow">→</span>
+        <span>Lucas Mendoza Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Héctor Mendoza</span>
+        <span class="arrow">→</span>
+        <span>Camila Mendoza Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Gloria Estrada</span>
+        <span class="arrow">→</span>
+        <span>Lucas Mendoza Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Gloria Estrada</span>
+        <span class="arrow">→</span>
+        <span>Camila Mendoza Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Valentina Rodriguez Chen</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Roberto Rodriguez</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Carmen Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Diego Rodriguez Chen</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Isabella</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Sofía Valentina Rodriguez Sánchez</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Lucas Mendoza Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Camila Mendoza Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Roberto Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Andrés Rodriguez</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Roberto Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Patricia Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Roberto Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Matías</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Carmen Vega</span>
+        <span class="arrow">→</span>
+        <span>Andrés Rodriguez</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Carmen Vega</span>
+        <span class="arrow">→</span>
+        <span>Patricia Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Carmen Vega</span>
+        <span class="arrow">→</span>
+        <span>Matías</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Antonio Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Valentina Rodriguez Chen</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Antonio Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Roberto Rodriguez</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Antonio Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Carmen Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Antonio Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Diego Rodriguez Chen</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Antonio Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Isabella</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Antonio Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Sofía Valentina Rodriguez Sánchez</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Antonio Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Lucas Mendoza Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Antonio Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Camila Mendoza Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Antonio Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Antonio Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Andrés Rodriguez</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Antonio Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Patricia Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Antonio Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Matías</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Elena Morales</span>
+        <span class="arrow">→</span>
+        <span>Valentina Rodriguez Chen</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Elena Morales</span>
+        <span class="arrow">→</span>
+        <span>Roberto Rodriguez</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Elena Morales</span>
+        <span class="arrow">→</span>
+        <span>Carmen Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Elena Morales</span>
+        <span class="arrow">→</span>
+        <span>Diego Rodriguez Chen</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Elena Morales</span>
+        <span class="arrow">→</span>
+        <span>Isabella</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Elena Morales</span>
+        <span class="arrow">→</span>
+        <span>Sofía Valentina Rodriguez Sánchez</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Elena Morales</span>
+        <span class="arrow">→</span>
+        <span>Lucas Mendoza Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Elena Morales</span>
+        <span class="arrow">→</span>
+        <span>Camila Mendoza Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Elena Morales</span>
+        <span class="arrow">→</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Elena Morales</span>
+        <span class="arrow">→</span>
+        <span>Andrés Rodriguez</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Elena Morales</span>
+        <span class="arrow">→</span>
+        <span>Patricia Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Elena Morales</span>
+        <span class="arrow">→</span>
+        <span>Matías</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Miguel Chen</span>
+        <span class="arrow">→</span>
+        <span>Matías</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">great_grandparent</span>
+        <span>Lucía Fernández</span>
+        <span class="arrow">→</span>
+        <span>Matías</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Valentina Rodriguez Chen</span>
+        <span class="arrow">→</span>
+        <span>Matías</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Isabella</span>
+        <span class="arrow">→</span>
+        <span>Matías</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Eduardo Chen Fernández</span>
+        <span class="arrow">→</span>
+        <span>Valentina Rodriguez Chen</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Eduardo Chen Fernández</span>
+        <span class="arrow">→</span>
+        <span>Diego Rodriguez Chen</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Eduardo Chen Fernández</span>
+        <span class="arrow">→</span>
+        <span>Isabella</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Sofía Chen Fernández</span>
+        <span class="arrow">→</span>
+        <span>Daniel Chen Gutiérrez</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Mónica López García</span>
+        <span class="arrow">→</span>
+        <span>Matías</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Andrés Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Valentina Rodriguez Chen</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Andrés Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Roberto Rodriguez</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Andrés Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Carmen Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Andrés Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Diego Rodriguez Chen</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Andrés Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Isabella</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Andrés Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Lucas Mendoza Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Andrés Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Camila Mendoza Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Sofía Valentina Rodriguez Sánchez</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Lucas Mendoza Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Camila Mendoza Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Andrés Rodriguez</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Patricia Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Valentina Rodriguez Chen</span>
+        <span class="arrow">→</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Valentina Rodriguez Chen</span>
+        <span class="arrow">→</span>
+        <span>Patricia Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Roberto Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Roberto Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Patricia Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Roberto Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Matías</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Roberto Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Valentina Rodriguez Chen</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Roberto Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Carmen Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Roberto Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Diego Rodriguez Chen</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Roberto Rodriguez</span>
+        <span class="arrow">→</span>
+        <span>Isabella</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Carmen Vega</span>
+        <span class="arrow">→</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Carmen Vega</span>
+        <span class="arrow">→</span>
+        <span>Patricia Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Carmen Vega</span>
+        <span class="arrow">→</span>
+        <span>Matías</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Diego Rodriguez Chen</span>
+        <span class="arrow">→</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Diego Rodriguez Chen</span>
+        <span class="arrow">→</span>
+        <span>Patricia Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Isabella</span>
+        <span class="arrow">→</span>
+        <span>Jorge Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Isabella</span>
+        <span class="arrow">→</span>
+        <span>Patricia Rodriguez Vega</span>
+        <span class="conf">85% inf</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Patricia Rodriguez Vega</span>
+        <span class="arrow">→</span>
+        <span>Sofía Valentina Rodriguez Sánchez</span>
+        <span class="conf">85% inf</span>
+      </div>
+    <div class="legend">
+      <span><div class="dot" style="background:#4ade80"></div> Direct (AI)</span>
+      <span><div class="dot" style="background:#f59e0b"></div> Inferred</span>
+    </div>
+  </div>
+
+  <!-- Stories -->
+  <div class="card full-width" style="max-height: 600px; overflow-y: auto;">
+    <h2>📚 Stories (12)</h2>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+    
+      <div class="story">
+        <h3>"La historia de mis abuelos"</h3>
+        <p>Mis abuelos paternos, Roberto y Carmen, siempre me han contado historias de su infancia en Guadalajara. Mi abuelo Roberto me habló de su primer matrimonio con Marta Ruiz y de cómo nació su hijo Andrés. La historia de mi familia es compleja, pero llena de amor y dedicación. Mi abuelo Roberto siempre ...</p>
+      </div>
+    
+      <div class="story">
+        <h3>"Mi familia materna"</h3>
+        <p>Mi mamá, Sofía Chen Fernández, siempre me ha hablado de su infancia en la Ciudad de México. Su hermano, Eduardo Chen Fernández, se casó con Teresa Gutiérrez y tienen un hijo, Daniel. La familia de mi mamá es muy unida y siempre se apoyan mutuamente. Mi tío Eduardo me decía: 'La familia es como un ár...</p>
+      </div>
+    
+      <div class="story">
+        <h3>"Mi hermano y su familia"</h3>
+        <p>Mi hermano mayor, Diego, se casó con Ana López y tienen un bebé llamado Matías. La llegada de Matías ha sido un regalo para nuestra familia. Mi hermano siempre me decía: 'Ser padre es lo más grande que me ha pasado en la vida'.</p>
+      </div>
+    
+      <div class="story">
+        <h3>"La historia de mi abuelo Antonio"</h3>
+        <p>Mi abuelo Antonio fue un hombre increíble, con una pasión por la panadería y la música. Su panadería, la Panadería Rodriguez, fue famosa en todo el barrio y su guitarra era la vida de las fiestas del pueblo. Me encantaba escuchar sus historias y aprender de sus experiencias.</p>
+      </div>
+    
+      <div class="story">
+        <h3>"Mi familia materna: las mujeres fuertes"</h3>
+        <p>Mi mamá, Carmen Vega, fue una maestra de primaria antes de jubilarse. Siempre fue una mujer fuerte y decidida, que luchó por lo que quería. Mi hermana, Patricia, también es una mujer muy responsable y decidida. Me siento afortunado de tener mujeres tan fuertes en mi vida.</p>
+      </div>
+    
+      <div class="story">
+        <h3>"La unión familiar: mis hijos y su futuro"</h3>
+        <p>Mis hijos, Diego, Valentina e Isabella, son mi mayor orgullo. Me encanta verlos crecer y desarrollarse como personas. Espero que siempre se sientan orgullosos de su herencia y que sigan las tradiciones y costumbres de la familia.</p>
+      </div>
+    
+      <div class="story">
+        <h3>"El legado de mis bisabuelos"</h3>
+        <p>La historia de mis bisabuelos, Antonio Rodriguez y Elena Morales, es fundamental en mi familia. Ellos vivieron en Guadalajara y tuvieron una panadería que era el corazón del barrio. Me contaban que la panadería era un lugar donde la gente se reunía para compartir historias y tradiciones. La panaderí...</p>
+      </div>
+    
+      <div class="story">
+        <h3>"Mi familia y la tradición"</h3>
+        <p>La tradición es muy importante en mi familia. Mis abuelos, Roberto y Carmen, siempre nos contaban historias sobre nuestra familia y nuestra cultura. Mi abuela Lucía prepara mole y mi abuelo Miguel hace arroz frito, la mejor combinación de dos culturas. La comida es un elemento fundamental en nuestra...</p>
+      </div>
+    
+      <div class="story">
+        <h3>"El nacimiento de mi hijo Matías"</h3>
+        <p>El nacimiento de mi hijo Matías fue el momento más especial de mi vida. Ana y yo estábamos tan nerviosos, pero mi madre Sofía nos dio tranquilidad. Mi padre Jorge lloró cuando cargó a Matías por primera vez. Fue un momento muy emotivo para todos.</p>
+      </div>
+    
+      <div class="story">
+        <h3>"La casa de mis abuelos"</h3>
+        <p>La casa de mis abuelos Antonio y Elena en Guadalajara era un lugar mágico donde pasaba mis veranos de infancia. Mi abuelo Antonio me enseñó a hacer pan y mi abuela Elena me contaba historias de la Revolución que le contó su mamá. La casa estaba llena de recuerdos y olores que todavía puedo sentir cu...</p>
+      </div>
+    
+      <div class="story">
+        <h3>"Mi boda con Ricardo"</h3>
+        <p>Me casé con Ricardo Mendoza en 1995 en una ceremonia íntima en Guadalajara. Recuerdo que mi suegra Gloria me dio un consejo muy valioso sobre cómo mantener una relación saludable y feliz. La boda fue un día muy especial para mí y mi familia.</p>
+      </div>
+    
+      <div class="story">
+        <h3>"La Navidad con mi familia"</h3>
+        <p>La Navidad es una época muy especial para mi familia. Nos reunimos en la casa de mis padres en Guadalajara y compartimos historias, comida y risas. La tradición y la comida juegan un papel importante en estas reuniones, y siempre me siento agradecida de estar con mis seres queridos.</p>
+      </div>
+    
+    </div>
+  </div>
+</div>
+</body>
+</html>

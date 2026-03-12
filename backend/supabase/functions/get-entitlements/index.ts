@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — User Entitlements Check
+// Matra — User Entitlements Check
 // ============================================================
 // Quick endpoint for the frontend to check feature access.
 // ============================================================
@@ -16,7 +16,15 @@ serve(async (req: Request) => {
   try {
     const userId = await getAuthUserId(req);
     const entitlements = await getUserEntitlements(userId);
-    return jsonResponse(entitlements);
+    return jsonResponse({
+      tier: entitlements.tier,
+      limits: entitlements.limits,
+      usage: {
+        interview_count: entitlements.interviewCount,
+      },
+      familySharingActive: entitlements.familySharingActive,
+      downgrade: entitlements.downgrade,
+    });
   } catch (err) {
     return errorResponse(
       err.message || 'Internal server error',

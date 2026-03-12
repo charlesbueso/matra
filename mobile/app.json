@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "MATRA",
+    "name": "Matra",
     "slug": "matra",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -12,51 +12,65 @@
       "resizeMode": "contain",
       "backgroundColor": "#04070B"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.matra.app",
       "infoPlist": {
-        "NSMicrophoneUsageDescription": "MATRA needs microphone access to record family interviews.",
-        "UIBackgroundModes": ["audio"]
+        "NSMicrophoneUsageDescription": "Matra needs microphone access to record family interviews.",
+        "UIBackgroundModes": [
+          "audio"
+        ]
       }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
+        "monochromeImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#04070B"
       },
       "package": "com.matra.app",
-      "permissions": ["RECORD_AUDIO"]
+      "permissions": [
+        "RECORD_AUDIO"
+      ]
     },
     "plugins": [
       "expo-router",
       "expo-font",
       "expo-secure-store",
+      "expo-dev-client",
       [
         "expo-notifications",
         {
-          "icon": "./assets/icon.png",
+          "icon": "./assets/notification-icon.png",
           "color": "#04070B"
         }
       ],
       [
         "expo-av",
         {
-          "microphonePermission": "Allow MATRA to access your microphone to record family interviews."
+          "microphonePermission": "Allow Matra to access your microphone to record family interviews."
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker",
+      "expo-localization",
+      "@sentry/react-native"
     ],
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
       "eas": {
-        "projectId": "YOUR_EAS_PROJECT_ID"
+        "projectId": "a476bd24-8a1d-4cd4-8406-8092f812b9e1"
       },
       "supabaseUrl": "http://10.0.2.2:54321",
       "supabaseAnonKey": "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH",
-      "revenueCatApiKey": "YOUR_REVENUECAT_API_KEY"
+      "revenueCatApiKey": "test_bmWiLIcOcpPxCGzNauOeQftXnaJ",
+      "posthogApiKey": "phc_AGRWKlaTN8wVMWYH3eAg4xDsEmJhO4ZwLadWIW4Akwn",
+      "posthogHost": "https://us.i.posthog.com",
+      "sentryDsn": "https://5b79a6e81fec8e1aeca5a59c9b4927ed@o4510999365287936.ingest.us.sentry.io/4510999396417536"
     }
   }
 }

@@ -1,0 +1,52 @@
+{
+  "measured_at": "2026-03-07T00:59:28.908Z",
+  "scenario": {
+    "interviews_per_month": 30,
+    "duration_minutes": 30,
+    "transcript_words": 4840,
+    "transcript_chars": 27247
+  },
+  "per_interview": {
+    "extraction": {
+      "prompt_tokens": 8393,
+      "completion_tokens": 2916,
+      "total_tokens": 11309
+    },
+    "summarization": {
+      "prompt_tokens": 7890,
+      "completion_tokens": 1832,
+      "total_tokens": 9722
+    },
+    "biography": {
+      "prompt_tokens": 544,
+      "completion_tokens": 570,
+      "total_tokens": 1114
+    },
+    "stt_cost": 0.0555,
+    "llm_cost": 0.013357889999999999,
+    "total_cost": 0.06885789
+  },
+  "monthly": {
+    "stt_cost": 1.665,
+    "llm_cost": 0.40073669999999995,
+    "base_cost": 2.0657367,
+    "with_5_bios": 2.069593,
+    "with_15_bios": 2.0773056,
+    "with_30_bios": 2.0888745,
+    "total_input_tokens": 488490,
+    "total_output_tokens": 142440,
+    "total_tokens": 630930,
+    "audio_hours": 15
+  },
+  "pricing": {
+    "llama-3.3-70b-versatile": {
+      "input": 0.59,
+      "output": 0.79,
+      "label": "Llama 3.3 70B Versatile"
+    },
+    "whisper-large-v3": {
+      "perAudioHour": 0.111,
+      "label": "Whisper V3 Large"
+    }
+  }
+}

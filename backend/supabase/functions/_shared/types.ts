@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Shared Types
+// Matra — Shared Types
 // ============================================================
 // These types are shared across all Edge Functions.
 // Generated DB types will supplement these application-level types.
@@ -7,14 +7,30 @@
 
 // ── Subscription & Feature Gating ──
 
-export type SubscriptionTier = 'free' | 'premium' | 'lifetime';
+export type SubscriptionTier = 'free' | 'premium';
+export type SubscriptionStatus = 'active' | 'expired' | 'cancelled' | 'grace_period' | 'billing_retry';
+
+/** Describes how a lapsed premium user should be treated. */
+export interface DowngradeInfo {
+  /** User was previously premium and is now on free tier. */
+  isLapsed: boolean;
+  /** True while in 7-day grace period — full premium access. */
+  inGracePeriod: boolean;
+  /** When the grace period expires (null if not applicable). */
+  gracePeriodEndsAt: string | null;
+  /** Lapsed users can still export until this date (30 days from expiration). */
+  exportAccessUntil: string | null;
+}
 
 export interface FeatureLimits {
   maxInterviews: number;
-  maxStorageBytes: number;
+  maxInterviewsPerMonth: number;
+  maxInterviewsPerDay: number;
+  maxRecordingSeconds: number;
   maxStoriesPerInterview: number;
   aiSummarization: boolean;
   aiBiography: boolean;
+  audioSnippets: boolean;
   memoryBookExport: boolean;
   familySharing: boolean;
   encryptedArchive: boolean;
@@ -24,10 +40,13 @@ export interface FeatureLimits {
 export const TIER_LIMITS: Record<SubscriptionTier, FeatureLimits> = {
   free: {
     maxInterviews: 2,
-    maxStorageBytes: 100 * 1024 * 1024, // 100 MB
+    maxInterviewsPerMonth: Infinity,
+    maxInterviewsPerDay: Infinity,
+    maxRecordingSeconds: 5 * 60, // 5 minutes
     maxStoriesPerInterview: 1,
     aiSummarization: false,
     aiBiography: false,
+    audioSnippets: false,
     memoryBookExport: false,
     familySharing: false,
     encryptedArchive: false,
@@ -35,21 +54,13 @@ export const TIER_LIMITS: Record<SubscriptionTier, FeatureLimits> = {
   },
   premium: {
     maxInterviews: Infinity,
-    maxStorageBytes: 10 * 1024 * 1024 * 1024, // 10 GB
+    maxInterviewsPerMonth: 30,
+    maxInterviewsPerDay: 5,
+    maxRecordingSeconds: 30 * 60, // 30 minutes
     maxStoriesPerInterview: 5,
     aiSummarization: true,
     aiBiography: true,
-    memoryBookExport: true,
-    familySharing: true,
-    encryptedArchive: true,
-    documentaryGeneration: true,
-  },
-  lifetime: {
-    maxInterviews: Infinity,
-    maxStorageBytes: 50 * 1024 * 1024 * 1024, // 50 GB
-    maxStoriesPerInterview: 5,
-    aiSummarization: true,
-    aiBiography: true,
+    audioSnippets: true,
     memoryBookExport: true,
     familySharing: true,
     encryptedArchive: true,
@@ -99,9 +110,36 @@ export interface ExtractionResult {
     lastName?: string;
     nickname?: string;
     birthDate?: string;
+    deathDate?: string;
     birthPlace?: string;
+    currentLocation?: string;
+    profession?: string;
     isDeceased?: boolean;
+    gender?: 'male' | 'female' | null;
   }>;
+}
+
+export interface VerificationCorrection {
+  type: 'fix_directionality' | 'add_relationship' | 'remove_relationship' | 'add_person' | 'fix_relationship_type';
+  original?: {
+    personA?: string;
+    personB?: string;
+    relationshipType?: string;
+  };
+  corrected?: {
+    personA?: string;
+    personB?: string;
+    relationshipType?: string;
+    firstName?: string;
+    lastName?: string;
+    gender?: string;
+  };
+  reason: string;
+}
+
+export interface VerificationResult {
+  corrections: VerificationCorrection[];
+  verified: boolean;
 }
 
 export interface SummaryResult {
@@ -114,6 +152,24 @@ export interface SummaryResult {
     involvedPeople: string[];
     approximateDate?: string;
     location?: string;
+    keyMoments?: Array<{
+      quote: string;
+      label: string;
+    }>;
+  }>;
+}
+
+export interface StoryResult {
+  stories: Array<{
+    title: string;
+    content: string;
+    involvedPeople: string[];
+    approximateDate?: string;
+    location?: string;
+    keyMoments?: Array<{
+      quote: string;
+      label: string;
+    }>;
   }>;
 }
 

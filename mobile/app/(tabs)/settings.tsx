@@ -1,44 +1,137 @@
 // ============================================================
-// MATRA — Settings Tab
+// Matra — Settings Tab
 // ============================================================
 
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Alert, ActivityIndicator, TextInput } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { StarField, Card, Button, BioAlgae, CornerBush } from '../../src/components/ui';
+import { File as FSFile, Directory, Paths } from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
+import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
+import { StarField, Card, Button, BioAlgae, CornerBush, AvatarViewer } from '../../src/components/ui';
+import { SubscriptionInfoSheet } from '../../src/components/SubscriptionInfoSheet';
+import { SubscriptionStatusBanner } from '../../src/components/SubscriptionStatusBanner';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useFamilyStore, Interview } from '../../src/stores/familyStore';
+import { useSubscriptionStore } from '../../src/stores/subscriptionStore';
+import { invokeFunction } from '../../src/services/supabase';
+import { useSignedUrl, useSignedUrls } from '../../src/hooks';
 import { Colors, Typography, Spacing, BorderRadius } from '../../src/theme/tokens';
+
+const BRAND_KEYS = {
+  chairGold: 'matra/assets/icon-chair-gold-nobg.png',
+  chairGreen: 'matra/assets/icon-chair-nobg.png',
+} as const;
+import { SUPPORTED_LANGUAGES, getCurrentLanguage, type LanguageCode } from '../../src/i18n';
+import { resizeImageForUpload } from '../../src/utils/image';
+
+// ── Usage Row with Progress Bar ──
+function UsageRow({ label, used, max, suffix, formatLabel }: {
+  label: string;
+  used: number;
+  max: number;
+  suffix?: string;
+  formatLabel?: (used: number, max: number) => string;
+}) {
+  const ratio = Math.min(used / max, 1);
+  const isNearLimit = ratio >= 0.8;
+  const displayLabel = formatLabel
+    ? formatLabel(used, max)
+    : `${used} / ${max}${suffix ? ` ${suffix}` : ''}`;
+
+  return (
+    <View style={usageStyles.container}>
+      <View style={usageStyles.row}>
+        <Text style={usageStyles.label}>{label}</Text>
+        <Text style={[usageStyles.value, isNearLimit && usageStyles.valueWarn]}>
+          {displayLabel}
+        </Text>
+      </View>
+      <View style={usageStyles.barTrack}>
+        <View
+          style={[
+            usageStyles.barFill,
+            { width: `${Math.max(ratio * 100, 2)}%` },
+            isNearLimit && usageStyles.barFillWarn,
+          ]}
+        />
+      </View>
+    </View>
+  );
+}
+
+const usageStyles = StyleSheet.create({
+  container: { paddingVertical: Spacing.sm, gap: 4 },
+  row: { flexDirection: 'row', justifyContent: 'space-between' },
+  label: {
+    fontSize: Typography.sizes.body,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.moonlight,
+  },
+  value: {
+    fontSize: Typography.sizes.body,
+    fontFamily: Typography.fonts.bodySemiBold,
+    color: Colors.text.starlight,
+  },
+  valueWarn: { color: Colors.accent.coral },
+  barTrack: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: Colors.overlay.medium,
+    overflow: 'hidden',
+  },
+  barFill: {
+    height: '100%',
+    borderRadius: 2,
+    backgroundColor: Colors.accent.cyan,
+  },
+  barFillWarn: { backgroundColor: Colors.accent.coral },
+});
 
 export default function SettingsScreen() {
   const router = useRouter();
   const { scrollTo } = useLocalSearchParams<{ scrollTo?: string }>();
   const scrollViewRef = useRef<ScrollView>(null);
   const conversationsY = useRef(0);
-  const { profile, signOut, updateProfile, deleteAccount, deactivateAccount } = useAuthStore();
-  const { uploadPersonAvatar, interviews, deleteInterview, deleteAllInterviews } = useFamilyStore();
+  const { profile, signOut, updateProfile, deleteAccount, deactivateAccount, updateEmail } = useAuthStore();
+  const setLanguage = useAuthStore((s) => s.setLanguage);
+  const { t } = useTranslation();
+  const { uploadPersonAvatar, interviews, stories, people, relationships, familyGroups, deleteInterview, deleteAllInterviews } = useFamilyStore();
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isViewingAvatar, setIsViewingAvatar] = useState(false);
   const [isDeletingId, setIsDeletingId] = useState<string | null>(null);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
   const [isDeactivating, setIsDeactivating] = useState(false);
+  const [isExportingData, setIsExportingData] = useState(false);
+  const [isExportingMemoryBook, setIsExportingMemoryBook] = useState(false);
+  const [isChangingEmail, setIsChangingEmail] = useState(false);
+  const [showProfileEdit, setShowProfileEdit] = useState(false);
+  const [showSubscriptionInfo, setShowSubscriptionInfo] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [newDisplayName, setNewDisplayName] = useState('');
+  const [isSavingName, setIsSavingName] = useState(false);
+  const avatarUrl = useSignedUrl(profile?.avatar_url);
+  const brandUrls = useSignedUrls([BRAND_KEYS.chairGold, BRAND_KEYS.chairGreen]);
+  const downgrade = useSubscriptionStore((s) => s.downgrade);
 
   const handleDeleteInterview = (interview: Interview) => {
     Alert.alert(
-      'Delete Conversation',
-      `Are you sure you want to delete "${interview.title || 'Untitled Conversation'}"? This cannot be undone.`,
+      t('settings.deleteConversation'),
+      t('settings.deleteConversationConfirm', { title: interview.title || t('settings.untitledConversation') }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete', style: 'destructive',
+          text: t('common.delete'), style: 'destructive',
           onPress: async () => {
             setIsDeletingId(interview.id);
             try {
               await deleteInterview(interview.id);
             } catch (err: any) {
-              Alert.alert('Error', err.message);
+              Alert.alert(t('common.error'), err.message);
             } finally {
               setIsDeletingId(null);
             }
@@ -51,18 +144,18 @@ export default function SettingsScreen() {
   const handleDeleteAllInterviews = () => {
     if (interviews.length === 0) return;
     Alert.alert(
-      'Delete All Conversations',
-      `Are you sure you want to delete all ${interviews.length} conversation${interviews.length !== 1 ? 's' : ''}? This cannot be undone.`,
+      t('settings.deleteAllConversations'),
+      t('settings.deleteAllConversationsConfirm', { count: interviews.length }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete All', style: 'destructive',
+          text: t('settings.deleteAll'), style: 'destructive',
           onPress: async () => {
             setIsDeletingAll(true);
             try {
               await deleteAllInterviews();
             } catch (err: any) {
-              Alert.alert('Error', err.message);
+              Alert.alert(t('common.error'), err.message);
             } finally {
               setIsDeletingAll(false);
             }
@@ -73,29 +166,239 @@ export default function SettingsScreen() {
   };
 
   const handleSignOut = () => {
-    Alert.alert('Sign out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign Out', style: 'destructive', onPress: () => signOut() },
+    Alert.alert(t('settings.signOutConfirmTitle'), t('settings.signOutConfirmMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.signOut'), style: 'destructive', onPress: () => signOut() },
     ]);
   };
 
   const tierLabel = {
-    free: 'Free',
-    premium: 'Premium ◈',
-    lifetime: 'Lifetime ◈◈',
+    free: t('settings.free'),
+    premium: t('settings.premium'),
   }[profile?.subscription_tier || 'free'];
 
-  const storageUsedMB = Math.round((profile?.storage_used_bytes || 0) / (1024 * 1024));
+  // Tier limits (mirrors backend)
+  const tierLimits = {
+    free:    { maxPerMonth: Infinity, maxPerDay: Infinity, maxRecordingMin: 5 },
+    premium: { maxPerMonth: 30, maxPerDay: 5,  maxRecordingMin: 30 },
+  }[profile?.subscription_tier || 'free'];
+
+  // Count interviews this month and today (only relevant for premium)
+  const isPremium = profile?.subscription_tier === 'premium';
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const interviewsThisMonth = isPremium
+    ? interviews.filter((i) => new Date(i.created_at) >= monthStart).length
+    : 0;
+  const interviewsToday = isPremium
+    ? interviews.filter((i) => new Date(i.created_at) >= dayStart).length
+    : 0;
+
+  const handleChangeName = async () => {
+    const trimmed = newDisplayName.trim();
+    if (!trimmed) return;
+    if (trimmed === profile?.display_name) {
+      setShowProfileEdit(false);
+      return;
+    }
+    setIsSavingName(true);
+    try {
+      await updateProfile({ display_name: trimmed });
+      setShowProfileEdit(false);
+      setNewDisplayName('');
+    } catch (err: any) {
+      Alert.alert(t('common.error'), err.message);
+    } finally {
+      setIsSavingName(false);
+    }
+  };
+
+  const handleChangeEmail = async () => {
+    const trimmed = newEmail.trim().toLowerCase();
+    if (!trimmed || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      Alert.alert(t('settings.changeEmail'), t('settings.changeEmailInvalid'));
+      return;
+    }
+    if (trimmed === profile?.id) return; // same email, no-op
+
+    setIsChangingEmail(true);
+    try {
+      await updateEmail(trimmed);
+      setShowProfileEdit(false);
+      setNewEmail('');
+      Alert.alert(
+        t('settings.changeEmailSent'),
+        t('settings.changeEmailSentMessage'),
+      );
+    } catch (err: any) {
+      Alert.alert(t('common.error'), err.message);
+    } finally {
+      setIsChangingEmail(false);
+    }
+  };
+
+  const handleExportData = async () => {
+    setIsExportingData(true);
+    try {
+      const result = await invokeFunction<{
+        csvFiles: Record<string, string>;
+        fileDownloads: Record<string, string>;
+        summary: Record<string, number>;
+        exportedAt: string;
+      }>('export-my-data', {});
+
+      const { csvFiles, fileDownloads } = result;
+
+      if (Object.keys(csvFiles).length === 0) {
+        Alert.alert(t('common.error'), t('settings.noDataToExport'));
+        return;
+      }
+
+      // Build a single combined text file with all CSV sections
+      const sections: string[] = [];
+      for (const [filename, content] of Object.entries(csvFiles)) {
+        sections.push(`--- ${filename} ---\n${content}`);
+      }
+
+      // Append media download links at the end
+      if (Object.keys(fileDownloads).length > 0) {
+        const manifest = Object.entries(fileDownloads)
+          .map(([key, url]) => `${key}\n${url}`)
+          .join('\n\n');
+        sections.push(`--- media_download_links ---\n${manifest}`);
+      }
+
+      const combinedContent = sections.join('\n\n\n');
+
+      // Write to cache and share
+      const exportDir = new Directory(Paths.cache, 'matra-export');
+      if (exportDir.exists) {
+        exportDir.delete();
+      }
+      exportDir.create({ intermediates: true });
+
+      const timestamp = new Date().toISOString().slice(0, 10);
+      const exportFile = new FSFile(exportDir, `matra-export-${timestamp}.csv`);
+      exportFile.create();
+      exportFile.write(combinedContent);
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(exportFile.uri, {
+          mimeType: 'text/csv',
+          dialogTitle: t('settings.downloadMyData'),
+        });
+      }
+
+      Alert.alert(t('settings.downloadReady'), t('settings.downloadReadyMessage'));
+    } catch (err: any) {
+      Alert.alert(t('settings.downloadFailed'), t('settings.downloadFailedMessage'));
+    } finally {
+      setIsExportingData(false);
+    }
+  };
+
+  const handleExportMemoryBook = async () => {
+    // Allow export for premium users and lapsed users within their export grace window
+    const hasExportAccess = profile?.subscription_tier === 'premium' ||
+      (downgrade.exportAccessUntil && new Date(downgrade.exportAccessUntil) > new Date());
+    if (!hasExportAccess) {
+      router.push('/paywall');
+      return;
+    }
+
+    // First-time readiness check: prompt user to fill in family info
+    const activeGroup = familyGroups[0];
+    const groupNameFilled = activeGroup && activeGroup.name !== 'My Family' && activeGroup.name.trim().length > 0;
+    const biosGenerated = people.filter((p) => p.ai_biography).length;
+    const totalPeople = people.length;
+    const verifiedRelationships = relationships.filter((r) => r.verified).length;
+    const totalRelationships = relationships.length;
+
+    const issues: string[] = [];
+    if (!groupNameFilled) issues.push(t('settings.readinessGroupName'));
+    if (biosGenerated < totalPeople) issues.push(t('settings.readinessBios', { done: biosGenerated, total: totalPeople }));
+    if (totalRelationships > 0 && verifiedRelationships < totalRelationships) {
+      issues.push(t('settings.readinessConnections', { done: verifiedRelationships, total: totalRelationships }));
+    }
+
+    if (issues.length > 0) {
+      const checklist = issues.map((i) => `• ${i}`).join('\n');
+      return new Promise<void>((resolve) => {
+        Alert.alert(
+          t('settings.readinessTitle'),
+          `${t('settings.readinessMessage')}\n\n${checklist}`,
+          [
+            { text: t('settings.readinessGoFix'), style: 'cancel', onPress: () => resolve() },
+            {
+              text: t('settings.readinessContinue'),
+              onPress: () => { resolve(); proceedWithExport(); },
+            },
+          ],
+        );
+      });
+    }
+
+    await proceedWithExport();
+  };
+
+  const proceedWithExport = async () => {
+    setIsExportingMemoryBook(true);
+    try {
+      const result = await invokeFunction<{
+        pdf: string;
+        filename: string;
+        size: number;
+      }>('export-memory-book', {});
+
+      // Decode base64 and write PDF to cache
+      const binaryString = atob(result.pdf);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      const exportDir = new Directory(Paths.cache, 'matra-memory-book');
+      if (exportDir.exists) {
+        exportDir.delete();
+      }
+      exportDir.create({ intermediates: true });
+
+      const pdfFile = new FSFile(exportDir, result.filename);
+      pdfFile.create();
+      pdfFile.write(bytes);
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(pdfFile.uri, {
+          mimeType: 'application/pdf',
+          dialogTitle: t('settings.memoryBookShare'),
+        });
+      }
+
+      Alert.alert(t('settings.memoryBookReady'), t('settings.memoryBookReadyMessage'));
+    } catch (err: any) {
+      const msg = err?.message || '';
+      if (msg.includes('once per week') || msg.includes('can generate a new memory book on')) {
+        Alert.alert(t('settings.memoryBookRateLimited'), msg);
+      } else if (msg.includes('No new data')) {
+        Alert.alert(t('settings.memoryBookNoNewData'), msg);
+      } else {
+        Alert.alert(t('common.error'), t('settings.memoryBookError'));
+      }
+    } finally {
+      setIsExportingMemoryBook(false);
+    }
+  };
 
   const handlePickAvatar = async () => {
     if (!profile?.self_person_id) {
-      Alert.alert('No profile node', 'Record your first conversation to create your profile in the family tree.');
+      Alert.alert(t('settings.noProfileNode'), t('settings.noProfileNodeMessage'));
       return;
     }
 
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Please allow access to your photo library to add a profile picture.');
+      Alert.alert(t('settings.permissionNeeded'), t('settings.photoLibraryPermission'));
       return;
     }
 
@@ -110,13 +413,27 @@ export default function SettingsScreen() {
 
     setIsUploadingAvatar(true);
     try {
-      const avatarUrl = await uploadPersonAvatar(profile.self_person_id, result.assets[0].uri);
-      await updateProfile({ avatar_url: avatarUrl });
+      const resizedUri = await resizeImageForUpload(result.assets[0].uri);
+      const avatarKey = await uploadPersonAvatar(profile.self_person_id, resizedUri);
+      await updateProfile({ avatar_url: avatarKey });
     } catch (err: any) {
-      Alert.alert('Upload failed', err.message);
+      Alert.alert(t('settings.uploadFailed'), err.message);
     } finally {
       setIsUploadingAvatar(false);
     }
+  };
+
+  const handleAvatarPress = () => {
+    if (isUploadingAvatar) return;
+    if (!avatarUrl) {
+      handlePickAvatar();
+      return;
+    }
+    Alert.alert(t('settings.profilePicture'), undefined, [
+      { text: t('settings.viewPhoto'), onPress: () => setIsViewingAvatar(true) },
+      { text: t('settings.changePhoto'), onPress: handlePickAvatar },
+      { text: t('common.cancel'), style: 'cancel' },
+    ]);
   };
 
   return (
@@ -124,16 +441,16 @@ export default function SettingsScreen() {
       <BioAlgae strandCount={30} height={0.15} />
       <CornerBush />
       <ScrollView ref={scrollViewRef} style={styles.container} contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Settings</Text>
+        <Text style={styles.title}>{t('settings.title')}</Text>
 
         {/* Profile Card */}
         <Card variant="elevated" style={styles.profileCard}>
-          <Pressable onPress={handlePickAvatar} style={styles.avatar} disabled={isUploadingAvatar}>
+          <Pressable onPress={handleAvatarPress} style={styles.avatar} disabled={isUploadingAvatar}>
             {isUploadingAvatar ? (
               <ActivityIndicator color="#FFFFFF" size="small" />
-            ) : profile?.avatar_url ? (
+            ) : avatarUrl ? (
               <Image
-                source={{ uri: profile.avatar_url }}
+                source={{ uri: avatarUrl }}
                 style={styles.avatarImage}
                 contentFit="cover"
                 transition={300}
@@ -147,52 +464,160 @@ export default function SettingsScreen() {
               <Text style={styles.avatarEditBadgeText}>📷</Text>
             </View>
           </Pressable>
-          <Text style={styles.profileName}>{profile?.display_name || 'Explorer'}</Text>
-          <View style={styles.tierBadge}>
-            <Text style={styles.tierText}>{tierLabel}</Text>
+          <View style={styles.profileInfo}>
+            <Text style={styles.profileName} numberOfLines={1}>{profile?.display_name || t('settings.explorer')}</Text>
+            <Text style={[styles.profileEmail, isPremium && { color: Colors.accent.amber }]} numberOfLines={1}>
+              {useAuthStore.getState().user?.email || '—'}
+            </Text>
+            <Image
+              source={(() => {
+                const key = isPremium ? BRAND_KEYS.chairGold : BRAND_KEYS.chairGreen;
+                const url = brandUrls.get(key);
+                return url ? { uri: url } : undefined;
+              })()}
+              style={styles.tierChairIcon}
+              contentFit="contain"
+            />
           </View>
+          <Pressable
+            style={styles.profileEditButton}
+            onPress={() => {
+              setShowProfileEdit(!showProfileEdit);
+              setNewDisplayName(profile?.display_name || '');
+              setNewEmail('');
+            }}
+          >
+            <Ionicons name={showProfileEdit ? 'close-outline' : 'create-outline'} size={20} color={Colors.text.twilight} />
+          </Pressable>
         </Card>
+
+        {showProfileEdit && (
+          <Card variant="elevated" style={{ marginBottom: Spacing.xl, padding: Spacing.lg, gap: Spacing.md }}>
+            <View>
+              <Text style={styles.editLabel}>{t('settings.nameLabel')}</Text>
+              <TextInput
+                style={styles.emailInput}
+                value={newDisplayName}
+                onChangeText={setNewDisplayName}
+                placeholder={t('settings.newNamePlaceholder')}
+                placeholderTextColor={Colors.text.shadow}
+                autoCapitalize="words"
+                autoCorrect={false}
+              />
+              <Button
+                title={isSavingName ? t('settings.savingName') : t('settings.confirmChangeName')}
+                onPress={handleChangeName}
+                size="sm"
+                loading={isSavingName}
+                disabled={isSavingName || !newDisplayName.trim()}
+                style={{ marginTop: Spacing.sm }}
+              />
+            </View>
+            <View>
+              <Text style={styles.editLabel}>{t('settings.email')}</Text>
+              <TextInput
+                style={styles.emailInput}
+                value={newEmail}
+                onChangeText={setNewEmail}
+                placeholder={t('settings.newEmailPlaceholder')}
+                placeholderTextColor={Colors.text.shadow}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+              <Button
+                title={isChangingEmail ? t('settings.changingEmail') : t('settings.confirmChangeEmail')}
+                onPress={handleChangeEmail}
+                size="sm"
+                loading={isChangingEmail}
+                disabled={isChangingEmail || !newEmail.trim()}
+                style={{ marginTop: Spacing.sm }}
+              />
+            </View>
+          </Card>
+        )}
 
         {/* Subscription */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Subscription</Text>
+          <Text style={styles.sectionTitle}>{t('settings.subscription')}</Text>
           
+          {/* Grace period / lapsed banner in settings context */}
+          {(downgrade.inGracePeriod || downgrade.isLapsed) && (
+            <SubscriptionStatusBanner />
+          )}
+
           <Card variant="default">
             <View style={styles.settingRow}>
-              <Text style={styles.settingLabel}>Current Plan</Text>
-              <Text style={styles.settingValue}>{tierLabel}</Text>
-            </View>
-            <View style={styles.settingRow}>
-              <Text style={styles.settingLabel}>Conversations Used</Text>
-              <Text style={styles.settingValue}>
-                {profile?.interview_count || 0}
-                {profile?.subscription_tier === 'free' ? ' / 2' : ''}
-              </Text>
-            </View>
-            <View style={styles.settingRow}>
-              <Text style={styles.settingLabel}>Storage Used</Text>
-              <Text style={styles.settingValue}>{storageUsedMB} MB</Text>
+              <Text style={styles.settingLabel}>{t('settings.currentPlan')}</Text>
+              <View style={[styles.tierBadge, isPremium ? styles.tierBadgePremium : styles.tierBadgeFree]}>
+                <Text style={[styles.tierBadgeText, isPremium ? styles.tierBadgeTextPremium : styles.tierBadgeTextFree]}>{tierLabel}</Text>
+              </View>
             </View>
 
-            {profile?.subscription_tier === 'free' && (
+            {profile?.subscription_tier === 'free' && !downgrade.isLapsed && (
               <Button
-                title="Upgrade to Premium"
+                title={t('settings.upgradeToPremium')}
                 onPress={() => router.push('/paywall')}
                 variant="premium"
                 size="sm"
-                style={{ marginTop: Spacing.md }}
+                style={{ marginTop: Spacing.sm, alignSelf: 'flex-start' }}
+              />
+            )}
+
+            {/* Re-subscribe for lapsed users */}
+            {downgrade.isLapsed && (
+              <Button
+                title={t('home.resubscribe')}
+                onPress={() => router.push('/paywall')}
+                variant="premium"
+                size="sm"
+                style={{ marginTop: Spacing.sm, alignSelf: 'flex-start' }}
               />
             )}
           </Card>
         </View>
 
+        {/* Usage & Limits */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('settings.usageLimits')}</Text>
+          <Card variant="default">
+            {isPremium && (
+              <>
+                <UsageRow
+                  label={t('settings.monthlyConversations')}
+                  used={interviewsThisMonth}
+                  max={tierLimits.maxPerMonth}
+                  suffix={t('settings.thisMonth')}
+                />
+                <UsageRow
+                  label={t('settings.dailyConversations')}
+                  used={interviewsToday}
+                  max={tierLimits.maxPerDay}
+                  suffix={t('settings.today')}
+                />
+              </>
+            )}
+            <View style={styles.settingRow}>
+              <Text style={styles.settingLabel}>{t('settings.maxRecordingLength')}</Text>
+              <Text style={styles.settingValue}>{tierLimits.maxRecordingMin} min</Text>
+            </View>
+            <View style={styles.settingRow}>
+              <Text style={styles.settingLabel}>{t('settings.totalConversations')}</Text>
+              <Text style={styles.settingValue}>
+                {profile?.interview_count || 0}
+                {profile?.subscription_tier === 'free' ? ' / 2' : ''}
+              </Text>
+            </View>
+          </Card>
+        </View>
+
         {/* Family */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Family</Text>
+          <Text style={styles.sectionTitle}>{t('settings.family')}</Text>
           <Card variant="default">
-            <SettingItem label="Manage Family Groups" onPress={() => {}} />
-            <SettingItem label="Invite Family Members" onPress={() => {}} locked={profile?.subscription_tier === 'free'} />
-            <SettingItem label="Export Memory Book" onPress={() => {}} locked={profile?.subscription_tier === 'free'} />
+            <SettingItem label={t('settings.manageFamilyGroups')} onPress={() => router.push('/family-group')} badge={!familyGroups[0] || familyGroups[0].name === 'My Family' || !familyGroups[0].name.trim()} />
+            <SettingItem label={t('settings.inviteFamilyMembers')} onPress={() => profile?.subscription_tier === 'free' ? router.push('/paywall') : router.push('/invite-family')} locked={profile?.subscription_tier === 'free'} premium />
+            <SettingItem label={isExportingMemoryBook ? t('settings.memoryBookGenerating') : t('settings.exportMemoryBook')} onPress={handleExportMemoryBook} locked={profile?.subscription_tier === 'free' && !downgrade.exportAccessUntil} disabled={isExportingMemoryBook} premium />
           </Card>
         </View>
 
@@ -206,17 +631,17 @@ export default function SettingsScreen() {
             }
           }}
         >
-          <Text style={styles.sectionTitle}>Conversations</Text>
+          <Text style={styles.sectionTitle}>{t('settings.conversations')}</Text>
           <Card variant="default">
             {interviews.length === 0 ? (
-              <Text style={styles.emptyText}>No conversations recorded yet.</Text>
+              <Text style={styles.emptyText}>{t('settings.noConversations')}</Text>
             ) : (
               <>
                 {interviews.map((interview) => (
                   <View key={interview.id} style={styles.conversationRow}>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.conversationTitle} numberOfLines={1}>
-                        {interview.title || 'Untitled Conversation'}
+                        {interview.title || t('settings.untitledConversation')}
                       </Text>
                       <Text style={styles.conversationDate}>
                         {new Date(interview.created_at).toLocaleDateString()}
@@ -236,7 +661,7 @@ export default function SettingsScreen() {
                   </View>
                 ))}
                 <Button
-                  title={isDeletingAll ? 'Deleting...' : 'Delete All Conversations'}
+                  title={isDeletingAll ? t('settings.deleting') : t('settings.deleteAllConversationsButton')}
                   onPress={handleDeleteAllInterviews}
                   variant="danger"
                   size="sm"
@@ -250,104 +675,179 @@ export default function SettingsScreen() {
 
         {/* App */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>App</Text>
+          <Text style={styles.sectionTitle}>{t('settings.app')}</Text>
           <Card variant="default">
-            <SettingItem label="Privacy Policy" onPress={() => {}} />
-            <SettingItem label="Terms of Service" onPress={() => {}} />
-            <SettingItem label="About MATRA" onPress={() => {}} />
+            <View style={styles.settingRow}>
+              <Text style={styles.settingLabel}>{t('settings.language')}</Text>
+              <View style={styles.languageSelector}>
+                {SUPPORTED_LANGUAGES.map((lang) => {
+                  const isActive = getCurrentLanguage() === lang.code;
+                  return (
+                    <Pressable
+                      key={lang.code}
+                      style={[styles.languagePill, isActive && styles.languagePillActive]}
+                      onPress={() => setLanguage(lang.code as LanguageCode)}
+                    >
+                      <Text style={[styles.languagePillText, isActive && styles.languagePillTextActive]}>
+                        {lang.nativeLabel}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+            <SettingItem label={t('settings.privacyPolicy')} onPress={() => router.push('/privacy-policy')} />
+            <SettingItem label={t('settings.termsOfService')} onPress={() => router.push('/terms-of-service')} />
+            <SettingItem label={t('settings.aboutMatra')} onPress={() => router.push('/about')} />
+            {(isPremium || downgrade.isLapsed || downgrade.inGracePeriod) && (
+              <SettingItem label={t('settings.whatIfICancel')} onPress={() => setShowSubscriptionInfo(true)} />
+            )}
           </Card>
         </View>
 
-        {/* Account */}
+
+
+        {/* Your Data */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('settings.data')}</Text>
+          <Card variant="default">
+            <Text style={styles.dataExportDesc}>{t('settings.downloadMyDataDesc')}</Text>
+            <Button
+              title={isExportingData ? t('settings.downloading') : t('settings.downloadMyData')}
+              onPress={handleExportData}
+              variant="ghost"
+              size="sm"
+              loading={isExportingData}
+              style={{ marginTop: Spacing.sm }}
+            />
+          </Card>
+        </View>
+
+        {/* Sign Out */}
         <View style={styles.section}>
           <Button
-            title="Sign Out"
+            title={t('common.signOut')}
             onPress={handleSignOut}
             variant="ghost"
           />
-          <Button
-            title={isDeactivating ? 'Deactivating...' : 'Deactivate Account'}
-            onPress={() => {
-              Alert.alert(
-                'Deactivate Account',
-                'Your data will be preserved but hidden. You can reactivate your account by signing back in.',
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  {
-                    text: 'Deactivate',
-                    style: 'destructive',
-                    onPress: async () => {
-                      setIsDeactivating(true);
-                      try {
-                        await deactivateAccount();
-                      } catch (err: any) {
-                        Alert.alert('Error', err.message);
-                      } finally {
-                        setIsDeactivating(false);
-                      }
-                    },
-                  },
-                ]
-              );
-            }}
-            variant="ghost"
-            size="sm"
-            loading={isDeactivating}
-          />
-          <Button
-            title={isDeletingAccount ? 'Deleting...' : 'Delete Account'}
-            onPress={() => {
-              Alert.alert(
-                'Delete Account',
-                'This will permanently delete your account and ALL your data. This cannot be undone.',
-                [
-                  { text: 'Cancel', style: 'cancel' },
-                  {
-                    text: 'Delete Everything',
-                    style: 'destructive',
-                    onPress: () => {
-                      Alert.alert(
-                        'Are you absolutely sure?',
-                        'All your family data, conversations, and stories will be permanently lost.',
-                        [
-                          { text: 'Cancel', style: 'cancel' },
-                          {
-                            text: 'Yes, Delete My Account',
-                            style: 'destructive',
-                            onPress: async () => {
-                              setIsDeletingAccount(true);
-                              try {
-                                await deleteAccount();
-                              } catch (err: any) {
-                                Alert.alert('Error', err.message);
-                                setIsDeletingAccount(false);
-                              }
-                            },
-                          },
-                        ]
-                      );
-                    },
-                  },
-                ]
-              );
-            }}
-            variant="danger"
-            size="sm"
-            loading={isDeletingAccount}
-          />
         </View>
 
-        <Text style={styles.version}>MATRA v1.0.0</Text>
+        {/* Danger Zone */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('settings.dangerZone')}</Text>
+          <View style={styles.dangerZoneCard}>
+            <Text style={styles.dangerZoneDesc}>{t('settings.dangerZoneDesc')}</Text>
+
+            <View style={styles.dangerZoneItem}>
+              <View style={styles.dangerZoneItemInfo}>
+                <Text style={styles.dangerZoneItemTitle}>{t('settings.deactivateAccount')}</Text>
+                <Text style={styles.dangerZoneItemDesc}>{t('settings.deactivateAccountDesc')}</Text>
+              </View>
+              <Button
+                title={isDeactivating ? t('settings.deactivating') : t('settings.deactivate')}
+                onPress={() => {
+                  Alert.alert(
+                    t('settings.deactivateAccount'),
+                    t('settings.deactivateAccountMessage'),
+                    [
+                      { text: t('common.cancel'), style: 'cancel' },
+                      {
+                        text: t('settings.deactivate'),
+                        style: 'destructive',
+                        onPress: async () => {
+                          setIsDeactivating(true);
+                          try {
+                            await deactivateAccount();
+                          } catch (err: any) {
+                            Alert.alert(t('common.error'), err.message);
+                          } finally {
+                            setIsDeactivating(false);
+                          }
+                        },
+                      },
+                    ]
+                  );
+                }}
+                variant="ghost"
+                size="sm"
+                loading={isDeactivating}
+              />
+            </View>
+
+            <View style={styles.dangerZoneDivider} />
+
+            <View style={styles.dangerZoneItem}>
+              <View style={styles.dangerZoneItemInfo}>
+                <Text style={styles.dangerZoneItemTitle}>{t('settings.deleteAccount')}</Text>
+                <Text style={styles.dangerZoneItemDesc}>{t('settings.deleteAccountDesc')}</Text>
+              </View>
+              <Button
+                title={isDeletingAccount ? t('settings.deletingAccount') : t('settings.deleteAccount')}
+                onPress={() => {
+                  Alert.alert(
+                    t('settings.deleteAccount'),
+                    t('settings.deleteAccountMessage'),
+                    [
+                      { text: t('common.cancel'), style: 'cancel' },
+                      {
+                        text: t('settings.deleteEverything'),
+                        style: 'destructive',
+                        onPress: () => {
+                          Alert.alert(
+                            t('settings.absolutelySure'),
+                            t('settings.absolutelySureMessage'),
+                            [
+                              { text: t('common.cancel'), style: 'cancel' },
+                              {
+                                text: t('settings.yesDeleteAccount'),
+                                style: 'destructive',
+                                onPress: async () => {
+                                  setIsDeletingAccount(true);
+                                  try {
+                                    await deleteAccount();
+                                  } catch (err: any) {
+                                    Alert.alert(t('common.error'), err.message);
+                                    setIsDeletingAccount(false);
+                                  }
+                                },
+                              },
+                            ]
+                          );
+                        },
+                      },
+                    ]
+                  );
+                }}
+                variant="danger"
+                size="sm"
+                loading={isDeletingAccount}
+              />
+            </View>
+          </View>
+        </View>
+
+        <Text style={styles.version}>Matra v1.0.0</Text>
       </ScrollView>
+      <AvatarViewer
+        visible={isViewingAvatar}
+        uri={avatarUrl}
+        onClose={() => setIsViewingAvatar(false)}
+        name={profile?.display_name}
+      />
+      <SubscriptionInfoSheet
+        visible={showSubscriptionInfo}
+        onClose={() => setShowSubscriptionInfo(false)}
+      />
     </StarField>
   );
 }
 
-function SettingItem({ label, onPress, locked }: { label: string; onPress: () => void; locked?: boolean }) {
+function SettingItem({ label, onPress, locked, disabled, premium, badge }: { label: string; onPress: () => void; locked?: boolean; disabled?: boolean; premium?: boolean; badge?: boolean }) {
   return (
-    <Pressable onPress={onPress} style={styles.settingItem}>
+    <Pressable onPress={onPress} disabled={disabled} style={[styles.settingItem, disabled && { opacity: 0.5 }]}>
       <Text style={styles.settingItemLabel}>{label}</Text>
-      {locked && <Text style={styles.lockIcon}>🔒</Text>}
+      {badge && <View style={styles.notificationBadge}><Text style={styles.notificationBadgeText}>1</Text></View>}
+      {(locked || premium) && <Ionicons name="diamond" size={16} color="#C9A84C" />}
     </Pressable>
   );
 }
@@ -368,17 +868,18 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   profileCard: {
+    flexDirection: 'row',
     alignItems: 'center',
     marginBottom: Spacing.xl,
+    gap: Spacing.lg,
   },
   avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     backgroundColor: Colors.accent.cyan,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: Spacing.md,
     shadowColor: Colors.accent.cyan,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -386,9 +887,9 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   avatarImage: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
   },
   avatarEditBadge: {
     position: 'absolute',
@@ -407,18 +908,61 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
   avatarText: {
-    fontSize: Typography.sizes.h1,
+    fontSize: 36,
     fontFamily: Typography.fonts.heading,
     color: '#FFFFFF',
+  },
+  profileInfo: {
+    flex: 1,
+    gap: Spacing.xs,
+  },
+  profileEmailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  profileEmail: {
+    fontSize: Typography.sizes.caption,
+    fontFamily: Typography.fonts.body,
+    color: 'rgba(120, 180, 130, 0.85)',
+    flexShrink: 1,
+  },
+  profileEmailEdit: {
+    fontSize: 12,
+  },
+  profileNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.sm,
+  },
+  profileEditButton: {
+    position: 'absolute',
+    top: Spacing.md,
+    right: Spacing.md,
+    padding: Spacing.xs,
+  },
+  editLabel: {
+    fontSize: Typography.sizes.caption,
+    fontFamily: Typography.fonts.bodySemiBold,
+    color: Colors.text.twilight,
+    marginBottom: Spacing.xs,
+    textTransform: 'uppercase',
+    letterSpacing: Typography.letterSpacing.wide,
   },
   profileName: {
     fontSize: Typography.sizes.h3,
     fontFamily: Typography.fonts.heading,
     color: Colors.text.starlight,
-    marginBottom: Spacing.sm,
+    flexShrink: 1,
+  },
+  tierChairIcon: {
+    width: 28,
+    height: 28,
+    marginTop: Spacing.xs,
   },
   tierBadge: {
-    backgroundColor: Colors.background.current,
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(201, 168, 76, 0.12)',
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
     borderRadius: BorderRadius.full,
@@ -426,7 +970,7 @@ const styles = StyleSheet.create({
   tierText: {
     fontSize: Typography.sizes.caption,
     fontFamily: Typography.fonts.bodySemiBold,
-    color: Colors.accent.glow,
+    color: '#C9A84C',
   },
   section: {
     marginBottom: Spacing.xl,
@@ -454,6 +998,37 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fonts.bodySemiBold,
     color: Colors.text.starlight,
   },
+  tierBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
+  tierBadgePremium: {
+    backgroundColor: '#FDF3D7',
+  },
+  tierBadgeFree: {
+    backgroundColor: '#D9F0D3',
+  },
+  tierBadgeText: {
+    fontSize: Typography.sizes.caption,
+    fontFamily: Typography.fonts.bodySemiBold,
+  },
+  tierBadgeTextPremium: {
+    color: '#8A6200',
+  },
+  tierBadgeTextFree: {
+    color: '#2D6A1F',
+  },
+  storageBreakdown: {
+    paddingLeft: Spacing.sm,
+    paddingBottom: Spacing.xs,
+    gap: 2,
+  },
+  storageDetail: {
+    fontSize: Typography.sizes.small,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.twilight,
+  },
   settingItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -467,14 +1042,65 @@ const styles = StyleSheet.create({
     fontFamily: Typography.fonts.body,
     color: Colors.text.starlight,
   },
-  lockIcon: {
-    fontSize: 14,
+  notificationBadge: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: Colors.accent.coral,
+    marginLeft: Spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notificationBadgeText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontFamily: Typography.fonts.bodySemiBold,
+    lineHeight: 13,
+  },
+  languageSelector: {
+    flexDirection: 'row',
+    gap: Spacing.xs,
+  },
+  languagePill: {
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.xs,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.overlay.light,
+  },
+  languagePillActive: {
+    backgroundColor: Colors.accent.cyan,
+  },
+  languagePillText: {
+    fontSize: Typography.sizes.caption,
+    fontFamily: Typography.fonts.bodyMedium,
+    color: Colors.text.moonlight,
+  },
+  languagePillTextActive: {
+    color: '#FFFFFF',
+    fontFamily: Typography.fonts.bodySemiBold,
   },
   emptyText: {
     fontSize: Typography.sizes.body,
     fontFamily: Typography.fonts.body,
     color: Colors.text.twilight,
     paddingVertical: Spacing.sm,
+  },
+  dataExportDesc: {
+    fontSize: Typography.sizes.caption,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.twilight,
+    lineHeight: 18,
+  },
+  emailInput: {
+    borderWidth: 1,
+    borderColor: 'rgba(139, 115, 85, 0.20)',
+    borderRadius: 12,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+    fontSize: Typography.sizes.body,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.starlight,
+    backgroundColor: '#FFFFFF',
   },
   conversationRow: {
     flexDirection: 'row',
@@ -512,5 +1138,43 @@ const styles = StyleSheet.create({
     color: Colors.text.shadow,
     textAlign: 'center',
     marginTop: Spacing.xl,
+  },
+  dangerZoneCard: {
+    borderWidth: 1,
+    borderColor: 'rgba(196, 102, 90, 0.25)',
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.lg,
+    backgroundColor: 'rgba(196, 102, 90, 0.05)',
+    gap: Spacing.lg,
+  },
+  dangerZoneDesc: {
+    fontSize: Typography.sizes.caption,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.twilight,
+    lineHeight: 18,
+  },
+  dangerZoneItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  dangerZoneItemInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  dangerZoneItemTitle: {
+    fontSize: Typography.sizes.body,
+    fontFamily: Typography.fonts.bodySemiBold,
+    color: Colors.text.moonlight,
+  },
+  dangerZoneItemDesc: {
+    fontSize: Typography.sizes.small,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.twilight,
+    lineHeight: 16,
+  },
+  dangerZoneDivider: {
+    height: 1,
+    backgroundColor: 'rgba(196, 102, 90, 0.15)',
   },
 });

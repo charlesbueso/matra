@@ -61,38 +61,64 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 export async function invokeFunction<T = unknown>(
   name: string,
   body?: unknown,
+  methodOrOptions?: 'GET' | 'POST' | { formData?: FormData },
   options?: { formData?: FormData }
 ): Promise<T> {
-  const { data: { session } } = await supabase.auth.getSession();
+  let { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error('Not authenticated');
+
+  // Refresh token if it expires within 60 seconds
+  if (session.expires_at && session.expires_at * 1000 - Date.now() < 60_000) {
+    const { data } = await supabase.auth.refreshSession();
+    if (data.session) session = data.session;
+  }
+
+  // Support both old signature (name, body, options) and new (name, body, method, options)
+  let method: 'GET' | 'POST' | undefined;
+  let opts: { formData?: FormData } | undefined;
+  if (typeof methodOrOptions === 'string') {
+    method = methodOrOptions;
+    opts = options;
+  } else {
+    opts = methodOrOptions;
+  }
 
   const headers: Record<string, string> = {
     Authorization: `Bearer ${session.access_token}`,
   };
 
+  const httpMethod = method || (body || opts?.formData ? 'POST' : 'POST');
   let fetchBody: BodyInit | undefined;
 
-  if (options?.formData) {
-    fetchBody = options.formData;
-    // Don't set Content-Type for FormData — browser sets it with boundary
-  } else if (body) {
-    headers['Content-Type'] = 'application/json';
-    fetchBody = JSON.stringify(body);
+  if (httpMethod === 'POST') {
+    if (opts?.formData) {
+      fetchBody = opts.formData;
+      // Don't set Content-Type for FormData — browser sets it with boundary
+    } else if (body) {
+      headers['Content-Type'] = 'application/json';
+      fetchBody = JSON.stringify(body);
+    }
   }
 
   const response = await fetch(
     `${supabaseUrl}/functions/v1/${name}`,
     {
-      method: 'POST',
+      method: httpMethod,
       headers,
       body: fetchBody,
     }
   );
 
-  const result = await response.json();
+  let result: any;
+  try {
+    result = await response.json();
+  } catch {
+    throw new Error(`${name}: HTTP ${response.status} (non-JSON response)`);
+  }
 
   if (!result.success) {
-    throw new Error(result.error?.message || 'Request failed');
+    const msg = result.error?.message || result.message || result.msg || JSON.stringify(result);
+    throw new Error(`${name}: ${msg} (HTTP ${response.status})`);
   }
 
   return result.data as T;

@@ -2,15 +2,31 @@
 // MATRA — Shared Client Types
 // ============================================================
 
-export type SubscriptionTier = 'free' | 'premium' | 'lifetime';
-export type SubscriptionStatus = 'active' | 'past_due' | 'cancelled' | 'expired';
+export type SubscriptionTier = 'free' | 'premium';
+export type SubscriptionStatus = 'active' | 'past_due' | 'cancelled' | 'expired' | 'grace_period' | 'billing_retry';
+
+/** Describes downgrade/grace-period state for lapsed premium users. */
+export interface DowngradeInfo {
+  /** User was previously premium and is now on free tier. */
+  isLapsed: boolean;
+  /** True while in 7-day grace period — full premium access. */
+  inGracePeriod: boolean;
+  /** When the grace period expires (null if not applicable). */
+  gracePeriodEndsAt: string | null;
+  /** Lapsed users can still export until this date (30 days from expiration). */
+  exportAccessUntil: string | null;
+}
 export type InterviewStatus = 'draft' | 'uploading' | 'transcribing' | 'extracting' | 'summarising' | 'complete' | 'failed';
 export type RelationshipType =
-  | 'parent' | 'child' | 'sibling' | 'spouse' | 'grandparent'
-  | 'grandchild' | 'aunt_uncle' | 'niece_nephew' | 'cousin'
-  | 'step_parent' | 'step_child' | 'step_sibling' | 'in_law'
-  | 'godparent' | 'godchild' | 'partner' | 'friend'
-  | 'mentor' | 'other';
+  | 'parent' | 'child' | 'sibling' | 'spouse' | 'ex_spouse'
+  | 'grandparent' | 'grandchild'
+  | 'great_grandparent' | 'great_grandchild'
+  | 'great_great_grandparent' | 'great_great_grandchild'
+  | 'uncle_aunt' | 'nephew_niece' | 'cousin'
+  | 'step_parent' | 'step_child' | 'step_sibling' | 'half_sibling' | 'in_law' | 'parent_in_law' | 'child_in_law'
+  | 'adopted_parent' | 'adopted_child'
+  | 'godparent' | 'godchild'
+  | 'other';
 
 export interface FeatureLimits {
   max_interviews: number;        // -1 = unlimited

@@ -1,0 +1,1685 @@
+{
+  "narrator": {
+    "firstName": "Valentina",
+    "lastName": "Rodriguez Chen",
+    "gender": "female"
+  },
+  "extraction": {
+    "entities": [
+      {
+        "type": "person",
+        "value": "Valentina Rodriguez Chen",
+        "confidence": 0.9,
+        "context": "Bueno, me llamo Valentina Rodriguez Chen, soy mujer, nací en 1998 en la Ciudad de México."
+      },
+      {
+        "type": "date",
+        "value": "1998",
+        "confidence": 0.9,
+        "context": "Bueno, me llamo Valentina Rodriguez Chen, soy mujer, nací en 1998 en la Ciudad de México."
+      },
+      {
+        "type": "location",
+        "value": "Ciudad de México",
+        "confidence": 0.9,
+        "context": "Bueno, me llamo Valentina Rodriguez Chen, soy mujer, nací en 1998 en la Ciudad de México."
+      },
+      {
+        "type": "person",
+        "value": "Jorge Rodriguez Vega",
+        "confidence": 0.9,
+        "context": "Mi papá se llama Jorge Rodriguez Vega, nació en 1970 en Guadalajara y es ingeniero civil."
+      },
+      {
+        "type": "date",
+        "value": "1970",
+        "confidence": 0.9,
+        "context": "Mi papá se llama Jorge Rodriguez Vega, nació en 1970 en Guadalajara y es ingeniero civil."
+      },
+      {
+        "type": "location",
+        "value": "Guadalajara",
+        "confidence": 0.9,
+        "context": "Mi papá se llama Jorge Rodriguez Vega, nació en 1970 en Guadalajara y es ingeniero civil."
+      },
+      {
+        "type": "person",
+        "value": "Sofía Chen Fernández",
+        "confidence": 0.9,
+        "context": "Mi mamá se llama Sofía Chen Fernández, ella nació en 1973 en la Ciudad de México y es doctora."
+      },
+      {
+        "type": "date",
+        "value": "1973",
+        "confidence": 0.9,
+        "context": "Mi mamá se llama Sofía Chen Fernández, ella nació en 1973 en la Ciudad de México y es doctora."
+      },
+      {
+        "type": "date",
+        "value": "1996",
+        "confidence": 0.9,
+        "context": "Mis papás se casaron en 1996 aquí en la Ciudad de México."
+      },
+      {
+        "type": "person",
+        "value": "Diego Rodriguez Chen",
+        "confidence": 0.9,
+        "context": "Tengo un hermano mayor que se llama Diego Rodriguez Chen, él nació en 1995."
+      },
+      {
+        "type": "date",
+        "value": "1995",
+        "confidence": 0.9,
+        "context": "Tengo un hermano mayor que se llama Diego Rodriguez Chen, él nació en 1995."
+      },
+      {
+        "type": "person",
+        "value": "Ana López",
+        "confidence": 0.9,
+        "context": "Diego se casó el año pasado con Ana López y ya tienen un bebé que se llama Matías, el bebé tiene un año."
+      },
+      {
+        "type": "person",
+        "value": "Matías",
+        "confidence": 0.9,
+        "context": "Diego se casó el año pasado con Ana López y ya tienen un bebé que se llama Matías, el bebé tiene un año."
+      },
+      {
+        "type": "person",
+        "value": "Isabella",
+        "confidence": 0.9,
+        "context": "También tengo una hermana menor que se llama Isabella, pero todos le decimos Isa, ella nació en 2001."
+      },
+      {
+        "type": "date",
+        "value": "2001",
+        "confidence": 0.9,
+        "context": "También tengo una hermana menor que se llama Isabella, pero todos le decimos Isa, ella nació en 2001."
+      },
+      {
+        "type": "person",
+        "value": "Don Roberto Rodriguez",
+        "confidence": 0.9,
+        "context": "Por el lado de mi papá, mis abuelos paternos son Don Roberto Rodriguez, nacido en 1945 en Guadalajara, y Doña Carmen Vega, nacida en 1948."
+      },
+      {
+        "type": "date",
+        "value": "1945",
+        "confidence": 0.9,
+        "context": "Por el lado de mi papá, mis abuelos paternos son Don Roberto Rodriguez, nacido en 1945 en Guadalajara, y Doña Carmen Vega, nacida en 1948."
+      },
+      {
+        "type": "person",
+        "value": "Doña Carmen Vega",
+        "confidence": 0.9,
+        "context": "Por el lado de mi papá, mis abuelos paternos son Don Roberto Rodriguez, nacido en 1945 en Guadalajara, y Doña Carmen Vega, nacida en 1948."
+      },
+      {
+        "type": "date",
+        "value": "1948",
+        "confidence": 0.9,
+        "context": "Por el lado de mi papá, mis abuelos paternos son Don Roberto Rodriguez, nacido en 1945 en Guadalajara, y Doña Carmen Vega, nacida en 1948."
+      },
+      {
+        "type": "person",
+        "value": "Marta Ruiz",
+        "confidence": 0.9,
+        "context": "Pero resulta que mi abuelo Roberto estuvo casado antes con una señora que se llama Marta Ruiz."
+      },
+      {
+        "type": "person",
+        "value": "Andrés Rodriguez",
+        "confidence": 0.9,
+        "context": "De ese primer matrimonio nació Andrés Rodriguez en 1965."
+      },
+      {
+        "type": "date",
+        "value": "1965",
+        "confidence": 0.9,
+        "context": "De ese primer matrimonio nació Andrés Rodriguez en 1965."
+      },
+      {
+        "type": "location",
+        "value": "Monterrey",
+        "confidence": 0.9,
+        "context": "Andrés vive en Monterrey."
+      },
+      {
+        "type": "person",
+        "value": "Don Antonio Rodriguez",
+        "confidence": 0.9,
+        "context": "Los papás de mi abuelo Roberto, o sea mis bisabuelos, fueron Don Antonio Rodriguez y Doña Elena Morales."
+      },
+      {
+        "type": "date",
+        "value": "1920",
+        "confidence": 0.9,
+        "context": "Mi bisabuelo Antonio nació en 1920 en Guadalajara y era panadero, tenía una panadería en el centro de Guadalajara que era famosa en todo el barrio."
+      },
+      {
+        "type": "location",
+        "value": "Guadalajara",
+        "confidence": 0.9,
+        "context": "Mi bisabuelo Antonio nació en 1920 en Guadalajara y era panadero, tenía una panadería en el centro de Guadalajara que era famosa en todo el barrio."
+      },
+      {
+        "type": "date",
+        "value": "1995",
+        "confidence": 0.9,
+        "context": "Él falleció en 1995."
+      },
+      {
+        "type": "person",
+        "value": "Doña Elena Morales",
+        "confidence": 0.9,
+        "context": "Los papás de mi abuelo Roberto, o sea mis bisabuelos, fueron Don Antonio Rodriguez y Doña Elena Morales."
+      },
+      {
+        "type": "date",
+        "value": "1923",
+        "confidence": 0.9,
+        "context": "Mi bisabuela Elena nació en 1923 y también ya falleció, ella murió en 2010."
+      },
+      {
+        "type": "date",
+        "value": "2010",
+        "confidence": 0.9,
+        "context": "Mi bisabuela Elena nació en 1923 y también ya falleció, ella murió en 2010."
+      },
+      {
+        "type": "person",
+        "value": "Don Miguel Chen",
+        "confidence": 0.9,
+        "context": "Por el lado de mi mamá, mis abuelos maternos son Don Miguel Chen, que nació en 1947."
+      },
+      {
+        "type": "date",
+        "value": "1947",
+        "confidence": 0.9,
+        "context": "Por el lado de mi mamá, mis abuelos maternos son Don Miguel Chen, que nació en 1947."
+      },
+      {
+        "type": "person",
+        "value": "Doña Lucía Fernández",
+        "confidence": 0.9,
+        "context": "Y mi abuela materna es Doña Lucía Fernández, nacida en 1950 en Oaxaca."
+      },
+      {
+        "type": "date",
+        "value": "1950",
+        "confidence": 0.9,
+        "context": "Y mi abuela materna es Doña Lucía Fernández, nacida en 1950 en Oaxaca."
+      },
+      {
+        "type": "location",
+        "value": "Oaxaca",
+        "confidence": 0.9,
+        "context": "Y mi abuela materna es Doña Lucía Fernández, nacida en 1950 en Oaxaca."
+      },
+      {
+        "type": "person",
+        "value": "Patricia Rodriguez Vega",
+        "confidence": 0.9,
+        "context": "Mi papá tiene una hermana mayor que se llama Patricia Rodriguez Vega, ella nació en 1968."
+      },
+      {
+        "type": "date",
+        "value": "1968",
+        "confidence": 0.9,
+        "context": "Mi papá tiene una hermana mayor que se llama Patricia Rodriguez Vega, ella nació en 1968."
+      },
+      {
+        "type": "person",
+        "value": "Ricardo Mendoza",
+        "confidence": 0.9,
+        "context": "Mi tía Patricia está casada con mi tío Ricardo Mendoza."
+      },
+      {
+        "type": "person",
+        "value": "Lucas",
+        "confidence": 0.9,
+        "context": "Ellos tienen dos hijos: mi primo Lucas, que nació en 1997, y mi prima Camila, que nació en 2000."
+      },
+      {
+        "type": "date",
+        "value": "1997",
+        "confidence": 0.9,
+        "context": "Ellos tienen dos hijos: mi primo Lucas, que nació en 1997, y mi prima Camila, que nació en 2000."
+      },
+      {
+        "type": "person",
+        "value": "Camila",
+        "confidence": 0.9,
+        "context": "Ellos tienen dos hijos: mi primo Lucas, que nació en 1997, y mi prima Camila, que nació en 2000."
+      },
+      {
+        "type": "date",
+        "value": "2000",
+        "confidence": 0.9,
+        "context": "Ellos tienen dos hijos: mi primo Lucas, que nació en 1997, y mi prima Camila, que nació en 2000."
+      },
+      {
+        "type": "person",
+        "value": "Eduardo Chen Fernández",
+        "confidence": 0.9,
+        "context": "Mi mamá tiene un hermano menor que se llama Eduardo Chen Fernández, nacido en 1975."
+      },
+      {
+        "type": "date",
+        "value": "1975",
+        "confidence": 0.9,
+        "context": "Mi mamá tiene un hermano menor que se llama Eduardo Chen Fernández, nacido en 1975."
+      },
+      {
+        "type": "person",
+        "value": "Teresa Gutiérrez",
+        "confidence": 0.9,
+        "context": "Mi tío Eduardo se casó con Teresa Gutiérrez."
+      },
+      {
+        "type": "person",
+        "value": "Daniel",
+        "confidence": 0.9,
+        "context": "Tienen un hijo que se llama Daniel, que tiene veintidós años."
+      },
+      {
+        "type": "location",
+        "value": "Canadá",
+        "confidence": 0.9,
+        "context": "Mi tío Eduardo y su familia viven en Canadá."
+      }
+    ],
+    "relationships": [
+      {
+        "personA": "Jorge Rodriguez Vega",
+        "personB": "Valentina Rodriguez Chen",
+        "relationshipType": "parent",
+        "confidence": 0.9,
+        "context": "Mi papá se llama Jorge Rodriguez Vega, nació en 1970 en Guadalajara y es ingeniero civil."
+      },
+      {
+        "personA": "Sofía Chen Fernández",
+        "personB": "Valentina Rodriguez Chen",
+        "relationshipType": "parent",
+        "confidence": 0.9,
+        "context": "Mi mamá se llama Sofía Chen Fernández, ella nació en 1973 en la Ciudad de México y es doctora."
+      },
+      {
+        "personA": "Diego Rodriguez Chen",
+        "personB": "Valentina Rodriguez Chen",
+        "relationshipType": "sibling",
+        "confidence": 0.9,
+        "context": "Tengo un hermano mayor que se llama Diego Rodriguez Chen, él nació en 1995."
+      },
+      {
+        "personA": "Isabella",
+        "personB": "Valentina Rodriguez Chen",
+        "relationshipType": "sibling",
+        "confidence": 0.9,
+        "context": "También tengo una hermana menor que se llama Isabella, pero todos le decimos Isa, ella nació en 2001."
+      },
+      {
+        "personA": "Don Roberto Rodriguez",
+        "personB": "Jorge Rodriguez Vega",
+        "relationshipType": "parent",
+        "confidence": 0.9,
+        "context": "Por el lado de mi papá, mis abuelos paternos son Don Roberto Rodriguez, nacido en 1945 en Guadalajara, y Doña Carmen Vega, nacida en 1948."
+      },
+      {
+        "personA": "Doña Carmen Vega",
+        "personB": "Jorge Rodriguez Vega",
+        "relationshipType": "parent",
+        "confidence": 0.9,
+        "context": "Por el lado de mi papá, mis abuelos paternos son Don Roberto Rodriguez, nacido en 1945 en Guadalajara, y Doña Carmen Vega, nacida en 1948."
+      },
+      {
+        "personA": "Marta Ruiz",
+        "personB": "Andrés Rodriguez",
+        "relationshipType": "parent",
+        "confidence": 0.9,
+        "context": "Pero resulta que mi abuelo Roberto estuvo casado antes con una señora que se llama Marta Ruiz."
+      },
+      {
+        "personA": "Don Roberto Rodriguez",
+        "personB": "Andrés Rodriguez",
+        "relationshipType": "parent",
+        "confidence": 0.9,
+        "context": "Pero resulta que mi abuelo Roberto estuvo casado antes con una señora que se llama Marta Ruiz."
+      },
+      {
+        "personA": "Andrés Rodriguez",
+        "personB": "Jorge Rodriguez Vega",
+        "relationshipType": "half_sibling",
+        "confidence": 0.9,
+        "context": "O sea que Andrés es medio hermano de mi papá Jorge porque comparten el mismo padre que es Roberto."
+      },
+      {
+        "personA": "Don Antonio Rodriguez",
+        "personB": "Don Roberto Rodriguez",
+        "relationshipType": "parent",
+        "confidence": 0.9,
+        "context": "Los papás de mi abuelo Roberto, o sea mis bisabuelos, fueron Don Antonio Rodriguez y Doña Elena Morales."
+      },
+      {
+        "personA": "Doña Elena Morales",
+        "personB": "Don Roberto Rodriguez",
+        "relationshipType": "parent",
+        "confidence": 0.9,
+        "context": "Los papás de mi abuelo Roberto, o sea mis bisabuelos, fueron Don Antonio Rodriguez y Doña Elena Morales."
+      },
+      {
+        "personA": "Don Miguel Chen",
+        "personB": "Sofía Chen Fernández",
+        "relationshipType": "parent",
+        "confidence": 0.9,
+        "context": "Por el lado de mi mamá, mis abuelos maternos son Don Miguel Chen, que nació en 1947."
+      },
+      {
+        "personA": "Doña Lucía Fernández",
+        "personB": "Sofía Chen Fernández",
+        "relationshipType": "parent",
+        "confidence": 0.9,
+        "context": "Y mi abuela materna es Doña Lucía Fernández, nacida en 1950 en Oaxaca."
+      },
+      {
+        "personA": "Patricia Rodriguez Vega",
+        "personB": "Jorge Rodriguez Vega",
+        "relationshipType": "sibling",
+        "confidence": 0.9,
+        "context": "Mi papá tiene una hermana mayor que se llama Patricia Rodriguez Vega, ella nació en 1968."
+      },
+      {
+        "personA": "Ricardo Mendoza",
+        "personB": "Patricia Rodriguez Vega",
+        "relationshipType": "spouse",
+        "confidence": 0.9,
+        "context": "Mi tía Patricia está casada con mi tío Ricardo Mendoza."
+      },
+      {
+        "personA": "Lucas",
+        "personB": "Patricia Rodriguez Vega",
+        "relationshipType": "child",
+        "confidence": 0.9,
+        "context": "Ellos tienen dos hijos: mi primo Lucas, que nació en 1997, y mi prima Camila, que nació en 2000."
+      },
+      {
+        "personA": "Camila",
+        "personB": "Patricia Rodriguez Vega",
+        "relationshipType": "child",
+        "confidence": 0.9,
+        "context": "Ellos tienen dos hijos: mi primo Lucas, que nació en 1997, y mi prima Camila, que nació en 2000."
+      },
+      {
+        "personA": "Eduardo Chen Fernández",
+        "personB": "Sofía Chen Fernández",
+        "relationshipType": "sibling",
+        "confidence": 0.9,
+        "context": "Mi mamá tiene un hermano menor que se llama Eduardo Chen Fernández, nacido en 1975."
+      },
+      {
+        "personA": "Teresa Gutiérrez",
+        "personB": "Eduardo Chen Fernández",
+        "relationshipType": "spouse",
+        "confidence": 0.9,
+        "context": "Mi tío Eduardo se casó con Teresa Gutiérrez."
+      },
+      {
+        "personA": "Daniel",
+        "personB": "Eduardo Chen Fernández",
+        "relationshipType": "child",
+        "confidence": 0.9,
+        "context": "Tienen un hijo que se llama Daniel, que tiene veintidós años."
+      },
+      {
+        "personA": "Ana López",
+        "personB": "Diego Rodriguez Chen",
+        "relationshipType": "spouse",
+        "confidence": 0.9,
+        "context": "Diego se casó el año pasado con Ana López y ya tienen un bebé que se llama Matías, el bebé tiene un año."
+      },
+      {
+        "personA": "Matías",
+        "personB": "Diego Rodriguez Chen",
+        "relationshipType": "child",
+        "confidence": 0.9,
+        "context": "Diego se casó el año pasado con Ana López y ya tienen un bebé que se llama Matías, el bebé tiene un año."
+      }
+    ],
+    "suggestedPeople": [
+      {
+        "firstName": "Valentina",
+        "lastName": "Rodriguez Chen",
+        "birthDate": "1998",
+        "birthPlace": "Ciudad de México",
+        "gender": "female"
+      },
+      {
+        "firstName": "Jorge",
+        "lastName": "Rodriguez Vega",
+        "birthDate": "1970",
+        "birthPlace": "Guadalajara",
+        "gender": "male"
+      },
+      {
+        "firstName": "Sofía",
+        "lastName": "Chen Fernández",
+        "birthDate": "1973",
+        "birthPlace": "Ciudad de México",
+        "gender": "female"
+      },
+      {
+        "firstName": "Diego",
+        "lastName": "Rodriguez Chen",
+        "birthDate": "1995",
+        "gender": "male"
+      },
+      {
+        "firstName": "Isabella",
+        "lastName": "Rodriguez Chen",
+        "birthDate": "2001",
+        "gender": "female"
+      },
+      {
+        "firstName": "Roberto",
+        "lastName": "Rodriguez",
+        "birthDate": "1945",
+        "birthPlace": "Guadalajara",
+        "gender": "male"
+      },
+      {
+        "firstName": "Carmen",
+        "lastName": "Vega",
+        "birthDate": "1948",
+        "gender": "female"
+      },
+      {
+        "firstName": "Marta",
+        "lastName": "Ruiz",
+        "gender": "female"
+      },
+      {
+        "firstName": "Andrés",
+        "lastName": "Rodriguez",
+        "birthDate": "1965",
+        "gender": "male"
+      },
+      {
+        "firstName": "Antonio",
+        "lastName": "Rodriguez",
+        "birthDate": "1920",
+        "birthPlace": "Guadalajara",
+        "gender": "male",
+        "isDeceased": true
+      },
+      {
+        "firstName": "Elena",
+        "lastName": "Morales",
+        "birthDate": "1923",
+        "gender": "female",
+        "isDeceased": true
+      },
+      {
+        "firstName": "Miguel",
+        "lastName": "Chen",
+        "birthDate": "1947",
+        "gender": "male"
+      },
+      {
+        "firstName": "Lucía",
+        "lastName": "Fernández",
+        "birthDate": "1950",
+        "birthPlace": "Oaxaca",
+        "gender": "female"
+      },
+      {
+        "firstName": "Patricia",
+        "lastName": "Rodriguez Vega",
+        "birthDate": "1968",
+        "gender": "female"
+      },
+      {
+        "firstName": "Ricardo",
+        "lastName": "Mendoza",
+        "gender": "male"
+      },
+      {
+        "firstName": "Lucas",
+        "birthDate": "1997",
+        "gender": "male"
+      },
+      {
+        "firstName": "Camila",
+        "birthDate": "2000",
+        "gender": "female"
+      },
+      {
+        "firstName": "Eduardo",
+        "lastName": "Chen Fernández",
+        "birthDate": "1975",
+        "gender": "male"
+      },
+      {
+        "firstName": "Teresa",
+        "lastName": "Gutiérrez",
+        "gender": "female"
+      },
+      {
+        "firstName": "Daniel",
+        "gender": "male"
+      },
+      {
+        "firstName": "Ana",
+        "lastName": "López",
+        "gender": "female"
+      },
+      {
+        "firstName": "Matías",
+        "gender": "male"
+      }
+    ]
+  },
+  "summary": {
+    "summary": "Valentina Rodriguez Chen comparte con cariño la historia de su familia, una familia grande y diversa con raíces en diferentes partes de México y con influencias chinas. Desde su infancia, Valentina recuerda con nostalgia las visitas a la panadería de su bisabuelo Antonio en Guadalajara, donde el olor a pan fresco y las historias de su bisabuela Elena creaban un ambiente mágico. La unión familiar es un tema común en sus recuerdos, destacando momentos como el nacimiento de su sobrino Matías, que reunió a toda la familia en Guadalajara, y las Navidades, donde la tradición y la tecnología se unen para conectar a los miembros de la familia que viven lejos.",
+    "keyTopics": [
+      "Familia diversa",
+      "Raíces mexicanas y chinas",
+      "Recuerdos de la infancia",
+      "Unión familiar",
+      "Tradición y tecnología"
+    ],
+    "emotionalTone": "Cariño y nostalgia",
+    "suggestedStories": [
+      {
+        "title": "La Panadería de los Recuerdos",
+        "content": "Cada verano, mis papás nos llevaban a visitar la panadería de mi bisabuelo Antonio en Guadalajara. El olor a pan recién horneado llenaba toda la calle y mi primo Lucas y yo jugábamos en el patio mientras mi bisabuelo nos daba conchas y cuernos recién hechos. Mi bisabuela Elena nos contaba historias de cuando ella y Antonio eran jóvenes y apenas abrieron el negocio. Esos momentos son algunos de los más felices de mi infancia.",
+        "involvedPeople": [
+          "Valentina Rodriguez Chen",
+          "Antonio Rodriguez",
+          "Elena Morales",
+          "Lucas Mendoza"
+        ],
+        "approximateDate": "Fines de los 90 y principios de los 2000",
+        "location": "Guadalajara",
+        "keyMoments": [
+          {
+            "quote": "El olor a pan recién horneado llenaba toda la calle",
+            "label": "Descripción del ambiente"
+          },
+          {
+            "quote": "Mi bisabuela Elena nos contaba historias de cuando ella y Antonio eran jóvenes",
+            "label": "Compartir historias familiares"
+          }
+        ]
+      },
+      {
+        "title": "El Nacimiento de Matías",
+        "content": "Cuando nació mi sobrino Matías, fue un momento increíble. Toda la familia se reunió en Guadalajara para conocerlo. Hasta mi abuela Carmen lloró de la emoción. Mi bisabuela Elena, que en paz descanse, hubiera estado tan feliz de conocer a su tataranieto. Recuerdo que mi papá Jorge abrazó a Diego y le dijo que estaba muy orgulloso de él.",
+        "involvedPeople": [
+          "Valentina Rodriguez Chen",
+          "Diego Rodriguez Chen",
+          "Jorge Rodriguez",
+          "Carmen Vega"
+        ],
+        "approximateDate": "Un año atrás",
+        "location": "Guadalajara",
+        "keyMoments": [
+          {
+            "quote": "Toda la familia se reunió en Guadalajara para conocerlo",
+            "label": "Unión familiar"
+          },
+          {
+            "quote": "Mi papá Jorge abrazó a Diego y le dijo que estaba muy orgulloso de él",
+            "label": "Momento emocional"
+          }
+        ]
+      },
+      {
+        "title": "Navidades en Familia",
+        "content": "Las Navidades siempre son especiales porque hacemos videollamada con mi tío Eduardo, mi tía Teresa y mi primo Daniel en Canadá. Mi abuela Lucía prepara mole oaxaqueño y mi abuelo Miguel hace arroz frito. Es una mezcla de tradiciones mexicanas y chinas que hacen nuestra familia tan única. Mi prima Camila siempre organiza los juegos y mi hermana Isa le ayuda con la decoración.",
+        "involvedPeople": [
+          "Valentina Rodriguez Chen",
+          "Eduardo Chen",
+          "Teresa Gutiérrez",
+          "Daniel Chen",
+          "Lucía Fernández",
+          "Miguel Chen",
+          "Camila Mendoza",
+          "Isabella Rodriguez Chen"
+        ],
+        "location": "Diferentes lugares, incluyendo la Ciudad de México y Canadá",
+        "keyMoments": [
+          {
+            "quote": "Hacemos videollamada con mi tío Eduardo, mi tía Teresa y mi primo Daniel en Canadá",
+            "label": "Conexión a distancia"
+          },
+          {
+            "quote": "Es una mezcla de tradiciones mexicanas y chinas que hacen nuestra familia tan única",
+            "label": "Diversidad cultural"
+          }
+        ]
+      }
+    ]
+  },
+  "resolvedPeople": [
+    {
+      "id": "person-narrator",
+      "firstName": "Valentina",
+      "lastName": "Rodriguez Chen",
+      "gender": "female",
+      "isNarrator": true,
+      "birthDate": "1998",
+      "birthPlace": "Ciudad de México"
+    },
+    {
+      "id": "existing-jorge",
+      "firstName": "Jorge",
+      "lastName": "Rodriguez",
+      "nickname": null,
+      "birthDate": "1970",
+      "birthPlace": "Guadalajara",
+      "gender": "male",
+      "profession": "Ingeniero",
+      "existing": true
+    },
+    {
+      "id": "existing-sofia",
+      "firstName": "Sofía",
+      "lastName": "Chen",
+      "nickname": null,
+      "birthDate": "1973",
+      "birthPlace": "Ciudad de México",
+      "gender": "female",
+      "existing": true
+    },
+    {
+      "id": "person-1",
+      "firstName": "Diego",
+      "lastName": "Rodriguez Chen",
+      "birthDate": "1995",
+      "gender": "male"
+    },
+    {
+      "id": "person-2",
+      "firstName": "Isabella",
+      "lastName": "Rodriguez Chen",
+      "birthDate": "2001",
+      "gender": "female"
+    },
+    {
+      "id": "person-3",
+      "firstName": "Roberto",
+      "lastName": "Rodriguez",
+      "birthDate": "1945",
+      "birthPlace": "Guadalajara",
+      "gender": "male"
+    },
+    {
+      "id": "person-4",
+      "firstName": "Carmen",
+      "lastName": "Vega",
+      "birthDate": "1948",
+      "gender": "female"
+    },
+    {
+      "id": "person-5",
+      "firstName": "Marta",
+      "lastName": "Ruiz",
+      "gender": "female"
+    },
+    {
+      "id": "person-6",
+      "firstName": "Andrés",
+      "lastName": "Rodriguez",
+      "birthDate": "1965",
+      "gender": "male"
+    },
+    {
+      "id": "person-7",
+      "firstName": "Antonio",
+      "lastName": "Rodriguez",
+      "birthDate": "1920",
+      "birthPlace": "Guadalajara",
+      "isDeceased": true,
+      "gender": "male"
+    },
+    {
+      "id": "person-8",
+      "firstName": "Elena",
+      "lastName": "Morales",
+      "birthDate": "1923",
+      "isDeceased": true,
+      "gender": "female"
+    },
+    {
+      "id": "person-9",
+      "firstName": "Miguel",
+      "lastName": "Chen",
+      "birthDate": "1947",
+      "gender": "male"
+    },
+    {
+      "id": "person-10",
+      "firstName": "Lucía",
+      "lastName": "Fernández",
+      "birthDate": "1950",
+      "birthPlace": "Oaxaca",
+      "gender": "female"
+    },
+    {
+      "id": "person-11",
+      "firstName": "Patricia",
+      "lastName": "Rodriguez Vega",
+      "birthDate": "1968",
+      "gender": "female"
+    },
+    {
+      "id": "person-12",
+      "firstName": "Ricardo",
+      "lastName": "Mendoza",
+      "gender": "male"
+    },
+    {
+      "id": "person-13",
+      "firstName": "Lucas",
+      "birthDate": "1997",
+      "gender": "male"
+    },
+    {
+      "id": "person-14",
+      "firstName": "Camila",
+      "birthDate": "2000",
+      "gender": "female"
+    },
+    {
+      "id": "person-15",
+      "firstName": "Eduardo",
+      "lastName": "Chen Fernández",
+      "birthDate": "1975",
+      "gender": "male"
+    },
+    {
+      "id": "person-16",
+      "firstName": "Teresa",
+      "lastName": "Gutiérrez",
+      "gender": "female"
+    },
+    {
+      "id": "person-17",
+      "firstName": "Daniel",
+      "gender": "male"
+    },
+    {
+      "id": "person-18",
+      "firstName": "Ana",
+      "lastName": "López",
+      "gender": "female"
+    },
+    {
+      "id": "person-19",
+      "firstName": "Matías",
+      "gender": "male"
+    }
+  ],
+  "relationships": [
+    {
+      "personAId": "existing-jorge",
+      "personBId": "person-narrator",
+      "personAName": "Jorge Rodriguez",
+      "personBName": "Valentina Rodriguez Chen",
+      "type": "parent",
+      "confidence": 0.9,
+      "inferred": false
+    },
+    {
+      "personAId": "existing-sofia",
+      "personBId": "person-narrator",
+      "personAName": "Sofía Chen",
+      "personBName": "Valentina Rodriguez Chen",
+      "type": "parent",
+      "confidence": 0.9,
+      "inferred": false
+    },
+    {
+      "personAId": "person-1",
+      "personBId": "person-narrator",
+      "personAName": "Diego Rodriguez Chen",
+      "personBName": "Valentina Rodriguez Chen",
+      "type": "sibling",
+      "confidence": 0.9,
+      "inferred": false
+    },
+    {
+      "personAId": "person-2",
+      "personBId": "person-narrator",
+      "personAName": "Isabella Rodriguez Chen",
+      "personBName": "Valentina Rodriguez Chen",
+      "type": "sibling",
+      "confidence": 0.9,
+      "inferred": false
+    },
+    {
+      "personAId": "person-3",
+      "personBId": "existing-jorge",
+      "personAName": "Roberto Rodriguez",
+      "personBName": "Jorge Rodriguez",
+      "type": "parent",
+      "confidence": 0.9,
+      "inferred": false
+    },
+    {
+      "personAId": "person-4",
+      "personBId": "existing-jorge",
+      "personAName": "Carmen Vega",
+      "personBName": "Jorge Rodriguez",
+      "type": "parent",
+      "confidence": 0.9,
+      "inferred": false
+    },
+    {
+      "personAId": "person-5",
+      "personBId": "person-6",
+      "personAName": "Marta Ruiz",
+      "personBName": "Andrés Rodriguez",
+      "type": "parent",
+      "confidence": 0.9,
+      "inferred": false
+    },
+    {
+      "personAId": "person-3",
+      "personBId": "person-6",
+      "personAName": "Roberto Rodriguez",
+      "personBName": "Andrés Rodriguez",
+      "type": "parent",
+      "confidence": 0.9,
+      "inferred": false
+    },
+    {
+      "personAId": "person-6",
+      "personBId": "existing-jorge",
+      "personAName": "Andrés Rodriguez",
+      "personBName": "Jorge Rodriguez",
+      "type": "half_sibling",
+      "confidence": 0.9,
+      "inferred": false
+    },
+    {
+      "personAId": "person-7",
+      "personBId": "person-3",
+      "personAName": "Antonio Rodriguez",
+      "personBName": "Roberto Rodriguez",
+      "type": "parent",
+      "confidence": 0.9,
+      "inferred": false
+    },
+    {
+      "personAId": "person-8",
+      "personBId": "person-3",
+      "personAName": "Elena Morales",
+      "personBName": "Roberto Rodriguez",
+      "type": "parent",
+      "confidence": 0.9,
+      "inferred": false
+    },
+    {
+      "personAId": "person-9",
+      "personBId": "existing-sofia",
+      "personAName": "Miguel Chen",
+      "personBName": "Sofía Chen",
+      "type": "parent",
+      "confidence": 0.9,
+      "inferred": false
+    },
+    {
+      "personAId": "person-10",
+      "personBId": "existing-sofia",
+      "personAName": "Lucía Fernández",
+      "personBName": "Sofía Chen",
+      "type": "parent",
+      "confidence": 0.9,
+      "inferred": false
+    },
+    {
+      "personAId": "person-11",
+      "personBId": "existing-jorge",
+      "personAName": "Patricia Rodriguez Vega",
+      "personBName": "Jorge Rodriguez",
+      "type": "sibling",
+      "confidence": 0.9,
+      "inferred": false
+    },
+    {
+      "personAId": "person-12",
+      "personBId": "person-11",
+      "personAName": "Ricardo Mendoza",
+      "personBName": "Patricia Rodriguez Vega",
+      "type": "spouse",
+      "confidence": 0.9,
+      "inferred": false
+    },
+    {
+      "personAId": "person-13",
+      "personBId": "person-11",
+      "personAName": "Lucas",
+      "personBName": "Patricia Rodriguez Vega",
+      "type": "child",
+      "confidence": 0.9,
+      "inferred": false
+    },
+    {
+      "personAId": "person-14",
+      "personBId": "person-11",
+      "personAName": "Camila",
+      "personBName": "Patricia Rodriguez Vega",
+      "type": "child",
+      "confidence": 0.9,
+      "inferred": false
+    },
+    {
+      "personAId": "person-15",
+      "personBId": "existing-sofia",
+      "personAName": "Eduardo Chen Fernández",
+      "personBName": "Sofía Chen",
+      "type": "sibling",
+      "confidence": 0.9,
+      "inferred": false
+    },
+    {
+      "personAId": "person-16",
+      "personBId": "person-15",
+      "personAName": "Teresa Gutiérrez",
+      "personBName": "Eduardo Chen Fernández",
+      "type": "spouse",
+      "confidence": 0.9,
+      "inferred": false
+    },
+    {
+      "personAId": "person-17",
+      "personBId": "person-15",
+      "personAName": "Daniel",
+      "personBName": "Eduardo Chen Fernández",
+      "type": "child",
+      "confidence": 0.9,
+      "inferred": false
+    },
+    {
+      "personAId": "person-18",
+      "personBId": "person-1",
+      "personAName": "Ana López",
+      "personBName": "Diego Rodriguez Chen",
+      "type": "spouse",
+      "confidence": 0.9,
+      "inferred": false
+    },
+    {
+      "personAId": "person-19",
+      "personBId": "person-1",
+      "personAName": "Matías",
+      "personBName": "Diego Rodriguez Chen",
+      "type": "child",
+      "confidence": 0.9,
+      "inferred": false
+    },
+    {
+      "personAId": "existing-jorge",
+      "personBId": "person-1",
+      "type": "parent",
+      "confidence": 0.85,
+      "personAName": "Jorge Rodriguez",
+      "personBName": "Diego Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "existing-sofia",
+      "personBId": "person-1",
+      "type": "parent",
+      "confidence": 0.85,
+      "personAName": "Sofía Chen",
+      "personBName": "Diego Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "existing-jorge",
+      "personBId": "person-2",
+      "type": "parent",
+      "confidence": 0.85,
+      "personAName": "Jorge Rodriguez",
+      "personBName": "Isabella Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "existing-sofia",
+      "personBId": "person-2",
+      "type": "parent",
+      "confidence": 0.85,
+      "personAName": "Sofía Chen",
+      "personBName": "Isabella Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "person-3",
+      "personBId": "person-11",
+      "type": "parent",
+      "confidence": 0.85,
+      "personAName": "Roberto Rodriguez",
+      "personBName": "Patricia Rodriguez Vega",
+      "inferred": true
+    },
+    {
+      "personAId": "person-4",
+      "personBId": "person-11",
+      "type": "parent",
+      "confidence": 0.85,
+      "personAName": "Carmen Vega",
+      "personBName": "Patricia Rodriguez Vega",
+      "inferred": true
+    },
+    {
+      "personAId": "person-9",
+      "personBId": "person-15",
+      "type": "parent",
+      "confidence": 0.85,
+      "personAName": "Miguel Chen",
+      "personBName": "Eduardo Chen Fernández",
+      "inferred": true
+    },
+    {
+      "personAId": "person-10",
+      "personBId": "person-15",
+      "type": "parent",
+      "confidence": 0.85,
+      "personAName": "Lucía Fernández",
+      "personBName": "Eduardo Chen Fernández",
+      "inferred": true
+    },
+    {
+      "personAId": "person-1",
+      "personBId": "person-2",
+      "type": "sibling",
+      "confidence": 0.85,
+      "personAName": "Diego Rodriguez Chen",
+      "personBName": "Isabella Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "person-6",
+      "personBId": "person-11",
+      "type": "half_sibling",
+      "confidence": 0.85,
+      "personAName": "Andrés Rodriguez",
+      "personBName": "Patricia Rodriguez Vega",
+      "inferred": true
+    },
+    {
+      "personAId": "person-13",
+      "personBId": "person-14",
+      "type": "sibling",
+      "confidence": 0.85,
+      "personAName": "Lucas",
+      "personBName": "Camila",
+      "inferred": true
+    },
+    {
+      "personAId": "existing-jorge",
+      "personBId": "existing-sofia",
+      "type": "spouse",
+      "confidence": 0.85,
+      "personAName": "Jorge Rodriguez",
+      "personBName": "Sofía Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "person-3",
+      "personBId": "person-4",
+      "type": "spouse",
+      "confidence": 0.85,
+      "personAName": "Roberto Rodriguez",
+      "personBName": "Carmen Vega",
+      "inferred": true
+    },
+    {
+      "personAId": "person-5",
+      "personBId": "person-3",
+      "type": "spouse",
+      "confidence": 0.85,
+      "personAName": "Marta Ruiz",
+      "personBName": "Roberto Rodriguez",
+      "inferred": true
+    },
+    {
+      "personAId": "person-7",
+      "personBId": "person-8",
+      "type": "spouse",
+      "confidence": 0.85,
+      "personAName": "Antonio Rodriguez",
+      "personBName": "Elena Morales",
+      "inferred": true
+    },
+    {
+      "personAId": "person-9",
+      "personBId": "person-10",
+      "type": "spouse",
+      "confidence": 0.85,
+      "personAName": "Miguel Chen",
+      "personBName": "Lucía Fernández",
+      "inferred": true
+    },
+    {
+      "personAId": "existing-jorge",
+      "personBId": "person-19",
+      "type": "grandparent",
+      "confidence": 0.85,
+      "personAName": "Jorge Rodriguez",
+      "personBName": "Matías",
+      "inferred": true
+    },
+    {
+      "personAId": "existing-sofia",
+      "personBId": "person-19",
+      "type": "grandparent",
+      "confidence": 0.85,
+      "personAName": "Sofía Chen",
+      "personBName": "Matías",
+      "inferred": true
+    },
+    {
+      "personAId": "person-3",
+      "personBId": "person-narrator",
+      "type": "grandparent",
+      "confidence": 0.85,
+      "personAName": "Roberto Rodriguez",
+      "personBName": "Valentina Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "person-3",
+      "personBId": "person-1",
+      "type": "grandparent",
+      "confidence": 0.85,
+      "personAName": "Roberto Rodriguez",
+      "personBName": "Diego Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "person-3",
+      "personBId": "person-2",
+      "type": "grandparent",
+      "confidence": 0.85,
+      "personAName": "Roberto Rodriguez",
+      "personBName": "Isabella Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "person-3",
+      "personBId": "person-13",
+      "type": "grandparent",
+      "confidence": 0.85,
+      "personAName": "Roberto Rodriguez",
+      "personBName": "Lucas",
+      "inferred": true
+    },
+    {
+      "personAId": "person-3",
+      "personBId": "person-14",
+      "type": "grandparent",
+      "confidence": 0.85,
+      "personAName": "Roberto Rodriguez",
+      "personBName": "Camila",
+      "inferred": true
+    },
+    {
+      "personAId": "person-4",
+      "personBId": "person-narrator",
+      "type": "grandparent",
+      "confidence": 0.85,
+      "personAName": "Carmen Vega",
+      "personBName": "Valentina Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "person-4",
+      "personBId": "person-1",
+      "type": "grandparent",
+      "confidence": 0.85,
+      "personAName": "Carmen Vega",
+      "personBName": "Diego Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "person-4",
+      "personBId": "person-2",
+      "type": "grandparent",
+      "confidence": 0.85,
+      "personAName": "Carmen Vega",
+      "personBName": "Isabella Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "person-4",
+      "personBId": "person-13",
+      "type": "grandparent",
+      "confidence": 0.85,
+      "personAName": "Carmen Vega",
+      "personBName": "Lucas",
+      "inferred": true
+    },
+    {
+      "personAId": "person-4",
+      "personBId": "person-14",
+      "type": "grandparent",
+      "confidence": 0.85,
+      "personAName": "Carmen Vega",
+      "personBName": "Camila",
+      "inferred": true
+    },
+    {
+      "personAId": "person-7",
+      "personBId": "existing-jorge",
+      "type": "grandparent",
+      "confidence": 0.85,
+      "personAName": "Antonio Rodriguez",
+      "personBName": "Jorge Rodriguez",
+      "inferred": true
+    },
+    {
+      "personAId": "person-7",
+      "personBId": "person-6",
+      "type": "grandparent",
+      "confidence": 0.85,
+      "personAName": "Antonio Rodriguez",
+      "personBName": "Andrés Rodriguez",
+      "inferred": true
+    },
+    {
+      "personAId": "person-7",
+      "personBId": "person-11",
+      "type": "grandparent",
+      "confidence": 0.85,
+      "personAName": "Antonio Rodriguez",
+      "personBName": "Patricia Rodriguez Vega",
+      "inferred": true
+    },
+    {
+      "personAId": "person-8",
+      "personBId": "existing-jorge",
+      "type": "grandparent",
+      "confidence": 0.85,
+      "personAName": "Elena Morales",
+      "personBName": "Jorge Rodriguez",
+      "inferred": true
+    },
+    {
+      "personAId": "person-8",
+      "personBId": "person-6",
+      "type": "grandparent",
+      "confidence": 0.85,
+      "personAName": "Elena Morales",
+      "personBName": "Andrés Rodriguez",
+      "inferred": true
+    },
+    {
+      "personAId": "person-8",
+      "personBId": "person-11",
+      "type": "grandparent",
+      "confidence": 0.85,
+      "personAName": "Elena Morales",
+      "personBName": "Patricia Rodriguez Vega",
+      "inferred": true
+    },
+    {
+      "personAId": "person-9",
+      "personBId": "person-narrator",
+      "type": "grandparent",
+      "confidence": 0.85,
+      "personAName": "Miguel Chen",
+      "personBName": "Valentina Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "person-9",
+      "personBId": "person-1",
+      "type": "grandparent",
+      "confidence": 0.85,
+      "personAName": "Miguel Chen",
+      "personBName": "Diego Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "person-9",
+      "personBId": "person-2",
+      "type": "grandparent",
+      "confidence": 0.85,
+      "personAName": "Miguel Chen",
+      "personBName": "Isabella Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "person-9",
+      "personBId": "person-17",
+      "type": "grandparent",
+      "confidence": 0.85,
+      "personAName": "Miguel Chen",
+      "personBName": "Daniel",
+      "inferred": true
+    },
+    {
+      "personAId": "person-10",
+      "personBId": "person-narrator",
+      "type": "grandparent",
+      "confidence": 0.85,
+      "personAName": "Lucía Fernández",
+      "personBName": "Valentina Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "person-10",
+      "personBId": "person-1",
+      "type": "grandparent",
+      "confidence": 0.85,
+      "personAName": "Lucía Fernández",
+      "personBName": "Diego Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "person-10",
+      "personBId": "person-2",
+      "type": "grandparent",
+      "confidence": 0.85,
+      "personAName": "Lucía Fernández",
+      "personBName": "Isabella Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "person-10",
+      "personBId": "person-17",
+      "type": "grandparent",
+      "confidence": 0.85,
+      "personAName": "Lucía Fernández",
+      "personBName": "Daniel",
+      "inferred": true
+    },
+    {
+      "personAId": "person-3",
+      "personBId": "person-19",
+      "type": "great_grandparent",
+      "confidence": 0.85,
+      "personAName": "Roberto Rodriguez",
+      "personBName": "Matías",
+      "inferred": true
+    },
+    {
+      "personAId": "person-4",
+      "personBId": "person-19",
+      "type": "great_grandparent",
+      "confidence": 0.85,
+      "personAName": "Carmen Vega",
+      "personBName": "Matías",
+      "inferred": true
+    },
+    {
+      "personAId": "person-7",
+      "personBId": "person-narrator",
+      "type": "great_grandparent",
+      "confidence": 0.85,
+      "personAName": "Antonio Rodriguez",
+      "personBName": "Valentina Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "person-7",
+      "personBId": "person-1",
+      "type": "great_grandparent",
+      "confidence": 0.85,
+      "personAName": "Antonio Rodriguez",
+      "personBName": "Diego Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "person-7",
+      "personBId": "person-2",
+      "type": "great_grandparent",
+      "confidence": 0.85,
+      "personAName": "Antonio Rodriguez",
+      "personBName": "Isabella Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "person-7",
+      "personBId": "person-13",
+      "type": "great_grandparent",
+      "confidence": 0.85,
+      "personAName": "Antonio Rodriguez",
+      "personBName": "Lucas",
+      "inferred": true
+    },
+    {
+      "personAId": "person-7",
+      "personBId": "person-14",
+      "type": "great_grandparent",
+      "confidence": 0.85,
+      "personAName": "Antonio Rodriguez",
+      "personBName": "Camila",
+      "inferred": true
+    },
+    {
+      "personAId": "person-8",
+      "personBId": "person-narrator",
+      "type": "great_grandparent",
+      "confidence": 0.85,
+      "personAName": "Elena Morales",
+      "personBName": "Valentina Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "person-8",
+      "personBId": "person-1",
+      "type": "great_grandparent",
+      "confidence": 0.85,
+      "personAName": "Elena Morales",
+      "personBName": "Diego Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "person-8",
+      "personBId": "person-2",
+      "type": "great_grandparent",
+      "confidence": 0.85,
+      "personAName": "Elena Morales",
+      "personBName": "Isabella Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "person-8",
+      "personBId": "person-13",
+      "type": "great_grandparent",
+      "confidence": 0.85,
+      "personAName": "Elena Morales",
+      "personBName": "Lucas",
+      "inferred": true
+    },
+    {
+      "personAId": "person-8",
+      "personBId": "person-14",
+      "type": "great_grandparent",
+      "confidence": 0.85,
+      "personAName": "Elena Morales",
+      "personBName": "Camila",
+      "inferred": true
+    },
+    {
+      "personAId": "person-9",
+      "personBId": "person-19",
+      "type": "great_grandparent",
+      "confidence": 0.85,
+      "personAName": "Miguel Chen",
+      "personBName": "Matías",
+      "inferred": true
+    },
+    {
+      "personAId": "person-10",
+      "personBId": "person-19",
+      "type": "great_grandparent",
+      "confidence": 0.85,
+      "personAName": "Lucía Fernández",
+      "personBName": "Matías",
+      "inferred": true
+    },
+    {
+      "personAId": "person-narrator",
+      "personBId": "person-19",
+      "type": "uncle_aunt",
+      "confidence": 0.85,
+      "personAName": "Valentina Rodriguez Chen",
+      "personBName": "Matías",
+      "inferred": true
+    },
+    {
+      "personAId": "person-2",
+      "personBId": "person-19",
+      "type": "uncle_aunt",
+      "confidence": 0.85,
+      "personAName": "Isabella Rodriguez Chen",
+      "personBName": "Matías",
+      "inferred": true
+    },
+    {
+      "personAId": "person-11",
+      "personBId": "person-narrator",
+      "type": "uncle_aunt",
+      "confidence": 0.85,
+      "personAName": "Patricia Rodriguez Vega",
+      "personBName": "Valentina Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "person-11",
+      "personBId": "person-1",
+      "type": "uncle_aunt",
+      "confidence": 0.85,
+      "personAName": "Patricia Rodriguez Vega",
+      "personBName": "Diego Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "person-11",
+      "personBId": "person-2",
+      "type": "uncle_aunt",
+      "confidence": 0.85,
+      "personAName": "Patricia Rodriguez Vega",
+      "personBName": "Isabella Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "existing-jorge",
+      "personBId": "person-13",
+      "type": "uncle_aunt",
+      "confidence": 0.85,
+      "personAName": "Jorge Rodriguez",
+      "personBName": "Lucas",
+      "inferred": true
+    },
+    {
+      "personAId": "existing-jorge",
+      "personBId": "person-14",
+      "type": "uncle_aunt",
+      "confidence": 0.85,
+      "personAName": "Jorge Rodriguez",
+      "personBName": "Camila",
+      "inferred": true
+    },
+    {
+      "personAId": "person-15",
+      "personBId": "person-narrator",
+      "type": "uncle_aunt",
+      "confidence": 0.85,
+      "personAName": "Eduardo Chen Fernández",
+      "personBName": "Valentina Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "person-15",
+      "personBId": "person-1",
+      "type": "uncle_aunt",
+      "confidence": 0.85,
+      "personAName": "Eduardo Chen Fernández",
+      "personBName": "Diego Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "person-15",
+      "personBId": "person-2",
+      "type": "uncle_aunt",
+      "confidence": 0.85,
+      "personAName": "Eduardo Chen Fernández",
+      "personBName": "Isabella Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "existing-sofia",
+      "personBId": "person-17",
+      "type": "uncle_aunt",
+      "confidence": 0.85,
+      "personAName": "Sofía Chen",
+      "personBName": "Daniel",
+      "inferred": true
+    },
+    {
+      "personAId": "person-6",
+      "personBId": "person-narrator",
+      "type": "uncle_aunt",
+      "confidence": 0.85,
+      "personAName": "Andrés Rodriguez",
+      "personBName": "Valentina Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "person-6",
+      "personBId": "person-1",
+      "type": "uncle_aunt",
+      "confidence": 0.85,
+      "personAName": "Andrés Rodriguez",
+      "personBName": "Diego Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "person-6",
+      "personBId": "person-2",
+      "type": "uncle_aunt",
+      "confidence": 0.85,
+      "personAName": "Andrés Rodriguez",
+      "personBName": "Isabella Rodriguez Chen",
+      "inferred": true
+    },
+    {
+      "personAId": "person-6",
+      "personBId": "person-13",
+      "type": "uncle_aunt",
+      "confidence": 0.85,
+      "personAName": "Andrés Rodriguez",
+      "personBName": "Lucas",
+      "inferred": true
+    },
+    {
+      "personAId": "person-6",
+      "personBId": "person-14",
+      "type": "uncle_aunt",
+      "confidence": 0.85,
+      "personAName": "Andrés Rodriguez",
+      "personBName": "Camila",
+      "inferred": true
+    }
+  ],
+  "assertions": {
+    "passed": 125,
+    "failed": 0,
+    "warnings": 6,
+    "errors": [],
+    "warns": [
+      "Antonio profession should be panadero/baker, got \"undefined\"",
+      "Isabella nickname should be \"Isa\", got \"undefined\"",
+      "Roberto ↔ Marta ex_spouse",
+      "Patricia → godparent of Valentina",
+      "Bonus relationship type 'ex_spouse' should appear (direct or inferred)",
+      "Bonus relationship type 'godparent' should appear (direct or inferred)"
+    ]
+  }
+}

@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Matra — Pipeline Test Results</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: #0a1628; color: #e8e0d4; }
+  .header { text-align: center; padding: 24px; background: linear-gradient(135deg, #0d1f3c, #1a3a5c); border-bottom: 2px solid #2a5a8a; }
+  .header h1 { font-size: 28px; color: #7ec8e3; }
+  .header p { color: #8b9baa; margin-top: 4px; }
+  .container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 20px; max-width: 1600px; margin: 0 auto; }
+  .full-width { grid-column: 1 / -1; }
+  .card { background: #111d2e; border: 1px solid #1e3a5f; border-radius: 12px; padding: 20px; }
+  .card h2 { color: #7ec8e3; margin-bottom: 12px; font-size: 18px; }
+  .person { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 8px; margin-bottom: 6px; background: #0d1a2d; }
+  .person.narrator { border-left: 3px solid #7ec8e3; }
+  .person .avatar { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .person .avatar.male { background: #1e3a5f; }
+  .person .avatar.female { background: #5f1e3a; }
+  .person .avatar.unknown { background: #3a3a1e; }
+  .person .info { flex: 1; }
+  .person .name { font-weight: 600; color: #e8e0d4; }
+  .person .meta { font-size: 12px; color: #8b9baa; }
+  .rel { padding: 6px 10px; margin-bottom: 4px; border-radius: 6px; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+  .rel.direct { background: #0d2a1a; border-left: 2px solid #4ade80; }
+  .rel.inferred { background: #2a1a0d; border-left: 2px solid #f59e0b; }
+  .rel .type { font-weight: 600; color: #7ec8e3; min-width: 100px; }
+  .rel .arrow { color: #4a5568; }
+  .rel .conf { font-size: 11px; color: #8b9baa; margin-left: auto; }
+  .story { margin-bottom: 16px; padding: 14px; background: #0d1a2d; border-radius: 8px; }
+  .story h3 { color: #d4a574; margin-bottom: 8px; }
+  .story p { line-height: 1.6; color: #c4b8a8; font-size: 14px; }
+  .story .moment { margin-top: 8px; padding: 6px 10px; background: #1a2a3d; border-radius: 6px; font-style: italic; font-size: 13px; color: #8baabb; }
+  .summary-box { line-height: 1.7; color: #c4b8a8; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; background: #1e3a5f; color: #7ec8e3; margin: 2px; }
+  #graph { width: 100%; height: 500px; border: 1px solid #1e3a5f; border-radius: 8px; background: #080f1a; }
+  .legend { display: flex; gap: 16px; margin-top: 10px; font-size: 12px; color: #8b9baa; }
+  .legend span { display: flex; align-items: center; gap: 4px; }
+  .legend .dot { width: 10px; height: 10px; border-radius: 50%; }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>🌳 Matra — Pipeline Test Results</h1>
+  <p>Extraction + Summarization + Relationship Inference</p>
+</div>
+<div class="container">
+  <div class="card">
+    <h2>👥 People (17)</h2>
+    
+      <div class="person narrator">
+        <div class="avatar male">♂</div>
+        <div class="info">
+          <div class="name">Carlos Bueso 🎙️</div>
+          <div class="meta">1999-10-22 · Ciudad de México</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar male">♂</div>
+        <div class="info">
+          <div class="name">Carlos José Bueso</div>
+          <div class="meta">1968-03-16 · Puerto Rico</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar female">♀</div>
+        <div class="info">
+          <div class="name">Alicia Rentería Montes de Oca</div>
+          <div class="meta">No details</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar male">♂</div>
+        <div class="info">
+          <div class="name">Marco Andrés Bueso</div>
+          <div class="meta">No details</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar female">♀</div>
+        <div class="info">
+          <div class="name">Brisela Alessandra Bueso</div>
+          <div class="meta">No details</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar male">♂</div>
+        <div class="info">
+          <div class="name">Cristian Rentería</div>
+          <div class="meta">1985</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar male">♂</div>
+        <div class="info">
+          <div class="name">Mateo Renter</div>
+          <div class="meta">No details</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar male">♂</div>
+        <div class="info">
+          <div class="name">Andr Renter</div>
+          <div class="meta">No details</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar female">♀</div>
+        <div class="info">
+          <div class="name">Alicia Rentería</div>
+          <div class="meta">No details</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar female">♀</div>
+        <div class="info">
+          <div class="name">Claudia</div>
+          <div class="meta">No details</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar male">♂</div>
+        <div class="info">
+          <div class="name">Omar Gutiérrez</div>
+          <div class="meta">No details</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar female">♀</div>
+        <div class="info">
+          <div class="name">Valeria Gutiérrez</div>
+          <div class="meta">No details</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar female">♀</div>
+        <div class="info">
+          <div class="name">Lilian Mas</div>
+          <div class="meta">No details</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar male">♂</div>
+        <div class="info">
+          <div class="name">Héctor Bueso</div>
+          <div class="meta">No details</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar male">♂</div>
+        <div class="info">
+          <div class="name">José Virriel</div>
+          <div class="meta">No details</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar male">♂</div>
+        <div class="info">
+          <div class="name">Héctor Bueso</div>
+          <div class="meta">No details</div>
+        </div>
+      </div>
+    
+      <div class="person">
+        <div class="avatar female">♀</div>
+        <div class="info">
+          <div class="name">Omaira Ortega</div>
+          <div class="meta">No details</div>
+        </div>
+      </div>
+    
+  </div>
+
+  <div class="card">
+    <h2>🔗 Relationships (66)</h2>
+    
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Carlos José Bueso</span>
+        <span class="arrow">→</span>
+        <span>Carlos Bueso</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Alicia Rentería Montes de Oca</span>
+        <span class="arrow">→</span>
+        <span>Carlos Bueso</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">sibling</span>
+        <span>Carlos Bueso</span>
+        <span class="arrow">→</span>
+        <span>Marco Andrés Bueso</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">sibling</span>
+        <span>Carlos Bueso</span>
+        <span class="arrow">→</span>
+        <span>Brisela Alessandra Bueso</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Alicia Rentería Montes de Oca</span>
+        <span class="arrow">→</span>
+        <span>Cristian Rentería</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">half_sibling</span>
+        <span>Cristian Rentería</span>
+        <span class="arrow">→</span>
+        <span>Carlos Bueso</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Cristian Rentería</span>
+        <span class="arrow">→</span>
+        <span>Mateo Renter</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Cristian Rentería</span>
+        <span class="arrow">→</span>
+        <span>Andr Renter</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Alicia Rentería</span>
+        <span class="arrow">→</span>
+        <span>Alicia Rentería Montes de Oca</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">sibling</span>
+        <span>Claudia</span>
+        <span class="arrow">→</span>
+        <span>Alicia Rentería Montes de Oca</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Claudia</span>
+        <span class="arrow">→</span>
+        <span>Omar Gutiérrez</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Claudia</span>
+        <span class="arrow">→</span>
+        <span>Valeria Gutiérrez</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">cousin</span>
+        <span>Omar Gutiérrez</span>
+        <span class="arrow">→</span>
+        <span>Carlos Bueso</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">cousin</span>
+        <span>Valeria Gutiérrez</span>
+        <span class="arrow">→</span>
+        <span>Carlos Bueso</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">child</span>
+        <span>Carlos Bueso</span>
+        <span class="arrow">→</span>
+        <span>Carlos José Bueso</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">child</span>
+        <span>Marco Andrés Bueso</span>
+        <span class="arrow">→</span>
+        <span>Carlos José Bueso</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">child</span>
+        <span>Brisela Alessandra Bueso</span>
+        <span class="arrow">→</span>
+        <span>Carlos José Bueso</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">ex_spouse</span>
+        <span>Alicia Rentería Montes de Oca</span>
+        <span class="arrow">→</span>
+        <span>Carlos José Bueso</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Lilian Mas</span>
+        <span class="arrow">→</span>
+        <span>Carlos José Bueso</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">parent</span>
+        <span>Héctor Bueso</span>
+        <span class="arrow">→</span>
+        <span>Carlos José Bueso</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">step_parent</span>
+        <span>José Virriel</span>
+        <span class="arrow">→</span>
+        <span>Carlos José Bueso</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">sibling</span>
+        <span>Héctor Bueso</span>
+        <span class="arrow">→</span>
+        <span>Carlos José Bueso</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel direct">
+        <span class="type">spouse</span>
+        <span>Omaira Ortega</span>
+        <span class="arrow">→</span>
+        <span>Héctor Bueso</span>
+        <span class="conf">90%</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">parent</span>
+        <span>Carlos José Bueso</span>
+        <span class="arrow">→</span>
+        <span>Marco Andrés Bueso</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">parent</span>
+        <span>Alicia Rentería Montes de Oca</span>
+        <span class="arrow">→</span>
+        <span>Marco Andrés Bueso</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">parent</span>
+        <span>Carlos José Bueso</span>
+        <span class="arrow">→</span>
+        <span>Brisela Alessandra Bueso</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">parent</span>
+        <span>Alicia Rentería Montes de Oca</span>
+        <span class="arrow">→</span>
+        <span>Brisela Alessandra Bueso</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">parent</span>
+        <span>Alicia Rentería</span>
+        <span class="arrow">→</span>
+        <span>Claudia</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">parent</span>
+        <span>Lilian Mas</span>
+        <span class="arrow">→</span>
+        <span>Héctor Bueso</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">parent</span>
+        <span>Héctor Bueso</span>
+        <span class="arrow">→</span>
+        <span>Héctor Bueso</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">sibling</span>
+        <span>Marco Andrés Bueso</span>
+        <span class="arrow">→</span>
+        <span>Brisela Alessandra Bueso</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">half_sibling</span>
+        <span>Cristian Rentería</span>
+        <span class="arrow">→</span>
+        <span>Marco Andrés Bueso</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">half_sibling</span>
+        <span>Cristian Rentería</span>
+        <span class="arrow">→</span>
+        <span>Brisela Alessandra Bueso</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">sibling</span>
+        <span>Mateo Renter</span>
+        <span class="arrow">→</span>
+        <span>Andr Renter</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">sibling</span>
+        <span>Omar Gutiérrez</span>
+        <span class="arrow">→</span>
+        <span>Valeria Gutiérrez</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">spouse</span>
+        <span>Carlos José Bueso</span>
+        <span class="arrow">→</span>
+        <span>Alicia Rentería Montes de Oca</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">spouse</span>
+        <span>Lilian Mas</span>
+        <span class="arrow">→</span>
+        <span>Héctor Bueso</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Alicia Rentería Montes de Oca</span>
+        <span class="arrow">→</span>
+        <span>Mateo Renter</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Alicia Rentería Montes de Oca</span>
+        <span class="arrow">→</span>
+        <span>Andr Renter</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Alicia Rentería</span>
+        <span class="arrow">→</span>
+        <span>Carlos Bueso</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Alicia Rentería</span>
+        <span class="arrow">→</span>
+        <span>Cristian Rentería</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Alicia Rentería</span>
+        <span class="arrow">→</span>
+        <span>Marco Andrés Bueso</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Alicia Rentería</span>
+        <span class="arrow">→</span>
+        <span>Brisela Alessandra Bueso</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Alicia Rentería</span>
+        <span class="arrow">→</span>
+        <span>Omar Gutiérrez</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Alicia Rentería</span>
+        <span class="arrow">→</span>
+        <span>Valeria Gutiérrez</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Lilian Mas</span>
+        <span class="arrow">→</span>
+        <span>Carlos Bueso</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Lilian Mas</span>
+        <span class="arrow">→</span>
+        <span>Marco Andrés Bueso</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Lilian Mas</span>
+        <span class="arrow">→</span>
+        <span>Brisela Alessandra Bueso</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Héctor Bueso</span>
+        <span class="arrow">→</span>
+        <span>Carlos Bueso</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Héctor Bueso</span>
+        <span class="arrow">→</span>
+        <span>Marco Andrés Bueso</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">grandparent</span>
+        <span>Héctor Bueso</span>
+        <span class="arrow">→</span>
+        <span>Brisela Alessandra Bueso</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Claudia</span>
+        <span class="arrow">→</span>
+        <span>Carlos Bueso</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Claudia</span>
+        <span class="arrow">→</span>
+        <span>Cristian Rentería</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Claudia</span>
+        <span class="arrow">→</span>
+        <span>Marco Andrés Bueso</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Claudia</span>
+        <span class="arrow">→</span>
+        <span>Brisela Alessandra Bueso</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Alicia Rentería Montes de Oca</span>
+        <span class="arrow">→</span>
+        <span>Omar Gutiérrez</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Alicia Rentería Montes de Oca</span>
+        <span class="arrow">→</span>
+        <span>Valeria Gutiérrez</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Héctor Bueso</span>
+        <span class="arrow">→</span>
+        <span>Carlos Bueso</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Héctor Bueso</span>
+        <span class="arrow">→</span>
+        <span>Marco Andrés Bueso</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Héctor Bueso</span>
+        <span class="arrow">→</span>
+        <span>Brisela Alessandra Bueso</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Carlos Bueso</span>
+        <span class="arrow">→</span>
+        <span>Mateo Renter</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Carlos Bueso</span>
+        <span class="arrow">→</span>
+        <span>Andr Renter</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Marco Andrés Bueso</span>
+        <span class="arrow">→</span>
+        <span>Mateo Renter</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Marco Andrés Bueso</span>
+        <span class="arrow">→</span>
+        <span>Andr Renter</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Brisela Alessandra Bueso</span>
+        <span class="arrow">→</span>
+        <span>Mateo Renter</span>
+        <span class="conf">85% inferred</span>
+      </div>
+      <div class="rel inferred">
+        <span class="type">uncle_aunt</span>
+        <span>Brisela Alessandra Bueso</span>
+        <span class="arrow">→</span>
+        <span>Andr Renter</span>
+        <span class="conf">85% inferred</span>
+      </div>
+    <div class="legend">
+      <span><div class="dot" style="background:#4ade80"></div> Direct (from AI)</span>
+      <span><div class="dot" style="background:#f59e0b"></div> Inferred (transitive)</span>
+    </div>
+  </div>
+
+  
+  <div class="card">
+    <h2>📝 Summary</h2>
+    <div class="summary-box">Combined results from 2 interviews</div>
+    <div style="margin-top:12px">
+      <strong style="color:#7ec8e3">Tone:</strong> warm<br>
+      <strong style="color:#7ec8e3">Topics:</strong> <span class="tag">family</span> <span class="tag">heritage</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📚 Stories (6)</h2>
+    
+      <div class="story">
+        <h3>"La historia de Abuelita Mimi"</h3>
+        <p>La abuela materna de Carlos, Alicia Rentería, era una mujer muy querida por su familia. Aunque ya falleció, su legado vive en el corazón de sus seres queridos. Carlos recuerda con cariño los momentos que pasó con su abuela y la forma en que ella los hacía sentir especiales. La familia de Carlos sigue honrando su memoria con el apodo que le dieron, Abuelita Mimi.</p>
+        <div style="margin-top:6px;font-size:12px;color:#8b9baa">👥 Carlos Adrián Bueso, Alicia Rentería Montes de Oca, Alicia Rentería</div>
+        <div class="moment">"La queremos mucho"</div><div class="moment">"El apodo que le tenemos a ella es Abuelita Mimi"</div>
+      </div>
+    
+      <div class="story">
+        <h3>"El origen de la familia Bueso"</h3>
+        <p>La historia de la familia Bueso comienza con la llegada de Carlos José Bueso a la Ciudad de México desde Puerto Rico. Allí conoció a su futura esposa, Alicia Rentería Montes de Oca, y juntos formaron una familia unida y amorosa. Carlos Adrián Bueso se siente orgulloso de sus raíces y de la forma en que su familia se ha mantenido unida a lo largo de los años.</p>
+        <div style="margin-top:6px;font-size:12px;color:#8b9baa">👥 Carlos Adrián Bueso, Carlos José Bueso, Alicia Rentería Montes de Oca</div>
+        <div class="moment">"Mi papá nació en Puerto Rico y se fue a estudiar la universidad a Boston, en Massachusetts"</div>
+      </div>
+    
+      <div class="story">
+        <h3>"La carrera profesional de Carlos"</h3>
+        <p>Carlos Adrián Bueso es un joven emprendedor que se dedica a la programación y el desarrollo de software. Es dueño de su propia empresa, Alquimia Studio, donde trabaja en proyectos innovadores y emocionantes. Carlos se siente realizado en su carrera y está ansioso por ver lo que el futuro le depara.</p>
+        <div style="margin-top:6px;font-size:12px;color:#8b9baa">👥 Carlos Adrián Bueso</div>
+        <div class="moment">"Yo soy desarrollador de software y me dedico a programar"</div>
+      </div>
+    
+      <div class="story">
+        <h3>"La pérdida de mi padre biológico"</h3>
+        <p>Mi papá biológico, Héctor Bueso, falleció cuando yo tenía solo seis meses de edad. Fue un accidente trágico que ocurrió durante una exploración de cuevas en Puerto Rico. Aunque no tengo recuerdos de él, siempre he sentido su ausencia en mi vida.</p>
+        <div style="margin-top:6px;font-size:12px;color:#8b9baa">👥 Carlos José Bueso, Héctor Bueso</div>
+        <div class="moment">"Mi papá biológico Héctor falleció cuando yo tenía seis meses de edad"</div>
+      </div>
+    
+      <div class="story">
+        <h3>"Mi familia en Puerto Rico"</h3>
+        <p>Mi mamá se llama Lilian Mas y mi papá biológico se llamaba Héctor Bueso. Después de la muerte de mi padre biológico, mi abuela se casó con mi padrastro, José Virriel. También tengo un hermano que se llama Héctor Bueso y está casado con su esposa, Omaira Ortega.</p>
+        <div style="margin-top:6px;font-size:12px;color:#8b9baa">👥 Carlos José Bueso, Lilian Mas, Héctor Bueso, José Virriel, Héctor Bueso, Omaira Ortega</div>
+        <div class="moment">"Mi mamá se llama Lilian Mas"</div><div class="moment">"Mi papá biológico se llamaba Héctor Bueso"</div>
+      </div>
+    
+      <div class="story">
+        <h3>"Mi matrimonio y mis hijos"</h3>
+        <p>Me casé con Alicia Rentería Montes de Oca y tenemos tres hijos juntos: Carlos, Marco y Bricel. Aunque ya no estamos juntos, siempre he estado presente en la vida de mis hijos y los amo profundamente.</p>
+        <div style="margin-top:6px;font-size:12px;color:#8b9baa">👥 Carlos José Bueso, Alicia Rentería Montes de Oca, Carlos Bueso, Marco Andrés Bueso, Brisela Alessandra Bueso</div>
+        <div class="moment">"Yo tengo tres hijos con mi ex esposa Alicia Rentería"</div>
+      </div>
+    
+  </div>
+  
+</div>
+</body>
+</html>

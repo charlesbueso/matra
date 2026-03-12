@@ -1,5 +1,5 @@
 // ============================================================
-// MATRA — Validate Subscription (RevenueCat Webhook)
+// Matra — Validate Subscription (RevenueCat Webhook)
 // ============================================================
 // Receives webhooks from RevenueCat when subscription state changes.
 // Updates the database accordingly.
@@ -38,7 +38,6 @@ interface RCWebhookEvent {
 }
 
 function productToTier(productId: string): SubscriptionTier {
-  if (productId.includes('lifetime')) return 'lifetime';
   if (productId.includes('premium') || productId.includes('pro')) return 'premium';
   return 'free';
 }
@@ -83,7 +82,7 @@ serve(async (req: Request) => {
           started_at: new Date(event.purchased_at_ms).toISOString(),
           expires_at: event.expiration_at_ms
             ? new Date(event.expiration_at_ms).toISOString()
-            : null, // null = lifetime
+            : null,
           metadata: { store: event.store, environment: event.environment },
         });
 
@@ -124,17 +123,26 @@ serve(async (req: Request) => {
       }
 
       case 'EXPIRATION': {
-        // Subscription fully expired — downgrade to free
-        await supabase
-          .from('subscriptions')
-          .update({ status: 'expired' })
-          .eq('user_id', userId)
-          .in('status', ['active', 'cancelled']);
+        // Start 7-day grace period instead of immediate cutoff.
+        // User keeps full premium access during this window.
+        const gracePeriodEnd = new Date();
+        gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 7);
+
+        // Export access lasts 30 days from expiration
+        const exportAccessEnd = new Date();
+        exportAccessEnd.setDate(exportAccessEnd.getDate() + 30);
 
         await supabase
-          .from('profiles')
-          .update({ subscription_tier: 'free' })
-          .eq('id', userId);
+          .from('subscriptions')
+          .update({
+            status: 'grace_period',
+            grace_period_ends_at: gracePeriodEnd.toISOString(),
+            export_access_until: exportAccessEnd.toISOString(),
+          })
+          .eq('user_id', userId)
+          .in('status', ['active', 'cancelled', 'billing_retry']);
+
+        // Keep premium tier during grace period — feature-gate checks the dates
         break;
       }
 

@@ -1,4 +1,4 @@
-# MATRA 🌳
+# Matra 🌳
 
 A living tree of your ancestry — record family conversations, let AI extract stories and relationships, and watch your family tree grow.
 

@@ -3,8 +3,15 @@
 // ============================================================
 
 import { create } from 'zustand';
-import { supabase, invokeFunction } from '../services/supabase';
-import type { SubscriptionTier, FeatureLimits } from '../types';
+import { invokeFunction } from '../services/supabase';
+import {
+  identifyUser,
+  logOutPurchases,
+  getCustomerInfo,
+  isPremiumActive,
+} from '../services/purchases';
+import { useNotificationStore } from './notificationStore';
+import type { SubscriptionTier, FeatureLimits, DowngradeInfo } from '../types';
 
 // Feature limits by tier (client-side mirror of server TIER_LIMITS)
 export const TIER_LIMITS: Record<SubscriptionTier, FeatureLimits> = {
@@ -28,16 +35,6 @@ export const TIER_LIMITS: Record<SubscriptionTier, FeatureLimits> = {
     can_generate_documentary: true,
     ai_summary: true,
   },
-  lifetime: {
-    max_interviews: -1,
-    max_audio_minutes: 120,
-    max_family_members: -1,
-    max_storage_mb: 25_000,
-    can_export: true,
-    can_generate_biography: true,
-    can_generate_documentary: true,
-    ai_summary: true,
-  },
 };
 
 interface SubscriptionState {
@@ -46,8 +43,18 @@ interface SubscriptionState {
   interviewCount: number;
   storageUsedMb: number;
   isLoading: boolean;
+  /** True if user belongs to a premium user's family group. */
+  familySharingActive: boolean;
+  /** Downgrade/grace-period state for lapsed premium users. */
+  downgrade: DowngradeInfo;
 
   fetchEntitlements: () => Promise<void>;
+  /** Identify the user with RevenueCat and sync tier. */
+  syncPurchaseUser: (userId: string) => Promise<void>;
+  /** Log out from RevenueCat. */
+  clearPurchaseUser: () => Promise<void>;
+  /** Update local tier from CustomerInfo (called by listener). */
+  applyCustomerInfo: (isPremium: boolean) => void;
   canPerform: (feature: keyof FeatureLimits) => boolean;
   isAtInterviewLimit: () => boolean;
 }
@@ -58,6 +65,13 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   interviewCount: 0,
   storageUsedMb: 0,
   isLoading: false,
+  familySharingActive: false,
+  downgrade: {
+    isLapsed: false,
+    inGracePeriod: false,
+    gracePeriodEndsAt: null,
+    exportAccessUntil: null,
+  },
 
   fetchEntitlements: async () => {
     set({ isLoading: true });
@@ -66,6 +80,8 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
         tier: SubscriptionTier;
         limits: FeatureLimits;
         usage: { interview_count: number; storage_used_mb: number };
+        familySharingActive?: boolean;
+        downgrade?: DowngradeInfo;
       }>('get-entitlements');
 
       set({
@@ -73,13 +89,52 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
         limits: data.limits,
         interviewCount: data.usage.interview_count,
         storageUsedMb: data.usage.storage_used_mb,
+        familySharingActive: data.familySharingActive ?? false,
+        downgrade: data.downgrade ?? {
+          isLapsed: false,
+          inGracePeriod: false,
+          gracePeriodEndsAt: null,
+          exportAccessUntil: null,
+        },
       });
+
+      // Schedule / cancel grace period push notifications
+      const dg = data.downgrade;
+      if (dg?.inGracePeriod && dg.gracePeriodEndsAt) {
+        useNotificationStore.getState().scheduleGracePeriodReminders(dg.gracePeriodEndsAt);
+      } else {
+        useNotificationStore.getState().cancelGracePeriodReminders();
+      }
     } catch {
       // Fallback to free tier on error
       set({ tier: 'free', limits: TIER_LIMITS.free });
     } finally {
       set({ isLoading: false });
     }
+  },
+
+  syncPurchaseUser: async (userId: string) => {
+    try {
+      const info = await identifyUser(userId);
+      const premium = isPremiumActive(info);
+      get().applyCustomerInfo(premium);
+    } catch (err) {
+      console.warn('[Purchases] Failed to identify user:', err);
+    }
+  },
+
+  clearPurchaseUser: async () => {
+    try {
+      await logOutPurchases();
+    } catch {
+      // Ignore — user may already be anonymous
+    }
+    set({ tier: 'free', limits: TIER_LIMITS.free });
+  },
+
+  applyCustomerInfo: (isPremium: boolean) => {
+    const tier: SubscriptionTier = isPremium ? 'premium' : 'free';
+    set({ tier, limits: TIER_LIMITS[tier] });
   },
 
   canPerform: (feature) => {

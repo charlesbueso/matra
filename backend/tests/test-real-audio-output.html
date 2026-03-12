@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Matra — Real Audio Pipeline Test</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: #EDE6D8; color: #3B2E1E; }
+  .page-header { background: #F7F2EA; border-bottom: 1px solid rgba(139,115,85,0.15); padding: 20px 32px; display: flex; align-items: center; justify-content: space-between; }
+  .page-header h1 { font-family: 'Space Grotesk', sans-serif; font-size: 28px; color: #3B2E1E; }
+  .page-header .subtitle { color: #6B5D4F; font-size: 14px; margin-top: 2px; }
+  .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .badge-green { background: rgba(107,143,60,0.12); color: #6B8F3C; }
+  .badge-amber { background: rgba(196,154,60,0.12); color: #C49A3C; }
+  .stats-bar { display: flex; gap: 24px; padding: 16px 32px; background: #F7F2EA; border-bottom: 1px solid rgba(139,115,85,0.1); flex-wrap: wrap; }
+  .stat-item { text-align: center; }
+  .stat-num { font-family: 'Space Grotesk', sans-serif; font-size: 28px; font-weight: 700; color: #6B8F3C; }
+  .stat-label { font-size: 11px; color: #9B8E7E; text-transform: uppercase; letter-spacing: 0.5px; }
+  .app-tabs { display: flex; gap: 0; background: #FFFFFF; border-bottom: 1px solid rgba(139,115,85,0.1); position: sticky; top: 0; z-index: 100; }
+  .app-tab { flex: 1; padding: 14px 8px; text-align: center; cursor: pointer; border: none; background: none; font-size: 12px; font-weight: 500; color: #9B8E7E; transition: all 0.2s; border-bottom: 3px solid transparent; font-family: 'Inter', system-ui, sans-serif; }
+  .app-tab:hover { color: #6B5D4F; }
+  .app-tab.active { color: #6B8F3C; border-bottom-color: #6B8F3C; }
+  .app-tab .tab-icon { font-size: 20px; display: block; margin-bottom: 2px; }
+  .tab-panel { display: none; } .tab-panel.active { display: block; }
+  .tree-container { padding: 16px; overflow: auto; background: #F7F2EA; min-height: 500px; }
+  .tree-container svg { display: block; margin: 0 auto; }
+  .tree-controls { display: flex; gap: 8px; padding: 8px 16px; background: #FFFFFF; border-bottom: 1px solid rgba(139,115,85,0.08); }
+  .tree-controls button { background: #F0EADE; border: 1px solid rgba(139,115,85,0.12); border-radius: 8px; padding: 6px 14px; cursor: pointer; font-size: 12px; color: #6B5D4F; font-family: 'Inter', system-ui, sans-serif; }
+  .tree-controls button:hover { background: #E5DDD0; }
+  .legend { display: flex; gap: 16px; padding: 8px 16px; background: #FFFFFF; border-bottom: 1px solid rgba(139,115,85,0.08); font-size: 11px; color: #9B8E7E; flex-wrap: wrap; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+  .legend-line { width: 20px; height: 2px; display: inline-block; margin-right: 4px; }
+  .people-grid { padding: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; }
+  .person-card { background: #FFFFFF; border-radius: 20px; padding: 16px; border: 1px solid rgba(139,115,85,0.08); box-shadow: 0 1px 6px rgba(139,115,85,0.06); display: flex; gap: 12px; align-items: flex-start; }
+  .person-card.deceased { opacity: 0.7; }
+  .person-avatar { width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 16px; flex-shrink: 0; border: 2px solid #6B8F3C; background: #F0EADE; color: #6B8F3C; }
+  .person-avatar.self { border-color: #C49A3C; color: #C49A3C; }
+  .person-info { flex: 1; min-width: 0; }
+  .person-name { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 16px; color: #3B2E1E; }
+  .person-role { font-size: 11px; font-weight: 600; color: #6B8F3C; text-transform: uppercase; letter-spacing: 0.5px; }
+  .person-role.self-role { color: #C49A3C; }
+  .person-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+  .chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 16px; background: #F0EADE; font-size: 11px; color: #6B5D4F; }
+  .stories-list { padding: 16px; display: grid; gap: 12px; }
+  .story-card { background: #FFFFFF; border-radius: 20px; padding: 20px; border: 1px solid rgba(107,143,60,0.18); box-shadow: 0 4px 16px rgba(139,115,85,0.15); }
+  .story-badge { font-size: 10px; font-weight: 600; color: #8BAF5C; background: rgba(107,143,60,0.12); padding: 2px 8px; border-radius: 12px; display: inline-block; margin-bottom: 8px; }
+  .story-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 20px; color: #3B2E1E; margin-bottom: 8px; }
+  .story-meta { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .story-meta .chip { background: rgba(107,143,60,0.08); }
+  .story-content { font-size: 14px; line-height: 1.75; color: #6B5D4F; }
+  .interviews-list { padding: 16px; display: grid; gap: 16px; }
+  .interview-card { background: #FFFFFF; border-radius: 20px; padding: 20px; border: 1px solid rgba(139,115,85,0.08); box-shadow: 0 1px 6px rgba(139,115,85,0.06); }
+  .interview-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .interview-icon { width: 44px; height: 44px; border-radius: 50%; background: rgba(107,143,60,0.12); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+  .interview-title { font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 18px; color: #3B2E1E; }
+  .interview-stats { font-size: 12px; color: #9B8E7E; }
+  .interview-transcript { background: #F7F2EA; border-radius: 12px; padding: 16px; margin-top: 12px; font-size: 13px; line-height: 1.8; color: #6B5D4F; max-height: 300px; overflow-y: auto; border: 1px solid rgba(139,115,85,0.08); }
+  .extraction-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .extraction-table th { background: #F0EADE; color: #6B5D4F; padding: 8px 12px; text-align: left; font-weight: 600; border-bottom: 1px solid rgba(139,115,85,0.12); }
+  .extraction-table td { padding: 6px 12px; border-bottom: 1px solid rgba(139,115,85,0.06); color: #3B2E1E; }
+  .extraction-table code { background: rgba(107,143,60,0.08); padding: 2px 6px; border-radius: 4px; font-size: 11px; color: #6B8F3C; }
+  .rels-container { padding: 16px; }
+  .rel-group { margin-bottom: 16px; }
+  .rel-group-header { font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 14px; color: #6B8F3C; text-transform: uppercase; letter-spacing: 0.5px; padding: 8px 0; border-bottom: 1px solid rgba(107,143,60,0.15); margin-bottom: 8px; }
+  .rel-row { display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: #FFFFFF; border-radius: 10px; margin-bottom: 4px; font-size: 13px; border: 1px solid rgba(139,115,85,0.06); }
+  .rel-row.inferred { background: rgba(196,154,60,0.04); border-left: 3px solid #C49A3C; }
+  .rel-arrow { color: #9B8E7E; font-size: 16px; }
+  .waveform-bar { display: flex; gap: 2px; align-items: center; height: 36px; padding: 8px 0; }
+  .waveform-bar span { display: inline-block; width: 3px; border-radius: 2px; background: #6B8F3C; opacity: 0.6; }
+  details summary { cursor: pointer; font-weight: 500; color: #6B5D4F; padding: 8px 0; }
+  details summary:hover { color: #3B2E1E; }
+  .audio-info { background: rgba(107,143,60,0.06); border-radius: 12px; padding: 12px 16px; margin-top: 8px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .audio-info .chip { background: rgba(107,143,60,0.12); }
+</style>
+</head>
+<body>
+<div class="page-header">
+  <div>
+    <h1>🌿 Matra — Real Audio Pipeline Test</h1>
+    <div class="subtitle">Voice notes → Whisper STT → AI Extraction → Family Tree</div>
+  </div>
+  <div>
+    <span class="badge badge-green">✓ 2 INTERVIEWS</span>
+    <span class="badge badge-amber">17 PEOPLE</span>
+  </div>
+</div>
+<div class="stats-bar">
+  <div class="stat-item"><div class="stat-num">17</div><div class="stat-label">People</div></div>
+  <div class="stat-item"><div class="stat-num">23</div><div class="stat-label">Direct Rels</div></div>
+  <div class="stat-item"><div class="stat-num">52</div><div class="stat-label">Inferred Rels</div></div>
+  <div class="stat-item"><div class="stat-num">5</div><div class="stat-label">Stories</div></div>
+  <div class="stat-item"><div class="stat-num">220s</div><div class="stat-label">Audio</div></div>
+  <div class="stat-item"><div class="stat-num">17.9s</div><div class="stat-label">Processing</div></div>
+</div>
+
+<div class="app-tabs">
+  <button class="app-tab active" onclick="showTab('tree')"><span class="tab-icon">🌳</span>Lineage</button>
+  <button class="app-tab" onclick="showTab('people')"><span class="tab-icon">👥</span>People</button>
+  <button class="app-tab" onclick="showTab('stories')"><span class="tab-icon">📖</span>Stories</button>
+  <button class="app-tab" onclick="showTab('interviews')"><span class="tab-icon">🎙️</span>Interviews</button>
+  <button class="app-tab" onclick="showTab('relationships')"><span class="tab-icon">🔗</span>Relationships</button>
+</div>
+
+<div class="tab-panel active" id="tab-tree">
+  <div class="legend">
+    <span><span class="legend-dot" style="border: 2px solid #C49A3C; background: #FFF;"></span> Self</span>
+    <span><span class="legend-dot" style="border: 2px solid #6B8F3C; background: #FFF;"></span> Family</span>
+    <span><span class="legend-line" style="background: #C49A3C;"></span> Spouse</span>
+    <span><span class="legend-line" style="background: rgba(107,143,60,0.6);"></span> Parent→Child</span>
+  </div>
+  <div class="tree-controls">
+    <button onclick="zoomTree(1.2)">🔍+ Zoom In</button>
+    <button onclick="zoomTree(0.8)">🔍− Zoom Out</button>
+    <button onclick="treeScale=1;applyTreeScale()">↺ Reset</button>
+  </div>
+  <div class="tree-container" id="tree-container">
+    <svg width="1020" height="800" xmlns="http://www.w3.org/2000/svg" style="background: #F7F2EA;"><defs>
+    <radialGradient id="nodeGlowG" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#6B8F3C" stop-opacity="0.15"/><stop offset="100%" stop-color="#6B8F3C" stop-opacity="0"/></radialGradient>
+    <radialGradient id="selfGlowG" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#C49A3C" stop-opacity="0.25"/><stop offset="100%" stop-color="#C49A3C" stop-opacity="0"/></radialGradient>
+  </defs>
+<path d="M 460 268 L 460 320 L 780 320 L 780 372" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 360 268 L 360 320 L 780 320 L 780 372" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 460 268 L 460 320 L 780 320 L 780 372" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 360 268 L 360 320 L 780 320 L 780 372" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 360 268 L 360 320 L 640 320 L 640 372" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 360 268 L 360 320 L 640 320 L 640 372" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 640 428 L 640 480 L 570 480 L 570 532" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 640 428 L 640 480 L 710 480 L 710 532" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 290 108 L 290 160 L 360 160 L 360 212" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 220 268 L 220 320 L 80 320 L 80 372" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 220 268 L 220 320 L 220 320 L 220 372" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 80 428 L 80 400 L 780 400 L 780 372" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 220 428 L 220 400 L 780 400 L 780 372" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<line x1="388" y1="240" x2="432" y2="240" stroke="#C4665A" stroke-width="1.5" stroke-dasharray="6 4" opacity="0.6"/>
+<path d="M 480 108 L 480 160 L 460 160 L 460 212" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 580 108 L 580 160 L 460 160 L 460 212" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<path d="M 720 108 L 720 160 L 460 160 L 460 212" stroke="rgba(107,143,60,0.6)" stroke-width="2"  fill="none"/>
+<line x1="628" y1="240" x2="672" y2="240" stroke="#C49A3C" stroke-width="2"/>
+<path d="M 460 268 L 460 320 L 360 320 L 360 372" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 360 268 L 360 320 L 360 320 L 360 372" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 460 268 L 460 320 L 500 320 L 500 372" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 360 268 L 360 320 L 500 320 L 500 372" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 290 108 L 290 160 L 220 160 L 220 212" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 480 108 L 480 160 L 600 160 L 600 212" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 580 108 L 580 160 L 600 160 L 600 212" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<line x1="388" y1="240" x2="432" y2="240" stroke="#C49A3C" stroke-width="2"/>
+<line x1="508" y1="80" x2="552" y2="80" stroke="#C49A3C" stroke-width="2"/>
+<path d="M 220 268 L 220 320 L 780 320 L 780 372" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 220 268 L 220 320 L 640 320 L 640 372" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 220 268 L 220 320 L 360 320 L 360 372" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 220 268 L 220 320 L 500 320 L 500 372" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 360 268 L 360 320 L 80 320 L 80 372" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 360 268 L 360 320 L 220 320 L 220 372" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 600 268 L 600 320 L 780 320 L 780 372" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 600 268 L 600 320 L 360 320 L 360 372" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 600 268 L 600 320 L 500 320 L 500 372" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 780 428 L 780 480 L 570 480 L 570 532" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 780 428 L 780 480 L 710 480 L 710 532" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 360 428 L 360 480 L 570 480 L 570 532" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 360 428 L 360 480 L 710 480 L 710 532" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 500 428 L 500 480 L 570 480 L 570 532" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 500 428 L 500 480 L 710 480 L 710 532" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 640 428 L 640 400 L 80 400 L 80 372" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 360 428 L 360 400 L 80 400 L 80 372" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 500 428 L 500 400 L 80 400 L 80 372" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 640 428 L 640 400 L 220 400 L 220 372" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 360 428 L 360 400 L 220 400 L 220 372" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<path d="M 500 428 L 500 400 L 220 400 L 220 372" stroke="rgba(107,143,60,0.18)" stroke-width="2" stroke-dasharray="4 4" fill="none"/>
+<line x1="388" y1="400" x2="752" y2="400" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" />
+<line x1="528" y1="400" x2="752" y2="400" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" />
+<line x1="248" y1="240" x2="332" y2="240" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" />
+<line x1="248" y1="240" x2="332" y2="240" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" />
+<line x1="488" y1="240" x2="572" y2="240" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" />
+<line x1="388" y1="400" x2="472" y2="400" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" />
+<line x1="668" y1="400" x2="752" y2="400" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" stroke-dasharray="6 3"/>
+<line x1="388" y1="400" x2="612" y2="400" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" stroke-dasharray="6 3"/>
+<line x1="528" y1="400" x2="612" y2="400" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" stroke-dasharray="6 3"/>
+<line x1="598" y1="560" x2="682" y2="560" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" />
+<line x1="108" y1="400" x2="192" y2="400" stroke="rgba(107,143,60,0.5)" stroke-width="1.5" />
+<circle cx="780" cy="400" r="56" fill="url(#selfGlowG)"/>
+<circle cx="780" cy="400" r="28" fill="#FFFFFF" stroke="#C49A3C" stroke-width="3"/>
+<text x="780" y="405" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">CB</text>
+<text x="780" y="444" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Carlos</text>
+<text x="780" y="457" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Bueso</text>
+<text x="780" y="470" text-anchor="middle" font-size="9" fill="#C49A3C" font-weight="600" font-family="Inter, system-ui">Me</text>
+<circle cx="460" cy="240" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="460" cy="240" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="460" y="245" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">CB</text>
+<text x="460" y="284" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Carlos José</text>
+<text x="460" y="297" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Bueso</text>
+<text x="460" y="310" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" font-family="Inter, system-ui">Parent</text>
+<circle cx="360" cy="240" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="360" cy="240" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="360" y="245" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">AM</text>
+<text x="360" y="284" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Alicia Rentería</text>
+<text x="360" y="297" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Montes de Oca</text>
+<text x="360" y="310" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" font-family="Inter, system-ui">Parent</text>
+<circle cx="360" cy="400" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="360" cy="400" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="360" y="405" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">MB</text>
+<text x="360" y="444" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Marco Andrés</text>
+<text x="360" y="457" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Bueso</text>
+<text x="360" y="470" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" font-family="Inter, system-ui">Sibling</text>
+<circle cx="500" cy="400" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="500" cy="400" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="500" y="405" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">BB</text>
+<text x="500" y="444" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Brisela Alessandra</text>
+<text x="500" y="457" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Bueso</text>
+<text x="500" y="470" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" font-family="Inter, system-ui">Sibling</text>
+<circle cx="640" cy="400" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="640" cy="400" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="640" y="405" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">CR</text>
+<text x="640" y="444" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Cristian</text>
+<text x="640" y="457" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Rentería</text>
+<text x="640" y="470" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" font-family="Inter, system-ui">Half Sib</text>
+<circle cx="570" cy="560" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="570" cy="560" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="570" y="565" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">MR</text>
+<text x="570" y="604" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Mateo</text>
+<text x="570" y="617" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Renter</text>
+<text x="570" y="630" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" font-family="Inter, system-ui">Nephew/Niece</text>
+<circle cx="710" cy="560" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="710" cy="560" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="710" y="565" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">AR</text>
+<text x="710" y="604" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Andr</text>
+<text x="710" y="617" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Renter</text>
+<text x="710" y="630" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" font-family="Inter, system-ui">Nephew/Niece</text>
+<circle cx="290" cy="80" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="290" cy="80" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2" opacity="0.6"/>
+<text x="290" y="85" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">AR</text>
+<text x="290" y="124" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Alicia</text>
+<text x="290" y="137" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Rentería</text>
+<text x="290" y="150" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" font-family="Inter, system-ui">Grandparent</text>
+<text x="314" y="62" text-anchor="middle" font-size="10" fill="#C4665A">✝</text>
+<circle cx="220" cy="240" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="220" cy="240" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="220" y="245" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">C</text>
+<text x="220" y="284" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Claudia</text>
+<text x="220" y="300" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" font-family="Inter, system-ui">Uncle/Aunt</text>
+<circle cx="80" cy="400" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="80" cy="400" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="80" y="405" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">OG</text>
+<text x="80" y="444" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Omar</text>
+<text x="80" y="457" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Gutiérrez</text>
+<text x="80" y="470" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" font-family="Inter, system-ui">Cousin</text>
+<circle cx="220" cy="400" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="220" cy="400" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="220" y="405" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">VG</text>
+<text x="220" y="444" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Valeria</text>
+<text x="220" y="457" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Gutiérrez</text>
+<text x="220" y="470" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" font-family="Inter, system-ui">Cousin</text>
+<circle cx="480" cy="80" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="480" cy="80" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="480" y="85" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">LM</text>
+<text x="480" y="124" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Lilian</text>
+<text x="480" y="137" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Mas</text>
+<text x="480" y="150" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" font-family="Inter, system-ui">Grandparent</text>
+<circle cx="580" cy="80" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="580" cy="80" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2" opacity="0.6"/>
+<text x="580" y="85" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">HB</text>
+<text x="580" y="124" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Héctor</text>
+<text x="580" y="137" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Bueso</text>
+<text x="580" y="150" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" font-family="Inter, system-ui">Grandparent</text>
+<text x="604" y="62" text-anchor="middle" font-size="10" fill="#C4665A">✝</text>
+<circle cx="720" cy="80" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="720" cy="80" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="720" y="85" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">JV</text>
+<text x="720" y="124" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">José</text>
+<text x="720" y="137" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Virriel</text>
+<text x="720" y="150" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" font-family="Inter, system-ui">Parent's Step Parent</text>
+<circle cx="600" cy="240" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="600" cy="240" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="600" y="245" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">HB</text>
+<text x="600" y="284" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Héctor</text>
+<text x="600" y="297" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Bueso</text>
+<text x="600" y="310" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" font-family="Inter, system-ui">Uncle/Aunt</text>
+<circle cx="700" cy="240" r="56" fill="url(#nodeGlowG)"/>
+<circle cx="700" cy="240" r="28" fill="#FFFFFF" stroke="#6B8F3C" stroke-width="2"/>
+<text x="700" y="245" text-anchor="middle" font-size="14" font-weight="bold" fill="#3B2E1E" font-family="Inter, system-ui">OO</text>
+<text x="700" y="284" text-anchor="middle" font-size="12" font-weight="600" fill="#3B2E1E" font-family="Inter, system-ui">Omaira</text>
+<text x="700" y="297" text-anchor="middle" font-size="10" fill="#6B5D4F" font-family="Inter, system-ui">Ortega</text>
+<text x="700" y="310" text-anchor="middle" font-size="9" fill="#6B8F3C" font-weight="600" font-family="Inter, system-ui">Uncle/Aunt's Spouse</text>
+</svg>
+  </div>
+</div>
+
+<div class="tab-panel" id="tab-people">
+  <div class="people-grid">
+    <div class="person-card">
+        <div class="person-avatar self">CB</div>
+        <div class="person-info">
+          <div class="person-name">Carlos Bueso</div>
+          <div class="person-role self-role">Me</div>
+          <div class="person-chips"><span class="chip">🎂 1999-10-22</span><span class="chip">📍 Ciudad de México</span><span class="chip">👤 male</span></div>
+        </div>
+      </div><div class="person-card">
+        <div class="person-avatar">CB</div>
+        <div class="person-info">
+          <div class="person-name">Carlos José Bueso</div>
+          <div class="person-role">Parent</div>
+          <div class="person-chips"><span class="chip">📍 Puerto Rico</span><span class="chip">👤 male</span></div>
+        </div>
+      </div><div class="person-card">
+        <div class="person-avatar">AM</div>
+        <div class="person-info">
+          <div class="person-name">Alicia Rentería Montes de Oca</div>
+          <div class="person-role">Parent</div>
+          <div class="person-chips"><span class="chip">👤 female</span></div>
+        </div>
+      </div><div class="person-card">
+        <div class="person-avatar">MB</div>
+        <div class="person-info">
+          <div class="person-name">Marco Andrés Bueso</div>
+          <div class="person-role">Sibling</div>
+          <div class="person-chips"><span class="chip">👤 male</span></div>
+        </div>
+      </div><div class="person-card">
+        <div class="person-avatar">BB</div>
+        <div class="person-info">
+          <div class="person-name">Brisela Alessandra Bueso</div>
+          <div class="person-role">Sibling</div>
+          <div class="person-chips"><span class="chip">👤 female</span></div>
+        </div>
+      </div><div class="person-card">
+        <div class="person-avatar">CR</div>
+        <div class="person-info">
+          <div class="person-name">Cristian Rentería</div>
+          <div class="person-role">Half Sib</div>
+          <div class="person-chips"><span class="chip">🎂 1985</span><span class="chip">👤 male</span></div>
+        </div>
+      </div><div class="person-card">
+        <div class="person-avatar">MR</div>
+        <div class="person-info">
+          <div class="person-name">Mateo Renter</div>
+          <div class="person-role">Nephew/Niece</div>
+          <div class="person-chips"><span class="chip">👤 male</span></div>
+        </div>
+      </div><div class="person-card">
+        <div class="person-avatar">AR</div>
+        <div class="person-info">
+          <div class="person-name">Andr Renter</div>
+          <div class="person-role">Nephew/Niece</div>
+          <div class="person-chips"><span class="chip">👤 male</span></div>
+        </div>
+      </div><div class="person-card deceased">
+        <div class="person-avatar">AR</div>
+        <div class="person-info">
+          <div class="person-name">Alicia Rentería</div>
+          <div class="person-role">Grandparent</div>
+          <div class="person-chips"><span class="chip">👤 female</span></div>
+        </div>
+      </div><div class="person-card">
+        <div class="person-avatar">C</div>
+        <div class="person-info">
+          <div class="person-name">Claudia</div>
+          <div class="person-role">Uncle/Aunt</div>
+          <div class="person-chips"><span class="chip">👤 female</span></div>
+        </div>
+      </div><div class="person-card">
+        <div class="person-avatar">OG</div>
+        <div class="person-info">
+          <div class="person-name">Omar Gutiérrez</div>
+          <div class="person-role">Cousin</div>
+          <div class="person-chips"><span class="chip">👤 male</span></div>
+        </div>
+      </div><div class="person-card">
+        <div class="person-avatar">VG</div>
+        <div class="person-info">
+          <div class="person-name">Valeria Gutiérrez</div>
+          <div class="person-role">Cousin</div>
+          <div class="person-chips"><span class="chip">👤 female</span></div>
+        </div>
+      </div><div class="person-card">
+        <div class="person-avatar">LM</div>
+        <div class="person-info">
+          <div class="person-name">Lilian Mas</div>
+          <div class="person-role">Grandparent</div>
+          <div class="person-chips"><span class="chip">👤 female</span></div>
+        </div>
+      </div><div class="person-card deceased">
+        <div class="person-avatar">HB</div>
+        <div class="person-info">
+          <div class="person-name">Héctor Bueso</div>
+          <div class="person-role">Grandparent</div>
+          <div class="person-chips"><span class="chip">👤 male</span></div>
+        </div>
+      </div><div class="person-card">
+        <div class="person-avatar">JV</div>
+        <div class="person-info">
+          <div class="person-name">José Virriel</div>
+          <div class="person-role">Parent's Step Parent</div>
+          <div class="person-chips"><span class="chip">👤 male</span></div>
+        </div>
+      </div><div class="person-card">
+        <div class="person-avatar">HB</div>
+        <div class="person-info">
+          <div class="person-name">Héctor Bueso <span style="color:#9B8E7E;font-weight:400;font-size:13px">— "(hermano)"</span></div>
+          <div class="person-role">Uncle/Aunt</div>
+          <div class="person-chips"><span class="chip">👤 male</span></div>
+        </div>
+      </div><div class="person-card">
+        <div class="person-avatar">OO</div>
+        <div class="person-info">
+          <div class="person-name">Omaira Ortega</div>
+          <div class="person-role">Uncle/Aunt's Spouse</div>
+          <div class="person-chips"><span class="chip">👤 female</span></div>
+        </div>
+      </div>
+  </div>
+</div>
+
+<div class="tab-panel" id="tab-stories">
+  <div class="stories-list">
+    <div class="story-card">
+      <div class="story-badge">✨ AI-crafted</div>
+      <div class="story-title">La Llegada de mi Papá a la Ciudad de México</div>
+      <div class="story-meta">
+        <span class="chip">👤 Carlos José Bueso</span><span class="chip">👤 Alicia Rentería Montes de Oca</span>
+        <span class="chip">📍 Ciudad de México</span>
+        <span class="chip">📖 Interview 1 — Carlos (voice note)</span>
+      </div>
+      <div class="story-content">Mi papá, Carlos José Bueso, nació en Puerto Rico y se fue a estudiar a la universidad en Boston, Massachusetts. Después de eso, consiguió un trabajo que lo expatrió a la Ciudad de México, donde conoció a mi mamá. Fue allí donde comenzó nuestra historia como familia.</div>
+    </div><div class="story-card">
+      <div class="story-badge">✨ AI-crafted</div>
+      <div class="story-title">Recuerdos de Abuelita Mimi</div>
+      <div class="story-meta">
+        <span class="chip">👤 Alicia Rentería</span><span class="chip">👤 Carlos Adrián Bueso</span>
+        
+        <span class="chip">📖 Interview 1 — Carlos (voice note)</span>
+      </div>
+      <div class="story-content">Mi abuela materna, Alicia Rentería, fue una mujer muy especial. La queremos mucho y la recordamos con cariño. Ella siempre estuvo allí para nosotros, ofreciéndonos amor y apoyo. Aunque ya no está con nosotros, su legado vive en nuestros corazones.</div>
+    </div><div class="story-card">
+      <div class="story-badge">✨ AI-crafted</div>
+      <div class="story-title">El Estudio Creativo Alquimia Studio</div>
+      <div class="story-meta">
+        <span class="chip">👤 Carlos Adrián Bueso</span>
+        
+        <span class="chip">📖 Interview 1 — Carlos (voice note)</span>
+      </div>
+      <div class="story-content">Me dedico a la programación y tengo un estudio creativo llamado Alquimia Studio. Allí desarrollamos páginas web y aplicaciones, y siempre buscamos innovar y mejorar. Es un lugar donde puedo expresar mi creatividad y trabajar en proyectos que me apasionan.</div>
+    </div><div class="story-card">
+      <div class="story-badge">✨ AI-crafted</div>
+      <div class="story-title">La Infancia en la Isla del Encanto</div>
+      <div class="story-meta">
+        <span class="chip">👤 Carlos José Bueso</span><span class="chip">👤 Lilian Mas</span><span class="chip">👤 Héctor Bueso</span><span class="chip">👤 José Virriel</span>
+        <span class="chip">📍 Puerto Rico</span>
+        <span class="chip">📖 Interview 2 — Papá Carlos José (voice note)</span>
+      </div>
+      <div class="story-content">Carlos José Bueso recuerda su infancia en Puerto Rico, rodeado de amor y naturaleza. Describe las exploraciones en la isla y los momentos especiales con su familia. La pérdida de su padre biológico a temprana edad dejó una huella profunda en su vida, pero también le enseñó a valorar cada momento con sus seres queridos.</div>
+    </div><div class="story-card">
+      <div class="story-badge">✨ AI-crafted</div>
+      <div class="story-title">El Legado de la Familia Bueso</div>
+      <div class="story-meta">
+        <span class="chip">👤 Carlos José Bueso</span><span class="chip">👤 Alicia Rentería</span><span class="chip">👤 Carlos</span><span class="chip">👤 Marco</span><span class="chip">👤 Bricel</span>
+        
+        <span class="chip">📖 Interview 2 — Papá Carlos José (voice note)</span>
+      </div>
+      <div class="story-content">Carlos José Bueso reflexiona sobre el legado de su familia y cómo ha influido en su vida y las vidas de sus hijos. Habla de la importancia de mantener vivas las tradiciones y los valores familiares, y cómo estos han sido transmitidos de generación en generación.</div>
+    </div>
+  </div>
+</div>
+
+<div class="tab-panel" id="tab-interviews">
+  <div class="interviews-list">
+    <div class="interview-card">
+      <div class="interview-header">
+        <div class="interview-icon">🎙️</div>
+        <div>
+          <div class="interview-title">Interview 1 — Carlos (voice note)</div>
+          <div class="interview-stats">
+            ⏱️ 11.3s · 🎵 charlie-1.m4a · 152.9s audio · 🌐 SPANISH
+          </div>
+        </div>
+      </div>
+      <div class="audio-info">
+        <span class="chip">📁 charlie-1.m4a</span>
+        <span class="chip">⏱️ 152.9s</span>
+        <span class="chip">🌐 Detected: Spanish</span>
+        <span class="chip">👥 12 people</span>
+        <span class="chip">🔗 17 direct + 40 inferred</span>
+        <span class="chip">📖 3 stories</span>
+      </div>
+      <details open>
+        <summary>📝 Transcript (Whisper STT)</summary>
+        <div class="interview-transcript"> Hola, mi nombre es Carlos Adrián Bueso. Nací el octubre 22 de 1999 en la Ciudad de México. Mis papás se llaman Carlos José Bueso y mi mamá se llama Alicia Rentería Montes de Oca. Mi papá nació en Puerto Rico y se fue a estudiar la universidad a Boston, en Massachusetts. Y después de eso consiguió un trabajo que lo expatrió a la Ciudad de México, donde conoció a mi mamá. Una vez que mi mamá y él se conocieron, se casaron y tuvieron tres hijos, que soy yo, mi hermano grande Marco Andrés Bueso y mi hermana pequeña Brisela Alessandra Bueso. También tengo un medio hermano de parte de mi mamá que se llama Cristian Rentería. Él nació en 1985 y él ya tiene dos hijos. Uno de sus hijos se llama Mateo Renter y su otro hijo se llama Andr Renter Mi familia es bastante grande y la verdad es que somos muy unidos Yo soy desarrollador de software y me dedico a programar. Tengo una empresa con mis amigos, un estudio creativo que se llama Alquimia Studio y yo soy programador ahí. principalmente hago páginas web, aplicaciones como esta misma en la que estamos trabajando el cual construye una gráfica de tu árbol familiar con inteligencia artificial y bueno, entre muchas otras cosas mi abuela materna se llama igual que mi mamá, Alicia Rentería y ella ya falleció, pero la queremos mucho. De hecho, el apodo que le tenemos a ella es Abuelita Mimi y también tengo una tía de parte de mi mamá. Ella se llama Claudia y ella es hermana de mi mamá mamá y Claudia tiene dos hijos que son Omar Gutiérrez y Valeria Gutiérrez que son mis primos</div>
+      </details>
+      <details>
+        <summary>🔍 Extracted Relationships (18)</summary>
+        <table class="extraction-table">
+          <tr><th>Person A</th><th>→</th><th>Person B</th><th>Type</th><th>Conf</th></tr>
+          <tr><td>Carlos Adrián Bueso</td><td style="color:#9B8E7E">→</td><td>Carlos José Bueso</td><td><code>child</code></td><td>90%</td></tr><tr><td>Carlos Adrián Bueso</td><td style="color:#9B8E7E">→</td><td>Alicia Rentería Montes de Oca</td><td><code>child</code></td><td>90%</td></tr><tr><td>Carlos José Bueso</td><td style="color:#9B8E7E">→</td><td>Carlos Adrián Bueso</td><td><code>parent</code></td><td>90%</td></tr><tr><td>Alicia Rentería Montes de Oca</td><td style="color:#9B8E7E">→</td><td>Carlos Adrián Bueso</td><td><code>parent</code></td><td>90%</td></tr><tr><td>Carlos Adrián Bueso</td><td style="color:#9B8E7E">→</td><td>Marco Andrés Bueso</td><td><code>sibling</code></td><td>90%</td></tr><tr><td>Carlos Adrián Bueso</td><td style="color:#9B8E7E">→</td><td>Brisela Alessandra Bueso</td><td><code>sibling</code></td><td>90%</td></tr><tr><td>Alicia Rentería Montes de Oca</td><td style="color:#9B8E7E">→</td><td>Cristian Rentería</td><td><code>parent</code></td><td>90%</td></tr><tr><td>Cristian Rentería</td><td style="color:#9B8E7E">→</td><td>Alicia Rentería Montes de Oca</td><td><code>child</code></td><td>90%</td></tr><tr><td>Cristian Rentería</td><td style="color:#9B8E7E">→</td><td>Mateo Renter</td><td><code>parent</code></td><td>90%</td></tr><tr><td>Cristian Rentería</td><td style="color:#9B8E7E">→</td><td>Andr Renter</td><td><code>parent</code></td><td>90%</td></tr><tr><td>Alicia Rentería</td><td style="color:#9B8E7E">→</td><td>Alicia Rentería Montes de Oca</td><td><code>parent</code></td><td>90%</td></tr><tr><td>Alicia Rentería Montes de Oca</td><td style="color:#9B8E7E">→</td><td>Alicia Rentería</td><td><code>child</code></td><td>90%</td></tr><tr><td>Claudia</td><td style="color:#9B8E7E">→</td><td>Alicia Rentería Montes de Oca</td><td><code>sibling</code></td><td>90%</td></tr><tr><td>Alicia Rentería Montes de Oca</td><td style="color:#9B8E7E">→</td><td>Claudia</td><td><code>sibling</code></td><td>90%</td></tr><tr><td>Claudia</td><td style="color:#9B8E7E">→</td><td>Omar Gutiérrez</td><td><code>parent</code></td><td>90%</td></tr><tr><td>Claudia</td><td style="color:#9B8E7E">→</td><td>Valeria Gutiérrez</td><td><code>parent</code></td><td>90%</td></tr><tr><td>Carlos Adrián Bueso</td><td style="color:#9B8E7E">→</td><td>Omar Gutiérrez</td><td><code>cousin</code></td><td>90%</td></tr><tr><td>Carlos Adrián Bueso</td><td style="color:#9B8E7E">→</td><td>Valeria Gutiérrez</td><td><code>cousin</code></td><td>90%</td></tr>
+        </table>
+      </details>
+      <details>
+        <summary>👥 Extracted People (12)</summary>
+        <table class="extraction-table">
+          <tr><th>Name</th><th>Birth</th><th>Place</th><th>Profession</th><th>Gender</th></tr>
+          <tr><td>Carlos Adrián Bueso</td><td>1999-10-22</td><td>Ciudad de México</td><td></td><td>male</td></tr><tr><td>Carlos José Bueso</td><td></td><td>Puerto Rico</td><td></td><td>male</td></tr><tr><td>Alicia Rentería Montes de Oca</td><td></td><td></td><td></td><td>female</td></tr><tr><td>Marco Andrés Bueso</td><td></td><td></td><td></td><td>male</td></tr><tr><td>Brisela Alessandra Bueso</td><td></td><td></td><td></td><td>female</td></tr><tr><td>Cristian Rentería</td><td>1985</td><td></td><td></td><td>male</td></tr><tr><td>Mateo Renter</td><td></td><td></td><td></td><td>male</td></tr><tr><td>Andr Renter</td><td></td><td></td><td></td><td>male</td></tr><tr><td>Alicia Rentería</td><td></td><td></td><td></td><td>female</td></tr><tr><td>Claudia</td><td></td><td></td><td></td><td>female</td></tr><tr><td>Omar Gutiérrez</td><td></td><td></td><td></td><td>male</td></tr><tr><td>Valeria Gutiérrez</td><td></td><td></td><td></td><td>female</td></tr>
+        </table>
+      </details>
+    </div><div class="interview-card">
+      <div class="interview-header">
+        <div class="interview-icon">🎙️</div>
+        <div>
+          <div class="interview-title">Interview 2 — Papá Carlos José (voice note)</div>
+          <div class="interview-stats">
+            ⏱️ 6.6s · 🎵 papa-2.m4a · 67.5s audio · 🌐 SPANISH
+          </div>
+        </div>
+      </div>
+      <div class="audio-info">
+        <span class="chip">📁 papa-2.m4a</span>
+        <span class="chip">⏱️ 67.5s</span>
+        <span class="chip">🌐 Detected: Spanish</span>
+        <span class="chip">👥 10 people</span>
+        <span class="chip">🔗 9 direct + 52 inferred</span>
+        <span class="chip">📖 2 stories</span>
+      </div>
+      <details open>
+        <summary>📝 Transcript (Whisper STT)</summary>
+        <div class="interview-transcript"> Hola, me llamo Carlos José Bueso y nací en Puerto Rico el 16 de marzo de 1968. Yo tengo tres hijos con mi ex esposa Alicia Rentería. Mis hijos son Carlos, Marco y Bricel. Yo tengo mis papás en Puerto Rico Mi mamá se llama Lilian Mas Y mi papá biológico se llama Héctor Bueso Mi papá biológico Héctor falleció cuando yo tenía seis meses de edad En una exploración de cuevas en Puerto Rico Y mi abuela después se casó con mi padrastro que se llama José Virriel. También tengo un hermano que se llama Héctor Bueso y mi hermano está casado con su esposa que se llama Omaira Ortega.</div>
+      </details>
+      <details>
+        <summary>🔍 Extracted Relationships (9)</summary>
+        <table class="extraction-table">
+          <tr><th>Person A</th><th>→</th><th>Person B</th><th>Type</th><th>Conf</th></tr>
+          <tr><td>Alicia Rentería</td><td style="color:#9B8E7E">→</td><td>Carlos José Bueso</td><td><code>ex_spouse</code></td><td>90%</td></tr><tr><td>Carlos José Bueso</td><td style="color:#9B8E7E">→</td><td>Carlos</td><td><code>parent</code></td><td>90%</td></tr><tr><td>Carlos José Bueso</td><td style="color:#9B8E7E">→</td><td>Marco</td><td><code>parent</code></td><td>90%</td></tr><tr><td>Carlos José Bueso</td><td style="color:#9B8E7E">→</td><td>Bricel</td><td><code>parent</code></td><td>90%</td></tr><tr><td>Lilian Mas</td><td style="color:#9B8E7E">→</td><td>Carlos José Bueso</td><td><code>parent</code></td><td>90%</td></tr><tr><td>Héctor Bueso</td><td style="color:#9B8E7E">→</td><td>Carlos José Bueso</td><td><code>parent</code></td><td>90%</td></tr><tr><td>José Virriel</td><td style="color:#9B8E7E">→</td><td>Carlos José Bueso</td><td><code>step_parent</code></td><td>90%</td></tr><tr><td>Héctor Bueso</td><td style="color:#9B8E7E">→</td><td>Carlos José Bueso</td><td><code>sibling</code></td><td>90%</td></tr><tr><td>Héctor Bueso</td><td style="color:#9B8E7E">→</td><td>Omaira Ortega</td><td><code>spouse</code></td><td>90%</td></tr>
+        </table>
+      </details>
+      <details>
+        <summary>👥 Extracted People (10)</summary>
+        <table class="extraction-table">
+          <tr><th>Name</th><th>Birth</th><th>Place</th><th>Profession</th><th>Gender</th></tr>
+          <tr><td>Carlos José Bueso</td><td>1968-03-16</td><td>Puerto Rico</td><td></td><td>male</td></tr><tr><td>Alicia Rentería</td><td></td><td></td><td></td><td>female</td></tr><tr><td>Carlos Bueso</td><td></td><td></td><td></td><td>male</td></tr><tr><td>Marco Bueso</td><td></td><td></td><td></td><td>male</td></tr><tr><td>Bricel Bueso</td><td></td><td></td><td></td><td>female</td></tr><tr><td>Lilian Mas</td><td></td><td></td><td></td><td>female</td></tr><tr><td>Héctor Bueso</td><td></td><td></td><td></td><td>male</td></tr><tr><td>José Virriel</td><td></td><td></td><td></td><td>male</td></tr><tr><td>Héctor Bueso</td><td></td><td></td><td></td><td>male</td></tr><tr><td>Omaira Ortega</td><td></td><td></td><td></td><td>female</td></tr>
+        </table>
+      </details>
+    </div>
+  </div>
+</div>
+
+<div class="tab-panel" id="tab-relationships">
+  <div class="rels-container">
+    <div class="rel-group">
+        <div class="rel-group-header">child (3)</div>
+        <div class="rel-row">
+            <span>Carlos Bueso</span>
+            <span class="rel-arrow">→</span>
+            <span>Carlos José Bueso</span>
+            <span class="chip" style="margin-left:auto">90%</span>
+          </div><div class="rel-row">
+            <span>Carlos Bueso</span>
+            <span class="rel-arrow">→</span>
+            <span>Alicia Rentería Montes de Oca</span>
+            <span class="chip" style="margin-left:auto">90%</span>
+          </div><div class="rel-row">
+            <span>Cristian Rentería</span>
+            <span class="rel-arrow">→</span>
+            <span>Alicia Rentería Montes de Oca</span>
+            <span class="chip" style="margin-left:auto">90%</span>
+          </div>
+      </div><div class="rel-group">
+        <div class="rel-group-header">cousin (8)</div>
+        <div class="rel-row">
+            <span>Carlos Bueso</span>
+            <span class="rel-arrow">→</span>
+            <span>Omar Gutiérrez</span>
+            <span class="chip" style="margin-left:auto">90%</span>
+          </div><div class="rel-row">
+            <span>Carlos Bueso</span>
+            <span class="rel-arrow">→</span>
+            <span>Valeria Gutiérrez</span>
+            <span class="chip" style="margin-left:auto">90%</span>
+          </div><div class="rel-row inferred">
+            <span>Omar Gutiérrez</span>
+            <span class="rel-arrow">→</span>
+            <span>Cristian Rentería</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Omar Gutiérrez</span>
+            <span class="rel-arrow">→</span>
+            <span>Marco Andrés Bueso</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Omar Gutiérrez</span>
+            <span class="rel-arrow">→</span>
+            <span>Brisela Alessandra Bueso</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Valeria Gutiérrez</span>
+            <span class="rel-arrow">→</span>
+            <span>Cristian Rentería</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Valeria Gutiérrez</span>
+            <span class="rel-arrow">→</span>
+            <span>Marco Andrés Bueso</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Valeria Gutiérrez</span>
+            <span class="rel-arrow">→</span>
+            <span>Brisela Alessandra Bueso</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div>
+      </div><div class="rel-group">
+        <div class="rel-group-header">ex_spouse (1)</div>
+        <div class="rel-row">
+            <span>Alicia Rentería Montes de Oca</span>
+            <span class="rel-arrow">→</span>
+            <span>Carlos José Bueso</span>
+            <span class="chip" style="margin-left:auto">90%</span>
+          </div>
+      </div><div class="rel-group">
+        <div class="rel-group-header">grandparent (14)</div>
+        <div class="rel-row inferred">
+            <span>Alicia Rentería Montes de Oca</span>
+            <span class="rel-arrow">→</span>
+            <span>Mateo Renter</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Alicia Rentería Montes de Oca</span>
+            <span class="rel-arrow">→</span>
+            <span>Andr Renter</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Alicia Rentería</span>
+            <span class="rel-arrow">→</span>
+            <span>Carlos Bueso</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Alicia Rentería</span>
+            <span class="rel-arrow">→</span>
+            <span>Cristian Rentería</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Alicia Rentería</span>
+            <span class="rel-arrow">→</span>
+            <span>Marco Andrés Bueso</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Alicia Rentería</span>
+            <span class="rel-arrow">→</span>
+            <span>Brisela Alessandra Bueso</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Alicia Rentería</span>
+            <span class="rel-arrow">→</span>
+            <span>Omar Gutiérrez</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Alicia Rentería</span>
+            <span class="rel-arrow">→</span>
+            <span>Valeria Gutiérrez</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Lilian Mas</span>
+            <span class="rel-arrow">→</span>
+            <span>Carlos Bueso</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Lilian Mas</span>
+            <span class="rel-arrow">→</span>
+            <span>Marco Andrés Bueso</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Lilian Mas</span>
+            <span class="rel-arrow">→</span>
+            <span>Brisela Alessandra Bueso</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Héctor Bueso</span>
+            <span class="rel-arrow">→</span>
+            <span>Carlos Bueso</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Héctor Bueso</span>
+            <span class="rel-arrow">→</span>
+            <span>Marco Andrés Bueso</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Héctor Bueso</span>
+            <span class="rel-arrow">→</span>
+            <span>Brisela Alessandra Bueso</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div>
+      </div><div class="rel-group">
+        <div class="rel-group-header">great_grandparent (2)</div>
+        <div class="rel-row inferred">
+            <span>Alicia Rentería</span>
+            <span class="rel-arrow">→</span>
+            <span>Mateo Renter</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Alicia Rentería</span>
+            <span class="rel-arrow">→</span>
+            <span>Andr Renter</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div>
+      </div><div class="rel-group">
+        <div class="rel-group-header">half_sibling (3)</div>
+        <div class="rel-row inferred">
+            <span>Carlos Bueso</span>
+            <span class="rel-arrow">→</span>
+            <span>Cristian Rentería</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Cristian Rentería</span>
+            <span class="rel-arrow">→</span>
+            <span>Marco Andrés Bueso</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Cristian Rentería</span>
+            <span class="rel-arrow">→</span>
+            <span>Brisela Alessandra Bueso</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div>
+      </div><div class="rel-group">
+        <div class="rel-group-header">parent (17)</div>
+        <div class="rel-row">
+            <span>Carlos José Bueso</span>
+            <span class="rel-arrow">→</span>
+            <span>Carlos Bueso</span>
+            <span class="chip" style="margin-left:auto">90%</span>
+          </div><div class="rel-row">
+            <span>Alicia Rentería Montes de Oca</span>
+            <span class="rel-arrow">→</span>
+            <span>Carlos Bueso</span>
+            <span class="chip" style="margin-left:auto">90%</span>
+          </div><div class="rel-row">
+            <span>Alicia Rentería Montes de Oca</span>
+            <span class="rel-arrow">→</span>
+            <span>Cristian Rentería</span>
+            <span class="chip" style="margin-left:auto">90%</span>
+          </div><div class="rel-row">
+            <span>Cristian Rentería</span>
+            <span class="rel-arrow">→</span>
+            <span>Mateo Renter</span>
+            <span class="chip" style="margin-left:auto">90%</span>
+          </div><div class="rel-row">
+            <span>Cristian Rentería</span>
+            <span class="rel-arrow">→</span>
+            <span>Andr Renter</span>
+            <span class="chip" style="margin-left:auto">90%</span>
+          </div><div class="rel-row">
+            <span>Alicia Rentería</span>
+            <span class="rel-arrow">→</span>
+            <span>Alicia Rentería Montes de Oca</span>
+            <span class="chip" style="margin-left:auto">90%</span>
+          </div><div class="rel-row">
+            <span>Claudia</span>
+            <span class="rel-arrow">→</span>
+            <span>Omar Gutiérrez</span>
+            <span class="chip" style="margin-left:auto">90%</span>
+          </div><div class="rel-row">
+            <span>Claudia</span>
+            <span class="rel-arrow">→</span>
+            <span>Valeria Gutiérrez</span>
+            <span class="chip" style="margin-left:auto">90%</span>
+          </div><div class="rel-row">
+            <span>Lilian Mas</span>
+            <span class="rel-arrow">→</span>
+            <span>Carlos José Bueso</span>
+            <span class="chip" style="margin-left:auto">90%</span>
+          </div><div class="rel-row">
+            <span>Héctor Bueso</span>
+            <span class="rel-arrow">→</span>
+            <span>Carlos José Bueso</span>
+            <span class="chip" style="margin-left:auto">90%</span>
+          </div><div class="rel-row inferred">
+            <span>Carlos José Bueso</span>
+            <span class="rel-arrow">→</span>
+            <span>Marco Andrés Bueso</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Alicia Rentería Montes de Oca</span>
+            <span class="rel-arrow">→</span>
+            <span>Marco Andrés Bueso</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Carlos José Bueso</span>
+            <span class="rel-arrow">→</span>
+            <span>Brisela Alessandra Bueso</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Alicia Rentería Montes de Oca</span>
+            <span class="rel-arrow">→</span>
+            <span>Brisela Alessandra Bueso</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Alicia Rentería</span>
+            <span class="rel-arrow">→</span>
+            <span>Claudia</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Lilian Mas</span>
+            <span class="rel-arrow">→</span>
+            <span>Héctor Bueso</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Héctor Bueso</span>
+            <span class="rel-arrow">→</span>
+            <span>Héctor Bueso</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div>
+      </div><div class="rel-group">
+        <div class="rel-group-header">sibling (8)</div>
+        <div class="rel-row">
+            <span>Carlos Bueso</span>
+            <span class="rel-arrow">→</span>
+            <span>Marco Andrés Bueso</span>
+            <span class="chip" style="margin-left:auto">90%</span>
+          </div><div class="rel-row">
+            <span>Carlos Bueso</span>
+            <span class="rel-arrow">→</span>
+            <span>Brisela Alessandra Bueso</span>
+            <span class="chip" style="margin-left:auto">90%</span>
+          </div><div class="rel-row">
+            <span>Claudia</span>
+            <span class="rel-arrow">→</span>
+            <span>Alicia Rentería Montes de Oca</span>
+            <span class="chip" style="margin-left:auto">90%</span>
+          </div><div class="rel-row">
+            <span>Alicia Rentería Montes de Oca</span>
+            <span class="rel-arrow">→</span>
+            <span>Claudia</span>
+            <span class="chip" style="margin-left:auto">90%</span>
+          </div><div class="rel-row">
+            <span>Héctor Bueso</span>
+            <span class="rel-arrow">→</span>
+            <span>Carlos José Bueso</span>
+            <span class="chip" style="margin-left:auto">90%</span>
+          </div><div class="rel-row inferred">
+            <span>Marco Andrés Bueso</span>
+            <span class="rel-arrow">→</span>
+            <span>Brisela Alessandra Bueso</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Mateo Renter</span>
+            <span class="rel-arrow">→</span>
+            <span>Andr Renter</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Omar Gutiérrez</span>
+            <span class="rel-arrow">→</span>
+            <span>Valeria Gutiérrez</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div>
+      </div><div class="rel-group">
+        <div class="rel-group-header">spouse (3)</div>
+        <div class="rel-row">
+            <span>Héctor Bueso</span>
+            <span class="rel-arrow">→</span>
+            <span>Omaira Ortega</span>
+            <span class="chip" style="margin-left:auto">90%</span>
+          </div><div class="rel-row inferred">
+            <span>Carlos José Bueso</span>
+            <span class="rel-arrow">→</span>
+            <span>Alicia Rentería Montes de Oca</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Lilian Mas</span>
+            <span class="rel-arrow">→</span>
+            <span>Héctor Bueso</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div>
+      </div><div class="rel-group">
+        <div class="rel-group-header">step_parent (1)</div>
+        <div class="rel-row">
+            <span>José Virriel</span>
+            <span class="rel-arrow">→</span>
+            <span>Carlos José Bueso</span>
+            <span class="chip" style="margin-left:auto">90%</span>
+          </div>
+      </div><div class="rel-group">
+        <div class="rel-group-header">uncle_aunt (15)</div>
+        <div class="rel-row inferred">
+            <span>Claudia</span>
+            <span class="rel-arrow">→</span>
+            <span>Carlos Bueso</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Claudia</span>
+            <span class="rel-arrow">→</span>
+            <span>Cristian Rentería</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Claudia</span>
+            <span class="rel-arrow">→</span>
+            <span>Marco Andrés Bueso</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Claudia</span>
+            <span class="rel-arrow">→</span>
+            <span>Brisela Alessandra Bueso</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Alicia Rentería Montes de Oca</span>
+            <span class="rel-arrow">→</span>
+            <span>Omar Gutiérrez</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Alicia Rentería Montes de Oca</span>
+            <span class="rel-arrow">→</span>
+            <span>Valeria Gutiérrez</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Héctor Bueso</span>
+            <span class="rel-arrow">→</span>
+            <span>Carlos Bueso</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Héctor Bueso</span>
+            <span class="rel-arrow">→</span>
+            <span>Marco Andrés Bueso</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Héctor Bueso</span>
+            <span class="rel-arrow">→</span>
+            <span>Brisela Alessandra Bueso</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Carlos Bueso</span>
+            <span class="rel-arrow">→</span>
+            <span>Mateo Renter</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Carlos Bueso</span>
+            <span class="rel-arrow">→</span>
+            <span>Andr Renter</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Marco Andrés Bueso</span>
+            <span class="rel-arrow">→</span>
+            <span>Mateo Renter</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Marco Andrés Bueso</span>
+            <span class="rel-arrow">→</span>
+            <span>Andr Renter</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Brisela Alessandra Bueso</span>
+            <span class="rel-arrow">→</span>
+            <span>Mateo Renter</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div><div class="rel-row inferred">
+            <span>Brisela Alessandra Bueso</span>
+            <span class="rel-arrow">→</span>
+            <span>Andr Renter</span>
+            <span class="chip" style="margin-left:auto">85% · inferred</span>
+          </div>
+      </div>
+  </div>
+</div>
+
+<script>
+  let treeScale = 1;
+  function showTab(name) {
+    document.querySelectorAll('.app-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    const tabs = ['tree', 'people', 'stories', 'interviews', 'relationships'];
+    document.querySelectorAll('.app-tab')[tabs.indexOf(name)].classList.add('active');
+  }
+  function zoomTree(f) { treeScale = Math.min(Math.max(treeScale * f, 0.2), 4); applyTreeScale(); }
+  function applyTreeScale() { const svg = document.querySelector('#tree-container svg'); if (svg) { svg.style.transform = 'scale(' + treeScale + ')'; svg.style.transformOrigin = '0 0'; } }
+  document.querySelector('#tree-container')?.addEventListener('wheel', e => { e.preventDefault(); zoomTree(e.deltaY > 0 ? 0.9 : 1.1); }, { passive: false });
+</script>
+</body></html>

@@ -9,3 +9,4 @@ export { TreeTrunk } from './TreeTrunk';
 export { MountainScape } from './MountainScape';
 export { FlyingBirds } from './FlyingBirds';
 export { CornerBush } from './CornerBush';
+export { AvatarViewer } from './AvatarViewer';
