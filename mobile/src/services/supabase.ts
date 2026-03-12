@@ -109,10 +109,16 @@ export async function invokeFunction<T = unknown>(
     }
   );
 
-  const result = await response.json();
+  let result: any;
+  try {
+    result = await response.json();
+  } catch {
+    throw new Error(`${name}: HTTP ${response.status} (non-JSON response)`);
+  }
 
   if (!result.success) {
-    throw new Error(result.error?.message || 'Request failed');
+    const msg = result.error?.message || result.message || result.msg || JSON.stringify(result);
+    throw new Error(`${name}: ${msg} (HTTP ${response.status})`);
   }
 
   return result.data as T;

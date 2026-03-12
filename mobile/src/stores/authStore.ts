@@ -31,7 +31,7 @@ interface AuthState {
   pendingPasswordRecovery: boolean;
 
   initialize: () => Promise<void>;
-  signUp: (email: string, password: string, displayName: string) => Promise<void>;
+  signUp: (email: string, password: string, displayName: string) => Promise<boolean>;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   fetchProfile: () => Promise<void>;
@@ -90,15 +90,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signUp: async (email, password, displayName) => {
     set({ isLoading: true });
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           data: { full_name: displayName },
+          emailRedirectTo: 'matra://login',
         },
       });
       if (error) throw error;
       trackEvent(AnalyticsEvents.SIGN_UP);
+      // Return whether email confirmation is needed
+      const needsConfirmation = !data.session;
+      return needsConfirmation;
     } finally {
       set({ isLoading: false });
     }

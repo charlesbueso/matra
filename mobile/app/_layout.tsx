@@ -159,6 +159,14 @@ function RootLayout() {
         return;
       }
 
+      // Email confirmation: matra://login (Supabase redirects here after email verify)
+      if (parsed.hostname === 'login' || parsed.path?.startsWith('login')) {
+        if (!session) {
+          router.replace('/(auth)/sign-in');
+        }
+        return;
+      }
+
       // Email change confirmation: matra://email-changed
       if (parsed.hostname === 'email-changed' || parsed.path?.startsWith('email-changed')) {
         Alert.alert(

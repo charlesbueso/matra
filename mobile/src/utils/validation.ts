@@ -92,24 +92,24 @@ export function sanitizeName(name: string): string {
   return name.trim().replace(/\s+/g, ' ');
 }
 
-/** Map Supabase auth error codes to user-friendly messages */
+/** Map Supabase auth error codes to user-friendly localized messages */
 export function friendlyAuthError(message: string): string {
   const lower = message.toLowerCase();
   if (lower.includes('invalid login credentials'))
-    return 'Incorrect email or password. Please try again.';
+    return t('validation.incorrectCredentials');
   if (lower.includes('email not confirmed'))
-    return 'Please check your inbox and confirm your email before signing in.';
+    return t('validation.emailNotConfirmed');
   if (lower.includes('user already registered') || lower.includes('already been registered'))
-    return 'An account with this email already exists. Try signing in instead.';
+    return t('validation.accountExists');
   if (lower.includes('signup is disabled'))
-    return 'New sign-ups are temporarily disabled. Please try again later.';
+    return t('validation.signupsDisabled');
   if (lower.includes('rate limit') || lower.includes('too many requests'))
-    return 'Too many attempts. Please wait a moment and try again.';
+    return t('validation.tooManyAttempts');
   if (lower.includes('network') || lower.includes('fetch'))
-    return 'Network error. Please check your connection and try again.';
+    return t('validation.networkError');
   if (lower.includes('weak password'))
-    return 'Password is too weak. Please use a stronger password.';
+    return t('validation.weakPassword');
   if (lower.includes('email rate limit'))
-    return 'Too many emails sent. Please wait before trying again.';
+    return t('validation.emailRateLimit');
   return message;
 }

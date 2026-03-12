@@ -164,9 +164,17 @@ export default function SignUpScreen() {
     }
 
     try {
-      await signUp(email.trim().toLowerCase(), password, sanitizeName(name));
+      const needsConfirmation = await signUp(email.trim().toLowerCase(), password, sanitizeName(name));
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.replace('/');
+      if (needsConfirmation) {
+        Alert.alert(
+          t('auth.checkInbox'),
+          t('auth.checkInboxSignUp'),
+          [{ text: t('common.goBack'), onPress: () => router.push('/(auth)/sign-in') }],
+        );
+      } else {
+        router.replace('/');
+      }
     } catch (err: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       Alert.alert(t('auth.signUpFailed'), friendlyAuthError(err.message));

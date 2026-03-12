@@ -7,10 +7,15 @@ import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Image } from 'expo-image';
 import Animated, { FadeInDown, FadeInUp } from 'react-native-reanimated';
 import { StarField, BioAlgae, CornerBush, Card } from '../src/components/ui';
 import { useTranslation } from 'react-i18next';
 import { Colors, Typography, Spacing, BorderRadius } from '../src/theme/tokens';
+
+const BRAND_URLS = {
+  logotype: 'https://alquimia-felina-spaces-bucket.nyc3.cdn.digitaloceanspaces.com/matra/assets/logotype-nobg.png',
+} as const;
 
 export default function AboutScreen() {
   const { t } = useTranslation();
@@ -27,17 +32,12 @@ export default function AboutScreen() {
 
         {/* Hero Brand Mark */}
         <Animated.View entering={FadeInDown.delay(100).duration(600)} style={styles.hero}>
-          <View style={styles.logoContainer}>
-            <LinearGradient
-              colors={Colors.gradients.bioluminescent}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.logoGradient}
-            >
-              <Text style={styles.logoIcon}>🌿</Text>
-            </LinearGradient>
-          </View>
-          <Text style={styles.brandName}>{t('common.matra')}</Text>
+          <Image
+            source={{ uri: BRAND_URLS.logotype }}
+            style={styles.logotypeImage}
+            contentFit="contain"
+            transition={300}
+          />
           <Text style={styles.tagline}>{t('about.tagline')}</Text>
         </Animated.View>
 
@@ -159,28 +159,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: Spacing.xl * 1.5,
   },
-  logoContainer: {
-    marginBottom: Spacing.md,
-  },
-  logoGradient: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: Colors.accent.cyan,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-  },
-  logoIcon: {
-    fontSize: 36,
-  },
-  brandName: {
-    fontSize: Typography.sizes.hero,
-    fontFamily: Typography.fonts.heading,
-    color: Colors.text.starlight,
-    letterSpacing: 6,
+  logotypeImage: {
+    width: 200,
+    height: 50,
     marginBottom: Spacing.sm,
   },
   tagline: {

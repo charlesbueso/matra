@@ -6,11 +6,13 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { StarField, BioAlgae, CornerBush } from '../src/components/ui';
 import { Colors, Typography, Spacing } from '../src/theme/tokens';
 
 export default function TermsOfServiceScreen() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   return (
     <StarField starCount={15}>
@@ -21,77 +23,21 @@ export default function TermsOfServiceScreen() {
           <Ionicons name="arrow-back" size={20} color={Colors.text.starlight} />
         </Pressable>
 
-        <Text style={styles.title}>Terms of Service</Text>
-        <Text style={styles.updated}>Last updated: March 10, 2026</Text>
+        <Text style={styles.title}>{t('termsOfServicePage.title')}</Text>
+        <Text style={styles.updated}>{t('termsOfServicePage.updated')}</Text>
 
-        <Section title="1. Acceptance">
-          {`By downloading, installing, or using Matra ("the App"), you agree to these Terms of Service. If you do not agree, please do not use the App.`}
-        </Section>
-
-        <Section title="2. What Matra Does">
-          {`Matra is a personal family storytelling app. You record conversations, and our AI helps transcribe, organize, and preserve your family's stories and relationships. The App is provided "as is" for personal, non-commercial use.`}
-        </Section>
-
-        <Section title="3. Your Account">
-          {`• You are responsible for keeping your account credentials secure.
-• You must provide accurate information when creating your account.
-• You may delete your account at any time from the Settings screen, which will permanently remove all your data.`}
-        </Section>
-
-        <Section title="4. Your Content">
-          {`You own all content you create in Matra — your recordings, your stories, your family data. By using the App, you grant Matra a limited license to process your content solely for the purpose of providing the service (e.g., AI transcription and analysis). We do not claim ownership of your content.`}
-        </Section>
-
-        <Section title="5. Acceptable Use">
-          {`You agree not to:
-
-• Use the App for any unlawful purpose.
-• Upload content that infringes on others' rights.
-• Attempt to reverse-engineer, compromise, or interfere with the App's systems.
-• Use the App to harass, harm, or impersonate others.`}
-        </Section>
-
-        <Section title="6. Subscriptions & Payments">
-          {`• Matra offers free and paid subscription tiers.
-• Paid subscriptions are billed through the Apple App Store or Google Play Store. Billing, renewals, and cancellations are governed by the respective store's policies.
-• Subscription status and entitlements are managed through RevenueCat, a third-party service that processes your purchase receipts. RevenueCat does not have access to your family data.
-• We reserve the right to change pricing with reasonable notice.`}
-        </Section>
-
-        <Section title="7. AI-Generated Content">
-          {`Matra uses AI to generate transcriptions, summaries, biographies, and other content based on your recordings. AI-generated content may contain errors or inaccuracies. You are responsible for reviewing and verifying any AI-generated content before relying on it.`}
-        </Section>
-
-        <Section title="8. Limitation of Liability">
-          {`Matra is provided "as is" without warranties of any kind. To the maximum extent permitted by law, Matra shall not be liable for any indirect, incidental, or consequential damages arising from your use of the App, including loss of data. Our total liability shall not exceed the amount you paid for the App in the 12 months preceding the claim.`}
-        </Section>
-
-        <Section title="9. Termination">
-          {`We may suspend or terminate your access to the App if you violate these terms. You may stop using the App at any time. Upon termination, your right to use the App ceases, but sections regarding your content ownership, limitation of liability, and dispute resolution survive.`}
-        </Section>
-
-        <Section title="10. Third-Party Services">
-          {`Matra uses the following third-party services to provide and improve the App:
-
-• Groq (Llama) for AI transcription and analysis.
-• Supabase for secure data storage and authentication.
-• PostHog for anonymous usage analytics.
-• Sentry for crash reporting and error monitoring.
-• RevenueCat for subscription and in-app purchase management.
-• DigitalOcean for secure file storage.
-
-Each service processes data in accordance with their respective terms and privacy policies.`}
-        </Section>
-
-        <Section title="11. Changes">
-          {`We may update these terms from time to time. Continued use of Matra after changes constitutes acceptance. We will notify you of significant changes through the App.`}
-        </Section>
-
-        <Section title="12. Contact">
-          {`For questions about these terms, contact us at:
-
-voxcentra@gmail.com`}
-        </Section>
+        <Section title={t('termsOfServicePage.s1Title')}>{t('termsOfServicePage.s1Body')}</Section>
+        <Section title={t('termsOfServicePage.s2Title')}>{t('termsOfServicePage.s2Body')}</Section>
+        <Section title={t('termsOfServicePage.s3Title')}>{t('termsOfServicePage.s3Body')}</Section>
+        <Section title={t('termsOfServicePage.s4Title')}>{t('termsOfServicePage.s4Body')}</Section>
+        <Section title={t('termsOfServicePage.s5Title')}>{t('termsOfServicePage.s5Body')}</Section>
+        <Section title={t('termsOfServicePage.s6Title')}>{t('termsOfServicePage.s6Body')}</Section>
+        <Section title={t('termsOfServicePage.s7Title')}>{t('termsOfServicePage.s7Body')}</Section>
+        <Section title={t('termsOfServicePage.s8Title')}>{t('termsOfServicePage.s8Body')}</Section>
+        <Section title={t('termsOfServicePage.s9Title')}>{t('termsOfServicePage.s9Body')}</Section>
+        <Section title={t('termsOfServicePage.s10Title')}>{t('termsOfServicePage.s10Body')}</Section>
+        <Section title={t('termsOfServicePage.s11Title')}>{t('termsOfServicePage.s11Body')}</Section>
+        <Section title={t('termsOfServicePage.s12Title')}>{t('termsOfServicePage.s12Body')}</Section>
 
         <View style={{ height: 40 }} />
       </ScrollView>

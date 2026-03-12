@@ -49,6 +49,10 @@ export default function HomeScreen() {
 
   const hasConversations = interviews.length > 0;
 
+  // Family setup is needed if the group name is still default AND no interviews recorded
+  const needsFamilySetup = interviews.length === 0
+    && (!familyGroups[0] || familyGroups[0].name === 'My Family' || !familyGroups[0].name.trim());
+
   // People who don't have a conversation yet (excluding self)
   const peopleWithoutConversation = people.filter((p) => p.id !== selfPersonId);
 
@@ -127,19 +131,6 @@ export default function HomeScreen() {
             </View>
           </Pressable>
         ))}
-        {backgroundJobs.filter((j) => j.status === 'failed').map((job) => (
-          <Pressable
-            key={job.id}
-            style={styles.failedBanner}
-            onPress={() => dismissJob(job.id)}
-          >
-            <Text style={styles.completedBannerIcon}>❌</Text>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.completedBannerTitle}>{t('home.jobFailed', { title: job.title })}</Text>
-              <Text style={styles.completedBannerDetail}>{job.error || t('home.jobFailedDetail')}</Text>
-            </View>
-          </Pressable>
-        ))}
 
         {/* First Conversation CTA — shown when no conversations exist */}
         {!hasConversations && (
@@ -169,8 +160,8 @@ export default function HomeScreen() {
           </Card>
         )}
 
-        {/* First-time family setup prompt — shown when user just onboarded */}
-        {people.length <= 1 && interviews.length === 0 && (
+        {/* First-time family setup prompt — shown when family name not configured */}
+        {needsFamilySetup && (
           <Card variant="glow" style={styles.ctaCard}>
             <Text style={styles.ctaTitle}>{t('home.setupFamilyTitle')}</Text>
             <Text style={styles.ctaDescription}>{t('home.setupFamilyDesc')}</Text>
@@ -631,17 +622,6 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     borderWidth: 1,
     borderColor: Colors.accent.cyan,
-    marginBottom: Spacing.sm,
-  },
-  failedBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.md,
-    backgroundColor: Colors.background.trench,
-    borderRadius: 12,
-    padding: Spacing.md,
-    borderWidth: 1,
-    borderColor: Colors.accent.coral + '60',
     marginBottom: Spacing.sm,
   },
   completedBannerIcon: {

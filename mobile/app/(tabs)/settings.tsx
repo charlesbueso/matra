@@ -560,7 +560,7 @@ export default function SettingsScreen() {
                 onPress={() => router.push('/paywall')}
                 variant="premium"
                 size="sm"
-                style={{ marginTop: Spacing.sm, alignSelf: 'flex-end' }}
+                style={{ marginTop: Spacing.sm, alignSelf: 'flex-start' }}
               />
             )}
 
@@ -571,7 +571,7 @@ export default function SettingsScreen() {
                 onPress={() => router.push('/paywall')}
                 variant="premium"
                 size="sm"
-                style={{ marginTop: Spacing.sm, alignSelf: 'flex-end' }}
+                style={{ marginTop: Spacing.sm, alignSelf: 'flex-start' }}
               />
             )}
           </Card>

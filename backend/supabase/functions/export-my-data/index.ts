@@ -173,64 +173,124 @@ serve(async (req: Request) => {
       );
     }
 
-    // 5. Build CSV data
+    // 5. Build CSV data — resolve IDs to human-readable names
     const csvFiles: Record<string, string> = {};
+
+    // Lookup helpers for resolving foreign keys
+    const personName = (id: string | null) => {
+      if (!id) return '';
+      const p = people.find((x: any) => x.id === id);
+      return p ? `${p.first_name}${p.last_name ? ' ' + p.last_name : ''}` : '';
+    };
+    const interviewTitle = (id: string | null) => {
+      if (!id) return '';
+      const i = interviews.find((x: any) => x.id === id);
+      return i?.title || '';
+    };
+    const storyTitle = (id: string | null) => {
+      if (!id) return '';
+      const s = stories.find((x: any) => x.id === id);
+      return s?.title || '';
+    };
+    const groupName = (id: string | null) => {
+      if (!id) return '';
+      const g = familyGroups.find((x: any) => x.id === id);
+      return g?.name || '';
+    };
+
+    // Strip internal ID columns from a row
+    function stripIds(row: Record<string, unknown>, extraKeys: string[] = []): Record<string, unknown> {
+      const exclude = new Set(['id', 'family_group_id', ...extraKeys]);
+      const result: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(row)) {
+        if (!exclude.has(k)) result[k] = v;
+      }
+      return result;
+    }
 
     // Profile
     if (profileRes.data) {
-      csvFiles['profile.csv'] = toCsv([profileRes.data]);
+      csvFiles['profile.csv'] = toCsv([stripIds(profileRes.data)]);
     }
 
     // Family groups
     if (familyGroups.length > 0) {
-      csvFiles['family_groups.csv'] = toCsv(familyGroups);
+      csvFiles['family_groups.csv'] = toCsv(familyGroups.map((fg: any) => stripIds(fg)));
     }
 
     // People
     if (people.length > 0) {
-      csvFiles['people.csv'] = toCsv(people);
+      csvFiles['people.csv'] = toCsv(people.map((p: any) => {
+        const row = stripIds(p);
+        row.family_group = groupName(p.family_group_id);
+        return row;
+      }));
     }
 
     // Relationships
     const relationships = relationshipsRes.data || [];
     if (relationships.length > 0) {
-      csvFiles['relationships.csv'] = toCsv(relationships);
+      csvFiles['relationships.csv'] = toCsv(relationships.map((r: any) => {
+        const row = stripIds(r, ['person_a_id', 'person_b_id']);
+        row.person_a = personName(r.person_a_id);
+        row.person_b = personName(r.person_b_id);
+        return row;
+      }));
     }
 
     // Interviews
     if (interviews.length > 0) {
       csvFiles['interviews.csv'] = toCsv(
-        interviews.map(({ audio_storage_path, ...rest }) => ({
-          ...rest,
-          audio_download_url: audio_storage_path ? (presignedUrls[audio_storage_path] || '') : '',
-        })),
+        interviews.map(({ audio_storage_path, subject_person_id, ...rest }: any) => {
+          const row = stripIds(rest);
+          row.subject_person = personName(subject_person_id);
+          row.audio_download_url = audio_storage_path ? (presignedUrls[audio_storage_path] || '') : '';
+          return row;
+        }),
       );
     }
 
     // Transcripts
     const transcripts = transcriptsRes.data || [];
     if (transcripts.length > 0) {
-      csvFiles['transcripts.csv'] = toCsv(transcripts);
+      csvFiles['transcripts.csv'] = toCsv(transcripts.map((t: any) => {
+        const row = stripIds(t, ['interview_id']);
+        row.interview = interviewTitle(t.interview_id);
+        return row;
+      }));
     }
 
     // Stories
     if (stories.length > 0) {
-      csvFiles['stories.csv'] = toCsv(stories);
+      csvFiles['stories.csv'] = toCsv(stories.map((s: any) => {
+        const row = stripIds(s, ['interview_id']);
+        row.interview = interviewTitle(s.interview_id);
+        row.family_group = groupName(s.family_group_id);
+        return row;
+      }));
     }
 
     // Story-People
     const storyPeople = storyPeopleRes.data || [];
     if (storyPeople.length > 0) {
-      csvFiles['story_people.csv'] = toCsv(storyPeople);
+      csvFiles['story_people.csv'] = toCsv(storyPeople.map((sp: any) => ({
+        story: storyTitle(sp.story_id),
+        person: personName(sp.person_id),
+        role: sp.role,
+      })));
     }
 
     // Media assets with download URLs
     if (media.length > 0) {
       csvFiles['media_assets.csv'] = toCsv(
-        media.map(({ storage_path, ...rest }) => ({
-          ...rest,
-          download_url: storage_path ? (presignedUrls[storage_path] || '') : '',
-        })),
+        media.map(({ storage_path, person_id, story_id, interview_id, ...rest }: any) => {
+          const row = stripIds(rest);
+          row.person = personName(person_id);
+          row.story = storyTitle(story_id);
+          row.interview = interviewTitle(interview_id);
+          row.download_url = storage_path ? (presignedUrls[storage_path] || '') : '';
+          return row;
+        }),
       );
     }
 

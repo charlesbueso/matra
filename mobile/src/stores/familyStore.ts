@@ -836,9 +836,7 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
         trackEvent(AnalyticsEvents.INTERVIEW_PROCESSING_FAILED, { error: err?.message });
         captureError(err instanceof Error ? err : new Error(err?.message || 'Interview processing failed'));
         set((state) => ({
-          backgroundJobs: state.backgroundJobs.map((j) =>
-            j.id === jobId ? { ...j, status: 'failed' as const, error: err?.message || 'Processing failed' } : j
-          ),
+          backgroundJobs: state.backgroundJobs.filter((j) => j.id !== jobId),
           processingError: err?.message || 'Processing failed. Please try again.',
         }));
         useNotificationStore.getState().sendLocalNotification(
