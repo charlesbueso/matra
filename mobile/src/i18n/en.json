@@ -645,7 +645,8 @@
     "valueHeritage": "Heritage - Every culture, every language, every family matters.",
     "valueConnection": "Connection - Technology should bring families closer, not apart.",
     "footer": "Made with care for families everywhere.",
-    "contact": "voxcentra@gmail.com"
+    "contact": "support@matra.live",
+    "website": "matra.live"
   },
   "privacyPolicyPage": {
     "title": "Privacy Policy",
@@ -669,7 +670,7 @@
     "s9Title": "9. Changes to This Policy",
     "s9Body": "We may update this policy from time to time. If we make significant changes, we will notify you through the app. Continued use of Matra after changes constitutes acceptance of the updated policy.",
     "s10Title": "10. Contact",
-    "s10Body": "If you have questions about this privacy policy or your data, please contact us at:\n\nvoxcentra@gmail.com"
+    "s10Body": "If you have questions about this privacy policy or your data, please contact us at:\n\nsupport@matra.live\n\nWebsite: matra.live"
   },
   "termsOfServicePage": {
     "title": "Terms of Service",
@@ -697,7 +698,7 @@
     "s11Title": "11. Changes",
     "s11Body": "We may update these terms from time to time. Continued use of Matra after changes constitutes acceptance. We will notify you of significant changes through the App.",
     "s12Title": "12. Contact",
-    "s12Body": "For questions about these terms, contact us at:\n\nvoxcentra@gmail.com"
+    "s12Body": "For questions about these terms, contact us at:\n\nsupport@matra.live\n\nWebsite: matra.live"
   },
   "layout": {
     "accountDeactivatedTitle": "Account Deactivated",

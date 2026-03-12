@@ -3,7 +3,7 @@
 // ============================================================
 
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Pressable, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -102,6 +102,9 @@ export default function AboutScreen() {
           <Text style={styles.footerText}>
             {t('about.footer')}
           </Text>
+          <Pressable onPress={() => Linking.openURL('https://matra.live')}>
+            <Text style={styles.footerWebsite}>{t('about.website')}</Text>
+          </Pressable>
           <Text style={styles.footerVersion}>{t('common.version')}</Text>
           <Text style={styles.footerContact}>{t('about.contact')}</Text>
         </Animated.View>
@@ -312,5 +315,12 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.caption,
     fontFamily: Typography.fonts.body,
     color: Colors.accent.azure,
+  },
+  footerWebsite: {
+    fontSize: Typography.sizes.caption,
+    fontFamily: Typography.fonts.subheading,
+    color: Colors.accent.cyan,
+    marginBottom: Spacing.sm,
+    textDecorationLine: 'underline',
   },
 });

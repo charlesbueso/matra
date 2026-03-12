@@ -26,6 +26,22 @@ enable_signup = true
 enable_signup = true
 double_confirm_changes = true
 enable_confirmations = false
+template = "./templates/confirm-signup.html"
+subjects_confirmation = "Confirm your email — Matra 🌳"
+subjects_recovery = "Reset your password — Matra 🌳"
+subjects_magic_link = "Your login link — Matra 🌳"
+subjects_email_change = "Confirm your new email — Matra 🌳"
+subjects_invite = "You're invited to Matra 🌳"
+
+# ── SMTP via Resend ──
+# For local dev, Supabase uses Inbucket (no config needed).
+# For production, set these in the Supabase Dashboard > Auth > SMTP Settings:
+#   SMTP Host:     smtp.resend.com
+#   SMTP Port:     465
+#   SMTP User:     resend
+#   SMTP Password: re_YOUR_API_KEY
+#   Sender email:  support@matra.live
+#   Sender name:   Matra
 
 [auth.external.apple]
 enabled = false

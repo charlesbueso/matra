@@ -1,0 +1,89 @@
+name: Supabase Database Backup
+
+on:
+  schedule:
+    # Every day at 3:00 AM UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch: # Manual trigger from GitHub UI
+
+env:
+  SPACES_BUCKET: alquimia-felina-spaces-bucket
+  SPACES_REGION: nyc3
+  BACKUP_PATH: matra/db_backups
+  RETENTION_DAYS: 30
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Install tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client awscli
+
+      - name: Dump database
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          TIMESTAMP=$(date -u +%Y-%m-%d_%H%M%S)
+          FILENAME="matra_backup_${TIMESTAMP}.sql.gz"
+          echo "BACKUP_FILE=$FILENAME" >> $GITHUB_ENV
+
+          pg_dump "$DATABASE_URL" \
+            --no-owner \
+            --no-privileges \
+            --clean \
+            --if-exists \
+            --format=plain \
+            | gzip -9 > "$FILENAME"
+
+          SIZE=$(du -sh "$FILENAME" | cut -f1)
+          echo "Backup created: $FILENAME ($SIZE)"
+
+      - name: Upload to DigitalOcean Spaces
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.DO_SPACES_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.DO_SPACES_SECRET }}
+        run: |
+          aws s3 cp "$BACKUP_FILE" \
+            "s3://${SPACES_BUCKET}/${BACKUP_PATH}/${BACKUP_FILE}" \
+            --endpoint-url "https://${SPACES_REGION}.digitaloceanspaces.com" \
+            --acl private
+
+          echo "Uploaded to ${BACKUP_PATH}/${BACKUP_FILE}"
+
+      - name: Prune old backups
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.DO_SPACES_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.DO_SPACES_SECRET }}
+        run: |
+          CUTOFF_DATE=$(date -u -d "${RETENTION_DAYS} days ago" +%Y-%m-%d)
+          echo "Deleting backups older than $CUTOFF_DATE (${RETENTION_DAYS} days)"
+
+          aws s3 ls "s3://${SPACES_BUCKET}/${BACKUP_PATH}/" \
+            --endpoint-url "https://${SPACES_REGION}.digitaloceanspaces.com" \
+            | while read -r LINE; do
+                FILE_DATE=$(echo "$LINE" | awk '{print $1}')
+                FILE_NAME=$(echo "$LINE" | awk '{print $4}')
+
+                if [[ -z "$FILE_NAME" ]]; then
+                  continue
+                fi
+
+                if [[ "$FILE_DATE" < "$CUTOFF_DATE" ]]; then
+                  echo "Deleting: $FILE_NAME (from $FILE_DATE)"
+                  aws s3 rm "s3://${SPACES_BUCKET}/${BACKUP_PATH}/${FILE_NAME}" \
+                    --endpoint-url "https://${SPACES_REGION}.digitaloceanspaces.com"
+                fi
+              done
+
+          echo "Pruning complete."
+
+      - name: Summary
+        run: |
+          echo "## Backup Complete" >> $GITHUB_STEP_SUMMARY
+          echo "- **File:** \`$BACKUP_FILE\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Destination:** \`${BACKUP_PATH}/\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Retention:** ${RETENTION_DAYS} days" >> $GITHUB_STEP_SUMMARY
