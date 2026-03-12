@@ -5,25 +5,30 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Image } from 'expo-image';
 import { StarField, BioAlgae, Button } from '../../src/components/ui';
 import { useTranslation } from 'react-i18next';
 import { Colors, Typography, Spacing } from '../../src/theme/tokens';
 
+const BRAND_URLS = {
+  logotype: 'https://alquimia-felina-spaces-bucket.nyc3.cdn.digitaloceanspaces.com/matra/assets/logotype-nobg.png',
+} as const;
+
 export default function WelcomeScreen() {
   const { t } = useTranslation();
   const router = useRouter();
-
   return (
     <StarField starCount={40}>
       <BioAlgae strandCount={55} height={0.22} />
       <View style={styles.container}>
         <View style={styles.hero}>
-          {/* Logo placeholder — replace with actual logo */}
-          <View style={styles.logoContainer}>
-            <Text style={styles.logoGlyph}>🌳</Text>
-          </View>
+          {/* Logotype */}
+          <Image
+            source={{ uri: BRAND_URLS.logotype }}
+            style={styles.logotype}
+            contentFit="contain"
+          />
 
-          <Text style={styles.title}>{t('welcome.title')}</Text>
           <Text style={styles.subtitle}>
             {t('welcome.subtitle')}
           </Text>
@@ -82,30 +87,16 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.xl,
-    paddingTop: 80,
+    paddingTop: 120,
     paddingBottom: 40,
   },
   hero: {
     alignItems: 'center',
   },
-  logoContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: 'rgba(107, 143, 60, 0.10)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: 'rgba(107, 143, 60, 0.25)',
+  logotype: {
+    width: 140,
+    height: 140,
     marginBottom: Spacing.xl,
-    shadowColor: Colors.accent.cyan,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-  },
-  logoGlyph: {
-    fontSize: 36,
-    color: Colors.accent.cyan,
   },
   title: {
     fontSize: Typography.sizes.hero,
@@ -128,6 +119,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.lg,
+  },
+  featureIconImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: 'rgba(107, 143, 60, 0.08)',
   },
   featureIcon: {
     fontSize: 28,

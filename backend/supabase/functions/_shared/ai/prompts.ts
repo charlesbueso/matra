@@ -365,7 +365,7 @@ Create a documentary script that:
 
 Write the full script. Be cinematic, emotional, and authentic.`;
 
-export const VERIFICATION_PROMPT = \`You are a relationship extraction auditor for a genealogy app. You will receive a family interview transcript and an AI-extracted JSON result containing entities, relationships, and suggestedPeople.
+export const VERIFICATION_PROMPT = `You are a relationship extraction auditor for a genealogy app. You will receive a family interview transcript and an AI-extracted JSON result containing entities, relationships, and suggestedPeople.
 
 Your job is to audit the extraction for common errors and provide corrections. Check for:
 
@@ -417,4 +417,4 @@ For "add_person" corrections:
 
 If everything is correct, return: { "corrections": [], "verified": true }
 
-Be precise and conservative — only flag CLEAR errors. Do not add speculative relationships.\`;
+Be precise and conservative — only flag CLEAR errors. Do not add speculative relationships.`;

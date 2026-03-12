@@ -3,7 +3,7 @@
 -- ============================================================
 
 CREATE TABLE public.rejected_relationships (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   family_group_id UUID NOT NULL REFERENCES public.family_groups(id) ON DELETE CASCADE,
   person_a_id UUID NOT NULL REFERENCES public.people(id) ON DELETE CASCADE,
   person_b_id UUID NOT NULL REFERENCES public.people(id) ON DELETE CASCADE,

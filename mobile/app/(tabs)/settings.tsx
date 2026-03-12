@@ -18,8 +18,13 @@ import { useAuthStore } from '../../src/stores/authStore';
 import { useFamilyStore, Interview } from '../../src/stores/familyStore';
 import { useSubscriptionStore } from '../../src/stores/subscriptionStore';
 import { invokeFunction } from '../../src/services/supabase';
-import { useSignedUrl } from '../../src/hooks';
+import { useSignedUrl, useSignedUrls } from '../../src/hooks';
 import { Colors, Typography, Spacing, BorderRadius } from '../../src/theme/tokens';
+
+const BRAND_KEYS = {
+  chairGold: 'matra/assets/icon-chair-gold-nobg.png',
+  chairGreen: 'matra/assets/icon-chair-nobg.png',
+} as const;
 import { SUPPORTED_LANGUAGES, getCurrentLanguage, type LanguageCode } from '../../src/i18n';
 import { resizeImageForUpload } from '../../src/utils/image';
 
@@ -110,6 +115,7 @@ export default function SettingsScreen() {
   const [newDisplayName, setNewDisplayName] = useState('');
   const [isSavingName, setIsSavingName] = useState(false);
   const avatarUrl = useSignedUrl(profile?.avatar_url);
+  const brandUrls = useSignedUrls([BRAND_KEYS.chairGold, BRAND_KEYS.chairGreen]);
   const downgrade = useSubscriptionStore((s) => s.downgrade);
 
   const handleDeleteInterview = (interview: Interview) => {
@@ -460,12 +466,18 @@ export default function SettingsScreen() {
           </Pressable>
           <View style={styles.profileInfo}>
             <Text style={styles.profileName} numberOfLines={1}>{profile?.display_name || t('settings.explorer')}</Text>
-            <View style={styles.tierBadge}>
-              <Text style={styles.tierText}>{tierLabel}</Text>
-            </View>
-            <Text style={styles.profileEmail} numberOfLines={1}>
+            <Text style={[styles.profileEmail, isPremium && { color: Colors.accent.amber }]} numberOfLines={1}>
               {useAuthStore.getState().user?.email || '—'}
             </Text>
+            <Image
+              source={(() => {
+                const key = isPremium ? BRAND_KEYS.chairGold : BRAND_KEYS.chairGreen;
+                const url = brandUrls.get(key);
+                return url ? { uri: url } : undefined;
+              })()}
+              style={styles.tierChairIcon}
+              contentFit="contain"
+            />
           </View>
           <Pressable
             style={styles.profileEditButton}
@@ -537,7 +549,9 @@ export default function SettingsScreen() {
           <Card variant="default">
             <View style={styles.settingRow}>
               <Text style={styles.settingLabel}>{t('settings.currentPlan')}</Text>
-              <Text style={styles.settingValue}>{tierLabel}</Text>
+              <View style={[styles.tierBadge, isPremium ? styles.tierBadgePremium : styles.tierBadgeFree]}>
+                <Text style={[styles.tierBadgeText, isPremium ? styles.tierBadgeTextPremium : styles.tierBadgeTextFree]}>{tierLabel}</Text>
+              </View>
             </View>
 
             {profile?.subscription_tier === 'free' && !downgrade.isLapsed && (
@@ -941,6 +955,11 @@ const styles = StyleSheet.create({
     color: Colors.text.starlight,
     flexShrink: 1,
   },
+  tierChairIcon: {
+    width: 28,
+    height: 28,
+    marginTop: Spacing.xs,
+  },
   tierBadge: {
     alignSelf: 'flex-start',
     backgroundColor: 'rgba(201, 168, 76, 0.12)',
@@ -978,6 +997,27 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.body,
     fontFamily: Typography.fonts.bodySemiBold,
     color: Colors.text.starlight,
+  },
+  tierBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    borderRadius: 999,
+  },
+  tierBadgePremium: {
+    backgroundColor: '#FDF3D7',
+  },
+  tierBadgeFree: {
+    backgroundColor: '#D9F0D3',
+  },
+  tierBadgeText: {
+    fontSize: Typography.sizes.caption,
+    fontFamily: Typography.fonts.bodySemiBold,
+  },
+  tierBadgeTextPremium: {
+    color: '#8A6200',
+  },
+  tierBadgeTextFree: {
+    color: '#2D6A1F',
   },
   storageBreakdown: {
     paddingLeft: Spacing.sm,

@@ -58,7 +58,7 @@ CREATE TABLE public.profiles (
 -- ============================================================
 
 CREATE TABLE public.subscriptions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   tier subscription_tier NOT NULL DEFAULT 'free',
   status subscription_status NOT NULL DEFAULT 'active',
@@ -87,7 +87,7 @@ CREATE INDEX idx_subscriptions_status ON public.subscriptions(status) WHERE stat
 -- ============================================================
 
 CREATE TABLE public.family_groups (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   description TEXT,
   cover_image_url TEXT,
@@ -105,7 +105,7 @@ CREATE INDEX idx_family_groups_created_by ON public.family_groups(created_by);
 -- ============================================================
 
 CREATE TABLE public.family_group_members (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   family_group_id UUID NOT NULL REFERENCES public.family_groups(id) ON DELETE CASCADE,
   user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   role family_role NOT NULL DEFAULT 'viewer',
@@ -124,7 +124,7 @@ CREATE INDEX idx_fgm_group ON public.family_group_members(family_group_id);
 -- ============================================================
 
 CREATE TABLE public.people (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   family_group_id UUID NOT NULL REFERENCES public.family_groups(id) ON DELETE CASCADE,
   -- Basic info
   first_name TEXT NOT NULL,
@@ -163,7 +163,7 @@ CREATE INDEX idx_people_name ON public.people(family_group_id, first_name, last_
 -- ============================================================
 
 CREATE TABLE public.relationships (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   family_group_id UUID NOT NULL REFERENCES public.family_groups(id) ON DELETE CASCADE,
   -- Directional: person_a has relationship_type to person_b
   -- e.g., person_a is 'parent' of person_b
@@ -194,7 +194,7 @@ CREATE INDEX idx_relationships_person_b ON public.relationships(person_b_id);
 -- ============================================================
 
 CREATE TABLE public.interviews (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   family_group_id UUID NOT NULL REFERENCES public.family_groups(id) ON DELETE CASCADE,
   conducted_by UUID NOT NULL REFERENCES public.profiles(id),
   -- Interview metadata
@@ -231,7 +231,7 @@ CREATE INDEX idx_interviews_status ON public.interviews(status) WHERE status != 
 -- ============================================================
 
 CREATE TABLE public.transcripts (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   interview_id UUID NOT NULL REFERENCES public.interviews(id) ON DELETE CASCADE,
   -- Full transcript text
   full_text TEXT NOT NULL DEFAULT '',
@@ -255,7 +255,7 @@ CREATE UNIQUE INDEX idx_transcripts_interview ON public.transcripts(interview_id
 -- ============================================================
 
 CREATE TABLE public.extracted_entities (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   interview_id UUID NOT NULL REFERENCES public.interviews(id) ON DELETE CASCADE,
   transcript_id UUID NOT NULL REFERENCES public.transcripts(id) ON DELETE CASCADE,
   -- Entity info
@@ -284,7 +284,7 @@ CREATE INDEX idx_entities_person ON public.extracted_entities(linked_person_id) 
 -- ============================================================
 
 CREATE TABLE public.stories (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   family_group_id UUID NOT NULL REFERENCES public.family_groups(id) ON DELETE CASCADE,
   -- Source
   interview_id UUID REFERENCES public.interviews(id),
@@ -327,7 +327,7 @@ CREATE INDEX idx_story_people_person ON public.story_people(person_id);
 -- ============================================================
 
 CREATE TABLE public.media_assets (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   family_group_id UUID NOT NULL REFERENCES public.family_groups(id) ON DELETE CASCADE,
   uploaded_by UUID NOT NULL REFERENCES public.profiles(id),
   -- File info
@@ -353,7 +353,7 @@ CREATE INDEX idx_media_person ON public.media_assets(person_id) WHERE person_id 
 -- ============================================================
 
 CREATE TABLE public.exports (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   family_group_id UUID NOT NULL REFERENCES public.family_groups(id) ON DELETE CASCADE,
   requested_by UUID NOT NULL REFERENCES public.profiles(id),
   export_type TEXT NOT NULL, -- 'memory_book', 'documentary_script', 'family_data'
@@ -379,7 +379,7 @@ CREATE INDEX idx_exports_user ON public.exports(requested_by);
 -- ============================================================
 
 CREATE TABLE public.processing_jobs (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   -- Job type
   job_type TEXT NOT NULL, -- 'transcribe', 'extract', 'summarize', 'biography', 'export'
   -- Reference

@@ -2,8 +2,8 @@
 // Matra — DigitalOcean Spaces (S3) Client
 // ============================================================
 
-import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from 'https://esm.sh/@aws-sdk/client-s3@3.525.0';
-import { getSignedUrl as s3GetSignedUrl } from 'https://esm.sh/@aws-sdk/s3-request-presigner@3.525.0';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from 'https://esm.sh/@aws-sdk/client-s3@3.525.0?no-check';
+import { getSignedUrl as s3GetSignedUrl } from 'https://esm.sh/@aws-sdk/s3-request-presigner@3.525.0?no-check';
 
 const DO_SPACES_KEY = Deno.env.get('DO_SPACES_KEY')!;
 const DO_SPACES_SECRET = Deno.env.get('DO_SPACES_SECRET')!;
@@ -26,6 +26,11 @@ function getClient(): S3Client {
         secretAccessKey: DO_SPACES_SECRET,
       },
       forcePathStyle: false,
+      // Disable credential chain lookups — Deno has no filesystem access
+      credentialDefaultProvider: () => async () => ({
+        accessKeyId: DO_SPACES_KEY,
+        secretAccessKey: DO_SPACES_SECRET,
+      }),
     });
   }
   return _client;

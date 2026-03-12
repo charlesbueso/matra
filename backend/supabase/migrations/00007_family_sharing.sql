@@ -9,7 +9,7 @@
 CREATE TYPE invitation_status AS ENUM ('pending', 'accepted', 'expired', 'revoked');
 
 CREATE TABLE public.family_invitations (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   family_group_id UUID NOT NULL REFERENCES public.family_groups(id) ON DELETE CASCADE,
   invited_by UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   -- Short alphanumeric code for the invite link (e.g. matra://invite/ABC123)

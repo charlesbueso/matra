@@ -567,13 +567,13 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
     cover.drawRectangle({ x, y: 0, width: 1.5, height: h, color: BRAND.green });
   }
 
-  // ── Logotype centered exactly at page center ──
+  // ── Logotype slightly above page center ──
   if (logotypeImage) {
-    const ltDim = logotypeImage.scale(0.5);
-    const ltW = Math.min(ltDim.width, 200);
+    const ltDim = logotypeImage.scale(0.4);
+    const ltW = Math.min(ltDim.width, 160);
     const ltH = ltW * (ltDim.height / ltDim.width);
     cover.drawImage(logotypeImage, {
-      x: (pageWidth - ltW) / 2, y: (pageHeight - ltH) / 2,
+      x: (pageWidth - ltW) / 2, y: (pageHeight - ltH) / 2 + 40,
       width: ltW, height: ltH,
     });
   }
@@ -776,10 +776,12 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
 
       if (hasBio && avatar) {
         // ── TWO-COLUMN LAYOUT (bio + avatar) ──
+        const imageOnRight = personIndex % 2 === 1;
+        personIndex++;
         const blockTopY = y;
-        const imgX = margin;
+        const imgX = imageOnRight ? margin + contentWidth - AVATAR_SIZE : margin;
 
-        // LEFT COL: Avatar
+        // Avatar column
         page.drawRectangle({
           x: imgX - AVATAR_BORDER, y: blockTopY - AVATAR_SIZE - AVATAR_BORDER,
           width: AVATAR_SIZE + AVATAR_BORDER * 2, height: AVATAR_SIZE + AVATAR_BORDER * 2,
@@ -791,7 +793,7 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
 
         let leftY = blockTopY - AVATAR_SIZE - AVATAR_BORDER - 20;
 
-        // LEFT COL: Detail tags below avatar
+        // Detail tags below avatar
         for (const detail of details) {
           const detRes = drawWrappedText(
             { page, y: leftY }, detail, imgX,
@@ -801,7 +803,7 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
           page = detRes.page; leftY = detRes.y;
         }
 
-        // LEFT COL: Relationship tags
+        // Relationship tags below avatar
         if (relTexts.length > 0) {
           leftY -= 4;
           for (const relLine of relTexts) {
@@ -814,21 +816,20 @@ async function generateMemoryBookPDF(data: MemoryBookData): Promise<Uint8Array> 
           }
         }
 
-        // RIGHT COL: Name
-        const rightColX = margin + AVATAR_SIZE + AVATAR_GAP;
-        const rightColWidth = contentWidth - AVATAR_SIZE - AVATAR_GAP;
+        // Text column: Name + Biography
+        const textColX = imageOnRight ? margin : margin + AVATAR_SIZE + AVATAR_GAP;
+        const textColWidth = contentWidth - AVATAR_SIZE - AVATAR_GAP;
         let rightY = blockTopY;
 
-        page.drawText(sanitize(fullName), { x: rightColX, y: rightY, size: 17, font: fonts.bold, color: BRAND.darkText });
+        page.drawText(sanitize(fullName), { x: textColX, y: rightY, size: 17, font: fonts.bold, color: BRAND.darkText });
         rightY -= 22;
 
-        // RIGHT COL: Biography
         const bioText = person.ai_biography || person.ai_summary;
         const bioFont = person.ai_biography ? fonts.regular : fonts.italic;
         const bioColor = person.ai_biography ? BRAND.darkText : BRAND.mutedText;
 
         const bioRes = drawWrappedText(
-          { page, y: rightY }, bioText, rightColX, bioFont, 10.5, bioColor, rightColWidth, 15,
+          { page, y: rightY }, bioText, textColX, bioFont, 10.5, bioColor, textColWidth, 15,
           (pg: any) => { drawFooter(pg, pageNum); pageNum++; }
         );
         page = bioRes.page; rightY = bioRes.y;

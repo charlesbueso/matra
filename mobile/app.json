@@ -62,7 +62,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "YOUR_EAS_PROJECT_ID"
+        "projectId": "a476bd24-8a1d-4cd4-8406-8092f812b9e1"
       },
       "supabaseUrl": "http://10.0.2.2:54321",
       "supabaseAnonKey": "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH",

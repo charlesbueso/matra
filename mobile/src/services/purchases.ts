@@ -27,8 +27,10 @@ let isConfigured = false;
 export async function configurePurchases(appUserId?: string): Promise<void> {
   if (isConfigured) return;
 
-  const apiKey = Constants.expoConfig?.extra?.revenueCatApiKey;
-  if (!apiKey || apiKey === 'YOUR_REVENUECAT_API_KEY') {
+  const apiKey = Platform.OS === 'ios'
+    ? Constants.expoConfig?.extra?.revenueCatApiKeyIos
+    : Constants.expoConfig?.extra?.revenueCatApiKeyAndroid;
+  if (!apiKey) {
     console.warn('[Purchases] RevenueCat API key not configured — skipping init');
     return;
   }

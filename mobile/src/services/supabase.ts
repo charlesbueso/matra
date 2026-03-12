@@ -64,8 +64,14 @@ export async function invokeFunction<T = unknown>(
   methodOrOptions?: 'GET' | 'POST' | { formData?: FormData },
   options?: { formData?: FormData }
 ): Promise<T> {
-  const { data: { session } } = await supabase.auth.getSession();
+  let { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error('Not authenticated');
+
+  // Refresh token if it expires within 60 seconds
+  if (session.expires_at && session.expires_at * 1000 - Date.now() < 60_000) {
+    const { data } = await supabase.auth.refreshSession();
+    if (data.session) session = data.session;
+  }
 
   // Support both old signature (name, body, options) and new (name, body, method, options)
   let method: 'GET' | 'POST' | undefined;

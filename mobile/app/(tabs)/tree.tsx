@@ -1236,7 +1236,7 @@ export default function TreeScreen() {
         <MountainScape mountainOpacity={0.10} cloudCount={6} />
         <FlyingBirds count={4} />
         <TreeTrunk opacity={0.18} />
-        <BioAlgae strandCount={50} height={0.22} />
+        <BioAlgae strandCount={12} height={0.22} />
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyIcon}>🌳</Text>
           <Text style={styles.emptyTitle}>{t('tree.emptyTitle')}</Text>

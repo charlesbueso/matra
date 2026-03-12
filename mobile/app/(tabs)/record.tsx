@@ -363,7 +363,7 @@ export default function RecordScreen() {
     return (
       <StarField starCount={30}>
         <TreeTrunk opacity={0.18} />
-        <BioAlgae strandCount={50} height={0.22} />
+        <BioAlgae strandCount={12} height={0.22} />
         <View style={styles.container}>
           <View style={styles.header}>
             <Text style={styles.title}>{t('record.whoSharing')}</Text>
@@ -585,7 +585,7 @@ export default function RecordScreen() {
             </View>
           )}
         </View>
-        <BioAlgae strandCount={50} height={0.22} />
+        <BioAlgae strandCount={12} height={0.22} />
       </StarField>
     );
   }
@@ -594,7 +594,7 @@ export default function RecordScreen() {
   return (
     <StarField starCount={30}>
       <TreeTrunk opacity={0.18} />
-      <BioAlgae strandCount={50} height={0.22} />
+      <BioAlgae strandCount={12} height={0.22} />
       <View style={styles.container}>
         <View style={styles.header}>
           {!isRecording && !isProcessing && !recordedUri && (

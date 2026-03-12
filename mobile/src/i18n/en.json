@@ -26,7 +26,7 @@
   "welcome": {
     "title": "Matra",
     "subtitle": "A living tree of your ancestry",
-    "feature1Title": "Record Family Conversations",
+    "feature1Title": "Record your Family",
     "feature1Desc": "Record conversations and let AI capture every detail",
     "feature2Title": "Grow Your Family Tree",
     "feature2Desc": "Watch your lineage come alive as a growing canopy",
@@ -564,7 +564,7 @@
     "subtitle": "Preserve every story, every branch, every memory.",
     "perMonth": "/month",
     "perYear": "/year",
-    "save40": "Save 40%",
+    "save40": "50% off",
     "feature1Title": "30 Conversations per Month",
     "feature1Desc": "More than enough to capture every story",
     "feature2Title": "Extended Recordings",

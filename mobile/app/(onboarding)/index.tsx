@@ -9,12 +9,17 @@ import Animated, {
   useSharedValue, useAnimatedStyle, withSpring, interpolate,
   useAnimatedScrollHandler,
 } from 'react-native-reanimated';
+import { Image } from 'expo-image';
 import { useTranslation } from 'react-i18next';
 import { StarField, Button, BioAlgae, CornerBush } from '../../src/components/ui';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useFamilyStore } from '../../src/stores/familyStore';
 import { Colors, Typography, Spacing } from '../../src/theme/tokens';
 import { SUPPORTED_LANGUAGES, type LanguageCode } from '../../src/i18n';
+const BRAND_URLS = {
+  logotype: 'https://alquimia-felina-spaces-bucket.nyc3.cdn.digitaloceanspaces.com/matra/assets/logotype-nobg.png',
+  chairGreen: 'https://alquimia-felina-spaces-bucket.nyc3.cdn.digitaloceanspaces.com/matra/assets/icon-chair-nobg.png',
+} as const;
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -101,7 +106,11 @@ export default function OnboardingScreen() {
         <BioAlgae strandCount={30} height={0.15} />
         <CornerBush />
         <View style={styles.identityContainer}>
-          <Text style={styles.identityIcon}>🌍</Text>
+          <Image
+            source={{ uri: BRAND_URLS.logotype }}
+            style={styles.logoImage}
+            contentFit="contain"
+          />
           <Text style={styles.identityTitle}>{t('onboarding.chooseLanguage')}</Text>
           <Text style={styles.identitySubtitle}>{t('onboarding.chooseLanguageSubtitle')}</Text>
           <View style={styles.languageOptions}>
@@ -138,7 +147,11 @@ export default function OnboardingScreen() {
             keyboardShouldPersistTaps="handled"
             bounces={false}
           >
-            <Text style={styles.identityIcon}>🌳</Text>
+            <Image
+              source={{ uri: BRAND_URLS.chairGreen }}
+              style={styles.logoImage}
+              contentFit="contain"
+            />
             <Text style={styles.identityTitle}>{t('onboarding.whoAreYou')}</Text>
             <Text style={styles.identitySubtitle}>
               {t('onboarding.firstNode')}
@@ -300,6 +313,19 @@ const styles = StyleSheet.create({
     fontSize: 64,
     textAlign: 'center',
     marginBottom: Spacing.xl,
+  },
+  logoImage: {
+    width: 160,
+    height: 160,
+    alignSelf: 'center',
+    marginBottom: Spacing.xl,
+  },
+  carouselLogo: {
+    width: 80,
+    height: 80,
+    alignSelf: 'center',
+    marginTop: 48,
+    marginBottom: Spacing.sm,
   },
   identityTitle: {
     fontSize: Typography.sizes.h1,

@@ -5,12 +5,14 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Alert, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Image } from 'expo-image';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { StarField, Button, BioAlgae, CornerBush } from '../src/components/ui';
 import { useTranslation } from 'react-i18next';
 import { Colors, Typography, Spacing, BorderRadius } from '../src/theme/tokens';
 import { useSubscriptionStore } from '../src/stores/subscriptionStore';
 import { trackEvent, AnalyticsEvents } from '../src/services/analytics';
+import { useSignedUrls } from '../src/hooks';
 import {
   getOfferings,
   purchasePackage,
@@ -22,11 +24,16 @@ import type { PurchasesPackage } from 'react-native-purchases';
 
 type PlanType = 'monthly' | 'annual';
 
+const BRAND_KEYS = {
+  chairGold: 'matra/assets/icon-chair-gold-nobg.png',
+} as const;
+
 export default function PaywallScreen() {
   const { t } = useTranslation();
   const router = useRouter();
   const tier = useSubscriptionStore((s) => s.tier);
   const fetchEntitlements = useSubscriptionStore((s) => s.fetchEntitlements);
+  const brandUrls = useSignedUrls([BRAND_KEYS.chairGold]);
   const [selectedPlan, setSelectedPlan] = useState<PlanType>('annual');
   const [isLoadingOfferings, setIsLoadingOfferings] = useState(true);
   const [isPurchasing, setIsPurchasing] = useState(false);
@@ -161,7 +168,11 @@ export default function PaywallScreen() {
 
         {/* Hero */}
         <Animated.View entering={FadeInDown.delay(100)} style={styles.hero}>
-          <Text style={styles.heroIcon}>◈</Text>
+          <Image
+            source={brandUrls.get(BRAND_KEYS.chairGold) ? { uri: brandUrls.get(BRAND_KEYS.chairGold)! } : undefined}
+            style={styles.heroIcon}
+            contentFit="contain"
+          />
           <Text style={styles.heroTitle}>{t('paywall.title')}</Text>
           <Text style={styles.heroSubtitle}>
             {t('paywall.subtitle')}
@@ -270,8 +281,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xxl,
   },
   heroIcon: {
-    fontSize: 48,
-    color: Colors.accent.amber,
+    width: 80,
+    height: 80,
     marginBottom: Spacing.md,
   },
   heroTitle: {
