@@ -94,8 +94,14 @@ export default function HomeScreen() {
 
         {/* Quick Stats */}
         <View style={styles.statsRow}>
-          <StatCard label={t('home.people', { count: people.length })} value={people.length} icon="🌳" onPress={() => router.push('/(tabs)/tree')} isPremium={isPremium} />
-          <StatCard label={t('home.sessions', { count: interviews.length })} value={interviews.length} icon="🎙" onPress={() => router.push({ pathname: '/(tabs)/settings', params: { scrollTo: 'conversations' } })} isPremium={isPremium} />
+          <StatCard label={t('home.people', { count: people.length })} value={people.length} icon="🌳" onPress={() => router.push({ pathname: '/(tabs)/tree', params: { viewMode: 'table' } })} isPremium={isPremium} />
+          <StatCard label={t('home.sessions', { count: interviews.length })} value={interviews.length} icon="🎙" onPress={() => {
+            if (!isPremium && people.length <= 1) {
+              router.push('/(tabs)/record');
+            } else {
+              router.push({ pathname: '/(tabs)/settings', params: { scrollTo: 'conversations' } });
+            }
+          }} isPremium={isPremium} />
           <StatCard label={t('home.stories', { count: stories.length })} value={stories.length} icon="📖" onPress={() => router.push('/(tabs)/stories')} isPremium={isPremium} />
         </View>
 

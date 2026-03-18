@@ -7,7 +7,7 @@
 
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, Dimensions, Pressable, ScrollView, RefreshControl } from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Image } from 'expo-image';
 import Animated, {
   FadeIn,
@@ -1144,10 +1144,17 @@ type ViewMode = 'graph' | 'table';
 export default function TreeScreen() {
   const { t } = useTranslation();
   const router = useRouter();
+  const { viewMode: paramViewMode } = useLocalSearchParams<{ viewMode?: string }>();
   const { people, relationships } = useFamilyStore();
   const selfPersonId = useAuthStore((s) => s.profile?.self_person_id);
-  const [viewMode, setViewMode] = useState<ViewMode>('graph');
+  const [viewMode, setViewMode] = useState<ViewMode>(paramViewMode === 'table' ? 'table' : 'graph');
   const avatarUrls = useSignedUrls(people.map((p) => p.avatar_url));
+
+  useEffect(() => {
+    if (paramViewMode === 'table' || paramViewMode === 'graph') {
+      setViewMode(paramViewMode);
+    }
+  }, [paramViewMode]);
 
   const roleTranslations: Record<string, string> = useMemo(() => ({
     'Me': t('tree.me'),

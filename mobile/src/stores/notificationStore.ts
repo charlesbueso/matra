@@ -10,6 +10,7 @@
 
 import { create } from 'zustand';
 import * as SecureStore from 'expo-secure-store';
+import i18next from 'i18next';
 
 // Lazy-load expo-notifications to avoid the side-effect push-token
 // registration that crashes in Expo Go.
@@ -66,6 +67,12 @@ interface NotificationState {
 
   /** Cancel any scheduled grace period notifications */
   cancelGracePeriodReminders: () => Promise<void>;
+
+  /** Schedule tapering inactivity nudges (7d, 14d, 21d — then stop) */
+  scheduleInactivityNudges: () => Promise<void>;
+
+  /** Send a milestone notification (first story, people, stories) */
+  sendMilestoneNotification: (milestone: 'firstStory' | 'fifteenPeople' | 'twentyFivePeople' | 'tenStories' | 'twentyStories') => Promise<void>;
 }
 
 export const useNotificationStore = create<NotificationState>((set, get) => ({
@@ -147,10 +154,10 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
 
       // Schedule reminders at key intervals
       const reminders = [
-        { daysBeforeEnd: 5, title: '5 days left on your MATRA access', body: 'Your full premium access ends soon. Renew to keep all features.' },
-        { daysBeforeEnd: 3, title: '3 days left on your MATRA access', body: 'Your grace period is almost over. Your memories are safe — renew to keep creating.' },
-        { daysBeforeEnd: 1, title: 'Last day of full access', body: 'Your premium access ends tomorrow. Renew now to avoid interruption.' },
-        { daysBeforeEnd: 0, title: 'Your premium access has ended', body: 'Your memories are safe and readable. You can export your data for 30 more days.' },
+        { daysBeforeEnd: 5, titleKey: 'notifications.grace5Title', bodyKey: 'notifications.grace5Body' },
+        { daysBeforeEnd: 3, titleKey: 'notifications.grace3Title', bodyKey: 'notifications.grace3Body' },
+        { daysBeforeEnd: 1, titleKey: 'notifications.grace1Title', bodyKey: 'notifications.grace1Body' },
+        { daysBeforeEnd: 0, titleKey: 'notifications.grace0Title', bodyKey: 'notifications.grace0Body' },
       ];
 
       for (const reminder of reminders) {
@@ -159,8 +166,8 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
 
         await notif.scheduleNotificationAsync({
           content: {
-            title: reminder.title,
-            body: reminder.body,
+            title: i18next.t(reminder.titleKey),
+            body: i18next.t(reminder.bodyKey),
             sound: 'default',
           },
           trigger: { type: notif.SchedulableTriggerInputTypes.DATE, date: triggerDate },
@@ -186,5 +193,68 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
     } catch {
       // Notifications not available — silent no-op
     }
+  },
+
+  scheduleInactivityNudges: async () => {
+    try {
+      const notif = await getNotifications();
+      if (!notif) return;
+
+      // Cancel any previously scheduled inactivity nudges
+      const nudgeIds = ['inactivity-7d', 'inactivity-14d', 'inactivity-21d'];
+      for (const id of nudgeIds) {
+        await notif.cancelScheduledNotificationAsync(id);
+      }
+
+      const DAY = 24 * 60 * 60;
+
+      // Tapering schedule: 7 days, 14 days, 21 days — then silence
+      const nudges = [
+        { id: 'inactivity-7d', seconds: 7 * DAY, titleKey: 'notifications.nudge7dTitle', bodyKey: 'notifications.nudge7dBody' },
+        { id: 'inactivity-14d', seconds: 14 * DAY, titleKey: 'notifications.nudge14dTitle', bodyKey: 'notifications.nudge14dBody' },
+        { id: 'inactivity-21d', seconds: 21 * DAY, titleKey: 'notifications.nudge21dTitle', bodyKey: 'notifications.nudge21dBody' },
+      ];
+
+      for (const nudge of nudges) {
+        await notif.scheduleNotificationAsync({
+          content: {
+            title: i18next.t(nudge.titleKey),
+            body: i18next.t(nudge.bodyKey),
+            sound: 'default',
+            data: { route: '/(tabs)/record' },
+          },
+          trigger: {
+            type: notif.SchedulableTriggerInputTypes.TIME_INTERVAL,
+            seconds: nudge.seconds,
+          },
+          identifier: nudge.id,
+        });
+      }
+    } catch {
+      // Notifications not available — silent no-op
+    }
+  },
+
+  sendMilestoneNotification: async (milestone) => {
+    const alreadySent = SecureStore.getItem(`milestone-${milestone}`);
+    if (alreadySent) return;
+
+    const titles: Record<string, string> = {
+      firstStory: i18next.t('notifications.milestoneFirstStoryTitle'),
+      fifteenPeople: i18next.t('notifications.milestoneFifteenPeopleTitle'),
+      twentyFivePeople: i18next.t('notifications.milestoneTwentyFivePeopleTitle'),
+      tenStories: i18next.t('notifications.milestoneTenStoriesTitle'),
+      twentyStories: i18next.t('notifications.milestoneTwentyStoriesTitle'),
+    };
+    const bodies: Record<string, string> = {
+      firstStory: i18next.t('notifications.milestoneFirstStoryBody'),
+      fifteenPeople: i18next.t('notifications.milestoneFifteenPeopleBody'),
+      twentyFivePeople: i18next.t('notifications.milestoneTwentyFivePeopleBody'),
+      tenStories: i18next.t('notifications.milestoneTenStoriesBody'),
+      twentyStories: i18next.t('notifications.milestoneTwentyStoriesBody'),
+    };
+
+    await get().sendLocalNotification(titles[milestone], bodies[milestone]);
+    SecureStore.setItem(`milestone-${milestone}`, '1');
   },
 }));

@@ -827,10 +827,33 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
           ),
           processingInterviewId: interviewId,
         }));
-        useNotificationStore.getState().sendLocalNotification(
-          i18next.t('notifications.lineageReady'),
-          i18next.t('notifications.lineageReadyBody'),
-        );
+        // Refresh data to check milestones
+        await get().fetchAllFamilyData();
+        const { interviews: allInterviews, people: allPeople, stories: allStories } = get();
+
+        // First interview: send celebratory milestone instead of generic "lineage ready"
+        if (allInterviews.length === 1) {
+          useNotificationStore.getState().sendMilestoneNotification('firstStory');
+        } else {
+          useNotificationStore.getState().sendLocalNotification(
+            i18next.t('notifications.lineageReady'),
+            i18next.t('notifications.lineageReadyBody'),
+          );
+        }
+
+        // People milestones
+        if (allPeople.length >= 25) {
+          useNotificationStore.getState().sendMilestoneNotification('twentyFivePeople');
+        } else if (allPeople.length >= 15) {
+          useNotificationStore.getState().sendMilestoneNotification('fifteenPeople');
+        }
+
+        // Story milestones
+        if (allStories.length >= 20) {
+          useNotificationStore.getState().sendMilestoneNotification('twentyStories');
+        } else if (allStories.length >= 10) {
+          useNotificationStore.getState().sendMilestoneNotification('tenStories');
+        }
       })
       .catch((err) => {
         trackEvent(AnalyticsEvents.INTERVIEW_PROCESSING_FAILED, { error: err?.message });

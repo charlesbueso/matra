@@ -183,7 +183,7 @@ export default function ManageFamilyGroupScreen() {
                 </View>
                 <Text style={styles.lockedText}>{t('familyGroup.upgradeForLogo')}</Text>
                 <Button
-                  title="Upgrade"
+                  title={t('common.upgrade')}
                   onPress={() => router.push('/paywall')}
                   variant="premium"
                   size="sm"

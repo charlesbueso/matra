@@ -62,7 +62,30 @@ function RootLayout() {
     initAnalytics();
     initialize();
     useNotificationStore.getState().requestPermissions();
+    useNotificationStore.getState().scheduleInactivityNudges();
     configurePurchases();
+  }, []);
+
+  // Handle notification taps — navigate to relevant screen
+  useEffect(() => {
+    let sub: { remove: () => void } | null = null;
+    (async () => {
+      try {
+        const Notif = await import('expo-notifications');
+        sub = Notif.addNotificationResponseReceivedListener((response) => {
+          const route = response.notification.request.content.data?.route as string | undefined;
+          if (route) {
+            router.push(route as any);
+          } else {
+            // Default: go home
+            router.push('/(tabs)/home');
+          }
+        });
+      } catch {
+        // expo-notifications unavailable
+      }
+    })();
+    return () => sub?.remove();
   }, []);
 
   // Identify / reset user in analytics when auth changes
