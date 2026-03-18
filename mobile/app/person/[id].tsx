@@ -716,7 +716,7 @@ export default function PersonDetailScreen() {
           style={styles.modalKeyboardWrap}
           pointerEvents="box-none"
         >
-        <Animated.View entering={SlideInDown.duration(300).springify().damping(18)} exiting={SlideOutDown.duration(200)} style={styles.modalContent}>
+        <Animated.View entering={SlideInDown.duration(300)} exiting={SlideOutDown.duration(200)} style={styles.modalContent}>
           {/* Drag handle */}
           <View style={styles.editDetailHandle} />
           <View style={styles.modalHeader}>
@@ -833,7 +833,7 @@ export default function PersonDetailScreen() {
     {showMergeModal && (
       <Animated.View entering={FadeIn.duration(200)} exiting={FadeOut.duration(150)} style={styles.modalOverlay}>
         <Pressable style={styles.modalBackdrop} onPress={() => setShowMergeModal(false)} />
-        <Animated.View entering={SlideInDown.duration(300).springify().damping(18)} exiting={SlideOutDown.duration(200)} style={styles.modalContent}>
+        <Animated.View entering={SlideInDown.duration(300)} exiting={SlideOutDown.duration(200)} style={styles.modalContent}>
           {/* Drag handle */}
           <View style={styles.editDetailHandle} />
           <View style={styles.modalHeader}>
@@ -911,7 +911,7 @@ export default function PersonDetailScreen() {
           style={styles.editDetailKeyboardWrap}
           pointerEvents="box-none"
         >
-          <Animated.View entering={SlideInDown.duration(300).springify().damping(18)} exiting={SlideOutDown.duration(200)} style={styles.editDetailCard}>
+          <Animated.View entering={SlideInDown.duration(300)} exiting={SlideOutDown.duration(200)} style={styles.editDetailCard}>
             {/* Drag handle */}
             <View style={styles.editDetailHandle} />
 

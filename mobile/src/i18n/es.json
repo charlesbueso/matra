@@ -291,6 +291,7 @@
     "conversationWith": "Conversación con {{name}}",
     "addNewPerson": "Alguien nuevo",
     "addNewPersonHint": "Agrega un familiar para grabar",
+    "discoverFamily": "Graba una conversación para descubrir más miembros de tu familia. La IA identificará a las personas mencionadas en tus historias.",
     "newPersonTitle": "¿A quién vas a grabar?",
     "newPersonSubtitle": "Cuéntanos un poco sobre la persona para que la IA pueda entender mejor la conversación.",
     "newPersonFirstName": "Nombre",
@@ -322,7 +323,8 @@
     "peopleInStory": "Personas en esta historia",
     "sourceInterview": "Entrevista Fuente",
     "premiumAudioPromo": "Mejora a Premium para escuchar fragmentos de audio de la conversación real en cada historia",
-    "generatedAt": "Generada el {{date}}"
+    "generatedAt": "Generada el {{date}}",
+    "shareStory": "Compartir Historia"
   },
   "interview": {
     "notFound": "Entrevista no encontrada",
@@ -331,7 +333,8 @@
     "keyTopics": "Temas Clave",
     "transcript": "Transcripción",
     "providerLanguage": "Proveedor: {{provider}} · Idioma: {{language}}",
-    "noTranscript": "No hay transcripción disponible"
+    "noTranscript": "No hay transcripción disponible",
+    "shareSummary": "Compartir Resumen"
   },
   "person": {
     "notFound": "Persona no encontrada",
@@ -410,7 +413,8 @@
     "merge": "Fusionar",
     "merging": "Fusionando...",
     "mergeComplete": "Fusi\u00f3n Completa",
-    "mergeCompleteMessage": "{{source}} se ha fusionado con {{target}}."
+    "mergeCompleteMessage": "{{source}} se ha fusionado con {{target}}.",
+    "shareBio": "Compartir Biografía"
   },
   "relationships": {
     "parent": "Padre/Madre",
@@ -698,6 +702,7 @@
     "s12Body": "Para preguntas sobre estos términos, contáctanos en:\n\nsupport@matra.live\n\nSitio web: matra.live"
   },
   "layout": {
+    "accountDeactivatedTitle": "Cuenta Desactivada",
     "accountDeactivatedMessage": "Tu cuenta fue desactivada. ¿Te gustaría reactivarla y restaurar tus datos?",
     "reactivate": "Reactivar",
     "reactivating": "Restaurando tus datos...",

@@ -62,7 +62,7 @@ export function SubscriptionInfoSheet({ visible, onClose }: Props) {
     >
       <Pressable style={styles.backdrop} onPress={onClose} />
       <Animated.View
-        entering={SlideInDown.duration(300).springify().damping(18)}
+        entering={SlideInDown.duration(300)}
         exiting={SlideOutDown.duration(200)}
         style={styles.sheet}
       >

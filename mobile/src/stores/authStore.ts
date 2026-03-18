@@ -99,6 +99,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         },
       });
       if (error) throw error;
+
+      // Supabase may return a fake success for existing emails (no identities).
+      // Detect this and throw a user-friendly error.
+      if (data.user && data.user.identities && data.user.identities.length === 0) {
+        throw new Error('User already registered');
+      }
+
       trackEvent(AnalyticsEvents.SIGN_UP);
       // Return whether email confirmation is needed
       const needsConfirmation = !data.session;

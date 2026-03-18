@@ -400,6 +400,13 @@ export default function RecordScreen() {
                 </Card>
               );
             })}
+            {/* Hint for new users with only themselves */}
+            {people.length <= 1 && (
+              <View style={styles.discoverHint}>
+                <Text style={styles.discoverHintIcon}>🌱</Text>
+                <Text style={styles.discoverHintText}>{t('record.discoverFamily')}</Text>
+              </View>
+            )}
             {/* Add Someone New card */}
             <Card
               variant="default"
@@ -931,7 +938,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.accent.coral + '60',
   },
   jobCardIcon: {
-    fontSize: 18,
+    fontSize: 24,
   },
   jobCardText: {
     fontSize: Typography.sizes.caption,
@@ -1000,6 +1007,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.overlay.dark,
     borderStyle: 'dashed',
+  },
+  discoverHint: {
+    alignItems: 'center',
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.xl,
+    gap: Spacing.sm,
+  },
+  discoverHintIcon: {
+    fontSize: 28,
+  },
+  discoverHintText: {
+    fontSize: Typography.sizes.caption,
+    fontFamily: Typography.fonts.body,
+    color: Colors.text.twilight,
+    textAlign: 'center',
+    lineHeight: Typography.sizes.caption * Typography.lineHeights.relaxed,
   },
   // ── Add Person Modal ──
   modalOverlay: {

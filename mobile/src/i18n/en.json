@@ -291,6 +291,7 @@
     "conversationWith": "Conversation with {{name}}",
     "addNewPerson": "Someone new",
     "addNewPersonHint": "Add a family member to record",
+    "discoverFamily": "Record a conversation to discover more family members. The AI will identify people mentioned in your stories.",
     "newPersonTitle": "Who are you recording?",
     "newPersonSubtitle": "Tell us a bit about the person so the AI can better understand the conversation.",
     "newPersonFirstName": "First Name",

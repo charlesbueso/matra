@@ -6,7 +6,7 @@ import React, { useState, useRef } from 'react';
 import { View, Text, TextInput, StyleSheet, FlatList, Dimensions, Pressable, Alert, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import Animated, { 
-  useSharedValue, useAnimatedStyle, withSpring, interpolate,
+  useSharedValue, useAnimatedStyle, interpolate,
   useAnimatedScrollHandler,
 } from 'react-native-reanimated';
 import { Image } from 'expo-image';

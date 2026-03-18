@@ -17,7 +17,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Svg, { Line, Circle, Path, Defs, RadialGradient, Stop, Text as SvgText } from 'react-native-svg';
-import { StarField, BioAlgae, TreeTrunk, MountainScape, FlyingBirds } from '../../src/components/ui';
+import { StarField, BioAlgae, MountainScape, FlyingBirds } from '../../src/components/ui';
 import { useFamilyStore, Person, Relationship } from '../../src/stores/familyStore';
 import { useAuthStore } from '../../src/stores/authStore';
 import { useNotificationStore } from '../../src/stores/notificationStore';
@@ -1232,11 +1232,10 @@ export default function TreeScreen() {
 
   if (people.length === 0) {
     return (
-      <StarField particleCount={30}>
-        <MountainScape mountainOpacity={0.10} cloudCount={6} />
-        <FlyingBirds count={4} />
-        <TreeTrunk opacity={0.18} />
-        <BioAlgae strandCount={12} height={0.22} />
+      <StarField particleCount={8}>
+        <MountainScape mountainOpacity={0.10} cloudCount={3} />
+        <FlyingBirds count={2} />
+        <BioAlgae strandCount={10} height={0.22} />
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyIcon}>🌳</Text>
           <Text style={styles.emptyTitle}>{t('tree.emptyTitle')}</Text>
@@ -1249,11 +1248,10 @@ export default function TreeScreen() {
   }
 
   return (
-    <StarField particleCount={20}>
-      <MountainScape mountainOpacity={0.10} cloudCount={8} />
-      <FlyingBirds count={5} />
-      <TreeTrunk opacity={0.18} />
-      <BioAlgae strandCount={60} height={0.22} />
+    <StarField particleCount={8}>
+      <MountainScape mountainOpacity={0.10} cloudCount={3} />
+      <FlyingBirds count={2} />
+      <BioAlgae strandCount={15} height={0.22} />
       <View style={styles.header}>
         <View style={styles.headerRow}>
           <View>

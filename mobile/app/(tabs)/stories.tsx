@@ -61,7 +61,7 @@ export default function StoriesScreen() {
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
           renderItem={({ item, index }) => (
-            <Animated.View entering={FadeInDown.delay(index * 80).springify()}>
+            <Animated.View entering={FadeInDown.delay(index * 80).duration(300)}>
               <Card
                 variant="default"
                 style={styles.storyCard}

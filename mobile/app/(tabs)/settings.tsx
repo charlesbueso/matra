@@ -220,7 +220,8 @@ export default function SettingsScreen() {
       Alert.alert(t('settings.changeEmail'), t('settings.changeEmailInvalid'));
       return;
     }
-    if (trimmed === profile?.id) return; // same email, no-op
+    const currentEmail = useAuthStore.getState().user?.email;
+    if (trimmed === currentEmail) return; // same email, no-op
 
     setIsChangingEmail(true);
     try {
@@ -1043,9 +1044,9 @@ const styles = StyleSheet.create({
     color: Colors.text.starlight,
   },
   notificationBadge: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
     backgroundColor: Colors.accent.coral,
     marginLeft: Spacing.sm,
     alignItems: 'center',
@@ -1053,9 +1054,9 @@ const styles = StyleSheet.create({
   },
   notificationBadgeText: {
     color: '#FFFFFF',
-    fontSize: 11,
+    fontSize: 13,
     fontFamily: Typography.fonts.bodySemiBold,
-    lineHeight: 13,
+    lineHeight: 16,
   },
   languageSelector: {
     flexDirection: 'row',

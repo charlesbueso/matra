@@ -94,8 +94,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logotype: {
-    width: 140,
-    height: 140,
+    width: 110,
+    height: 110,
     marginBottom: Spacing.xl,
   },
   title: {

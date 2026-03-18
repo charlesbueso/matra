@@ -26,6 +26,7 @@ import { ThemeProvider } from '../src/theme';
 import { useAuthStore } from '../src/stores/authStore';
 import { useSubscriptionStore } from '../src/stores/subscriptionStore';
 import { useNotificationStore } from '../src/stores/notificationStore';
+import { supabase } from '../src/services/supabase';
 import { configurePurchases, isPremiumActive } from '../src/services/purchases';
 import { initAnalytics, identifyUser, resetUser, trackScreen, flushAnalytics } from '../src/services/analytics';
 import { Colors } from '../src/theme/tokens';
@@ -169,6 +170,12 @@ function RootLayout() {
 
       // Email change confirmation: matra://email-changed
       if (parsed.hostname === 'email-changed' || parsed.path?.startsWith('email-changed')) {
+        // Force refresh user/session to pick up the new email immediately
+        supabase.auth.getUser().then(({ data: { user } }) => {
+          if (user) {
+            useAuthStore.getState().fetchProfile();
+          }
+        });
         Alert.alert(
           t('settings.changeEmailSent'),
           t('settings.emailChangedSuccess'),
