@@ -26,6 +26,7 @@ import { ThemeProvider } from '../src/theme';
 import { useAuthStore } from '../src/stores/authStore';
 import { useSubscriptionStore } from '../src/stores/subscriptionStore';
 import { useNotificationStore } from '../src/stores/notificationStore';
+import AnimatedSplash from '../src/components/AnimatedSplash';
 import { supabase } from '../src/services/supabase';
 import { configurePurchases, isPremiumActive } from '../src/services/purchases';
 import { initAnalytics, identifyUser, resetUser, trackScreen, flushAnalytics } from '../src/services/analytics';
@@ -46,6 +47,8 @@ function RootLayout() {
   const segments = useSegments();
   const navigationState = useRootNavigationState();
   const { t } = useTranslation();
+
+  const [splashDone, setSplashDone] = useState(false);
 
   const [fontsLoaded] = useFonts({
     'SpaceGrotesk-Bold': SpaceGrotesk_700Bold,
@@ -107,6 +110,7 @@ function RootLayout() {
     return () => Purchases.removeCustomerInfoUpdateListener(listener);
   }, []);
 
+  // Hide the native splash as soon as assets are ready — the AnimatedSplash overlay takes over
   useEffect(() => {
     if (fontsLoaded && isInitialized) {
       SplashScreen.hideAsync();
@@ -246,6 +250,9 @@ function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>
         <StatusBar style="dark" />
+        {!splashDone && (
+          <AnimatedSplash onFinish={() => setSplashDone(true)} />
+        )}
         <Stack
           screenOptions={{
             headerShown: false,

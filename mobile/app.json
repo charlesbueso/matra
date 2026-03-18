@@ -8,9 +8,9 @@
     "scheme": "matra",
     "userInterfaceStyle": "dark",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#04070B"
+      "backgroundColor": "#F7F2EA"
     },
     "assetBundlePatterns": [
       "**/*"
