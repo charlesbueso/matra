@@ -819,7 +819,7 @@ export const useFamilyStore = create<FamilyState>((set, get) => ({
 
     get()
       .processInterview(audioUri, familyGroupId, title, devTranscript, subjectPersonId)
-      .then((result) => {
+      .then(async (result) => {
         const interviewId = result?.interview?.id || null;
         set((state) => ({
           backgroundJobs: state.backgroundJobs.map((j) =>

@@ -188,8 +188,17 @@ function RootLayout() {
       }
 
       // Email confirmation: matra://login (Supabase redirects here after email verify)
+      // Supabase appends session tokens as URL fragments: #access_token=...&refresh_token=...
       if (parsed.hostname === 'login' || parsed.path?.startsWith('login')) {
-        if (!session) {
+        const fragment = event.url.split('#')[1];
+        const hashParams = fragment ? new URLSearchParams(fragment) : null;
+        const accessToken = hashParams?.get('access_token') || (parsed.queryParams?.access_token as string);
+        const refreshToken = hashParams?.get('refresh_token') || (parsed.queryParams?.refresh_token as string);
+
+        if (accessToken && refreshToken) {
+          // Auto sign-in with the tokens from the email confirmation redirect
+          supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+        } else if (!session) {
           router.replace('/(auth)/sign-in');
         }
         return;
